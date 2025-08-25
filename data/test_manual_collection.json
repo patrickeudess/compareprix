@@ -1,0 +1,44 @@
+[
+  {
+    "collector": "Jean Dupont",
+    "supermarket": "Carrefour",
+    "products": [
+      {
+        "article": "Riz Basmati",
+        "prix": 520,
+        "unite": "kg"
+      },
+      {
+        "article": "Huile d'Olive",
+        "prix": 1250,
+        "unite": "L"
+      },
+      {
+        "article": "Pain",
+        "prix": 85,
+        "unite": "unité"
+      }
+    ]
+  },
+  {
+    "collector": "Marie Martin",
+    "supermarket": "Cap Sud",
+    "products": [
+      {
+        "article": "Riz Basmati",
+        "prix": 540,
+        "unite": "kg"
+      },
+      {
+        "article": "Huile d'Olive",
+        "prix": 1200,
+        "unite": "L"
+      },
+      {
+        "article": "Pain",
+        "prix": 90,
+        "unite": "unité"
+      }
+    ]
+  }
+]

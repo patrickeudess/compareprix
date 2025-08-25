@@ -1,0 +1,172 @@
+{
+  "collection_methods": {
+    "manual_collection": {
+      "enabled": true,
+      "team_size": 3,
+      "frequency": "weekly",
+      "supermarkets": [
+        "Carrefour",
+        "Cap Sud", 
+        "Casino",
+        "Jumia"
+      ],
+      "validation_required": true,
+      "min_validators": 2
+    },
+    "receipt_collection": {
+      "enabled": true,
+      "whatsapp_integration": true,
+      "auto_extraction": true,
+      "ocr_enabled": false,
+      "validation_required": true,
+      "min_validators": 1
+    },
+    "scraping": {
+      "enabled": true,
+      "sources": [
+        "jumia.ci",
+        "carrefour.ci"
+      ],
+      "frequency": "daily",
+      "validation_required": false,
+      "auto_validation": true
+    }
+  },
+  "quality_control": {
+    "price_validation": {
+      "max_deviation_percent": 20,
+      "min_data_points": 2,
+      "consistency_threshold": 80,
+      "anomaly_detection": true
+    },
+    "validation_process": {
+      "double_validation": true,
+      "expert_review": false,
+      "auto_approval_threshold": 0.9,
+      "manual_review_threshold": 0.7
+    },
+    "data_quality_metrics": {
+      "completeness_threshold": 0.95,
+      "accuracy_threshold": 0.9,
+      "timeliness_threshold": 7,
+      "consistency_threshold": 0.85
+    }
+  },
+  "workflow": {
+    "data_collection": {
+      "manual": {
+        "steps": [
+          "field_collection",
+          "data_entry",
+          "initial_validation",
+          "expert_review",
+          "final_approval"
+        ],
+        "estimated_time": "2_hours_per_week"
+      },
+      "receipts": {
+        "steps": [
+          "whatsapp_reception",
+          "image_processing",
+          "data_extraction",
+          "manual_validation",
+          "approval"
+        ],
+        "estimated_time": "1_hour_per_day"
+      },
+      "scraping": {
+        "steps": [
+          "automated_scraping",
+          "data_cleaning",
+          "duplicate_detection",
+          "auto_validation",
+          "integration"
+        ],
+        "estimated_time": "30_minutes_per_day"
+      }
+    },
+    "validation": {
+      "levels": [
+        {
+          "name": "initial",
+          "validators": 1,
+          "timeout": "24_hours"
+        },
+        {
+          "name": "expert",
+          "validators": 2,
+          "timeout": "48_hours"
+        },
+        {
+          "name": "final",
+          "validators": 1,
+          "timeout": "24_hours"
+        }
+      ]
+    }
+  },
+  "notifications": {
+    "email": {
+      "enabled": true,
+      "recipients": [
+        "admin@compareprix.ci",
+        "validator@compareprix.ci"
+      ],
+      "triggers": [
+        "new_data_collected",
+        "validation_required",
+        "anomaly_detected",
+        "quality_threshold_breached"
+      ]
+    },
+    "whatsapp": {
+      "enabled": true,
+      "recipients": [
+        "+2250123456789",
+        "+2250987654321"
+      ],
+      "triggers": [
+        "urgent_validation_required",
+        "critical_anomaly"
+      ]
+    }
+  },
+  "backup": {
+    "frequency": "daily",
+    "retention_days": 30,
+    "locations": [
+      "local_backup",
+      "cloud_backup"
+    ],
+    "encryption": true
+  },
+  "reporting": {
+    "daily_report": {
+      "enabled": true,
+      "metrics": [
+        "new_entries",
+        "validation_rate",
+        "anomalies_detected",
+        "data_quality_score"
+      ]
+    },
+    "weekly_report": {
+      "enabled": true,
+      "metrics": [
+        "trends_analysis",
+        "supermarket_comparison",
+        "product_price_evolution",
+        "collection_efficiency"
+      ]
+    },
+    "monthly_report": {
+      "enabled": true,
+      "metrics": [
+        "overall_performance",
+        "quality_improvements",
+        "user_satisfaction",
+        "cost_analysis"
+      ]
+    }
+  }
+}

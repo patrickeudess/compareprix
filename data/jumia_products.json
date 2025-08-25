@@ -1,0 +1,18 @@
+[
+  {
+    "article": "Riz Basmati Jumia",
+    "supermarche": "Jumia",
+    "prix": 550,
+    "unite": "kg",
+    "url": "https://www.jumia.ci/example",
+    "image_url": ""
+  },
+  {
+    "article": "Huile d'Olive Jumia",
+    "supermarche": "Jumia",
+    "prix": 1300,
+    "unite": "L",
+    "url": "https://www.jumia.ci/example",
+    "image_url": ""
+  }
+]

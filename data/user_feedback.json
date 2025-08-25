@@ -1,0 +1,21 @@
+[
+  {
+    "id": "5d3b7bf7dc40",
+    "timestamp": "2025-08-23T19:05:20.881197",
+    "date": "2025-08-23",
+    "product_name": "Pain",
+    "supermarket": "Carrefour",
+    "current_price": 85,
+    "new_price": 45,
+    "price_difference": -40,
+    "feedback_type": "price_decrease",
+    "user_comment": "",
+    "user_name": "Anonyme",
+    "user_email": "",
+    "photo_path": null,
+    "status": "pending_review",
+    "reviewed_by": null,
+    "review_date": null,
+    "review_notes": null
+  }
+]

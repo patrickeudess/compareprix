@@ -1,0 +1,90 @@
+{
+  "features": {
+    "dark_mode": {
+      "enabled": true,
+      "default": false,
+      "shortcut": "Ctrl+D"
+    },
+    "keyboard_shortcuts": {
+      "enabled": true,
+      "shortcuts": {
+        "search": "Ctrl+K",
+        "export": "Ctrl+E",
+        "dark_mode": "Ctrl+D",
+        "favorites": "Ctrl+F",
+        "share": "Ctrl+S"
+      }
+    },
+    "quick_search": {
+      "enabled": true,
+      "suggestions": [
+        "Riz",
+        "Huile",
+        "Pain",
+        "Lait",
+        "Tomates",
+        "Pommes",
+        "Pâtes",
+        "Sucre"
+      ]
+    },
+    "filters": {
+      "enabled": true,
+      "types": [
+        "all",
+        "price_low",
+        "price_high",
+        "supermarket",
+        "favorites"
+      ]
+    },
+    "export": {
+      "enabled": true,
+      "formats": ["json", "csv", "pdf"]
+    },
+    "share": {
+      "enabled": true,
+      "platforms": ["clipboard", "native"]
+    },
+    "animations": {
+      "enabled": true,
+      "reduced_motion": false
+    },
+    "accessibility": {
+      "enabled": true,
+      "high_contrast": false,
+      "large_text": false
+    },
+    "notifications": {
+      "enabled": true,
+      "duration": 3000,
+      "position": "top-right"
+    }
+  },
+  "ui": {
+    "theme": {
+      "primary_color": "#667eea",
+      "secondary_color": "#764ba2",
+      "success_color": "#28a745",
+      "warning_color": "#ffc107",
+      "danger_color": "#dc3545"
+    },
+    "layout": {
+      "max_width": "1400px",
+      "border_radius": "12px",
+      "spacing": "20px"
+    },
+    "responsive": {
+      "breakpoints": {
+        "mobile": "480px",
+        "tablet": "768px",
+        "desktop": "1024px"
+      }
+    }
+  },
+  "data": {
+    "refresh_interval": 300000,
+    "cache_duration": 3600000,
+    "max_results": 100
+  }
+}
