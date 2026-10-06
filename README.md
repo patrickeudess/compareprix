@@ -1,205 +1,65 @@
-# 🛒 ComparePrix
+# ComparePrix
 
-Une application web simple pour comparer les prix d'articles dans différents supermarchés.
+ComparePrix permet de consulter des prix sans compte et de proposer des relevés avec un compte contributeur.
 
-## 🚀 Fonctionnalités
+## Parcours disponibles
 
-- **Recherche d'articles** : Tapez le nom d'un article pour voir ses prix
-- **Comparaison de prix** : Visualisez les prix dans différents supermarchés
-- **Interface moderne** : Design responsive et intuitif
-- **Statistiques** : Prix minimum, maximum et moyen
-- **Mise en évidence** : Le meilleur prix est automatiquement mis en évidence
-- **Scraping automatique** : Récupération des données depuis Jumia Côte d'Ivoire
-- **Images des produits** : Affichage des images des articles
-- **Liens directs** : Accès direct aux pages produits
+- `/` : recherche publique, filtre par magasin, prix du format et prix par unité de référence pour les contributions.
+- `/compte` ou `/compte.html` : création de compte, connexion, suivi des contributions et points.
+- `/contribuer` ou `/contribuer.html` : formulaire produit, marque, variante, quantité, unité, prix FCFA, magasin, ville/quartier/boutique, date, photo facultative.
+- `/admin` : gestion des prix manuels ; lien vers la modération.
+- `/admin/contributions` : contrôle de la preuve privée, acceptation, refus motivé ou retrait de validation.
 
-## 📋 Prérequis
+Un utilisateur peut préparer son brouillon avant de se connecter. Seul l’envoi exige un compte. Le brouillon est enregistré localement sur son navigateur, sans photo ; un bouton permet de l’effacer.
 
-- Python 3.7 ou supérieur
-- pip (gestionnaire de paquets Python)
+## Installation serveur
 
-## 🛠️ Installation
+Python 3.10 ou supérieur :
 
-### Option 1 : Démarrage rapide (recommandé)
 ```bash
-python run_complete.py
-```
-
-### Option 2 : Installation manuelle
-
-1. **Cloner ou télécharger le projet**
-   ```bash
-   git clone <url-du-repo>
-   cd ComparePrix
-   ```
-
-2. **Installer les dépendances**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Scraper les données Jumia (optionnel)**
-   ```bash
-   python scraper_jumia.py
-   ```
-
-4. **Fusionner les données**
-   ```bash
-   python merge_data.py
-   ```
-
-5. **Lancer l'application**
-   ```bash
-   python app.py
-   ```
-
-6. **Ouvrir dans le navigateur**
-   ```
-   http://localhost:5000
-   ```
-
-## 📊 Structure des données
-
-Les données sont stockées dans `data/articles.json` avec le format suivant :
-
-```json
-[
-  {
-    "article": "Nom de l'article",
-    "supermarche": "Nom du supermarché",
-    "prix": 500,
-    "unite": "kg",
-    "url": "https://www.jumia.ci/produit/...",
-    "image_url": "https://www.jumia.ci/images/..."
-  }
-]
-```
-
-### Sources de données :
-- **Données manuelles** : Articles saisis manuellement
-- **Jumia Côte d'Ivoire** : Scraping automatique des produits alimentaires
-
-## 🔧 Configuration
-
-### Ajouter de nouveaux articles
-
-Vous pouvez modifier le fichier `data/articles.json` ou ajouter des données directement dans `app.py` dans la section `sample_data`.
-
-### Modifier les supermarchés
-
-Les supermarchés sont définis dans les données JSON. Vous pouvez ajouter ou modifier les supermarchés selon vos besoins.
-
-### Scraping Jumia
-
-Le script `scraper_jumia.py` récupère automatiquement :
-- **Nom du produit** (product_name)
-- **Prix en FCFA** (price)
-- **Source** (store = "Jumia")
-- **URL du produit** (url)
-- **Image du produit** (image_url)
-
-**Catégories scrapées :**
-- Supermarché
-- Alimentation
-- Boissons
-- Fruits & Légumes
-- Viandes & Poissons
-- Produits laitiers
-- Épicerie
-
-**Configuration du scraping :**
-- Limite : 10 produits par page
-- Pause entre requêtes : 1-3 secondes
-- Pause entre pages : 2-5 secondes
-
-## 📱 Utilisation
-
-1. **Recherche** : Entrez le nom d'un article dans le champ de recherche
-2. **Comparaison** : Cliquez sur "Comparer" ou appuyez sur Entrée
-3. **Résultats** : Consultez le tableau avec les prix par supermarché
-4. **Statistiques** : Regardez les statistiques en haut du tableau
-
-## 🎨 Fonctionnalités de l'interface
-
-- **Design responsive** : Fonctionne sur desktop et mobile
-- **Recherche en temps réel** : Résultats instantanés
-- **Mise en évidence** : Le meilleur prix est surligné en vert
-- **Statistiques** : Prix min/max/moyen affichés
-- **Gestion d'erreurs** : Messages d'erreur clairs
-
-## 🔍 Exemples de recherche
-
-- "Riz" → Trouve tous les types de riz
-- "Huile" → Trouve tous les types d'huile
-- "Pain" → Trouve tous les types de pain
-- "Lait" → Trouve tous les types de lait
-
-## 🚀 Déploiement
-
-### Local
-```bash
+pip install -r requirements.txt
 python app.py
 ```
 
-### Production (avec Gunicorn)
-```bash
-pip install gunicorn
-gunicorn -w 4 -b 0.0.0.0:5000 app:app
-```
+Ouvrir http://localhost:5000. Pour un hébergement public, utiliser un serveur WSGI avec HTTPS et un disque persistant ; le serveur de développement Flask sert à l’aperçu local.
 
-## 📝 API Endpoints
+Configurer :
+- `COMPAREPRIX_ADMIN_TOKEN` : secret administrateur, demandé dans l’interface ; jamais dans le dépôt.
+- `COMPAREPRIX_SECRET_KEY` : clé stable de session en production. En local, une clé est créée dans `data/.session-secret`.
+- `COMPAREPRIX_COOKIE_SECURE=true` : sur un serveur HTTPS.
+- `COMPAREPRIX_DATA_DIR` : dossier persistant pour la base collaborative et les photos ; par défaut `data`.
 
-- `GET /` : Page d'accueil
-- `POST /search` : Recherche d'articles
-- `GET /api/articles` : Liste de tous les articles
-- `GET /api/articles/<nom>` : Articles par nom
+Les prix manuels utilisent encore `data/articles.json`. Les comptes, observations, décisions et mouvements de points sont dans `community.sqlite3`. Les fichiers de preuve sont dans `proofs/`. Sauvegarder ces données privées avec la clé de session et ne pas les servir comme fichiers publics. La base et les preuves ne doivent jamais être publiées sur GitHub.
 
-## 🤝 Contribution
+## Validation
 
-Les contributions sont les bienvenues ! N'hésitez pas à :
-- Signaler des bugs
-- Proposer des améliorations
-- Ajouter de nouvelles fonctionnalités
+- Prix entier positif en FCFA, quantité positive, unité explicite.
+- Date dans les 30 derniers jours, aucune date future.
+- Détection du même relevé et de la réutilisation exacte d’une photo réencodée.
+- Photos JPG/PNG de 5 Mo maximum et 25 mégapixels maximum, réencodées pour retirer EXIF et géolocalisation.
+- Relevés en attente invisibles dans la recherche ; validation humaine obligatoire.
+- Historique conservé ; le relevé accepté le plus récent pour chaque produit/marque/variante/format/magasin/lieu est publié.
+- Relevés publics retirés des résultats après 30 jours depuis leur observation ; ils restent dans l’historique.
+- 10 points par acceptation, crédités une seule fois ; retrait de validation : mouvement de -10 points une seule fois. Aucune valeur monétaire.
+- Auteur et photo accessibles uniquement à l’auteur et à l’administration ; aucun email, pseudo ou photo dans le flux public.
+- Les prix manuels sans date sont signalés comme tels.
 
-## 📄 Licence
+Les mots de passe sont hachés. Les opérations de compte et de contribution utilisent une session et un jeton CSRF ; les endpoints administrateur utilisent le jeton Bearer. Les réponses privées ne sont pas mises en cache. L’ancien endpoint anonyme `/submit_feedback` est retiré (HTTP 410) au profit du parcours connecté.
 
-Ce projet est sous licence MIT.
+## GitHub Pages
 
----
+GitHub Pages ne peut pas exécuter Flask ni stocker des comptes. Le site statique reste une démonstration avec des pages de compte et de saisie qui signalent l’absence du serveur. Le parcours complet fonctionne sur la version Flask. Ne pas annoncer les inscriptions comme disponibles sur GitHub Pages seul.
 
-**ComparePrix** - Comparez intelligemment, économisez intelligemment ! 🛒💰
+## Limites de cette première version
 
+Pas encore d’email de vérification ou de récupération de mot de passe, d’OCR, de publication automatique, de panier comparatif ou de conversion monétaire des points. La modération doit vérifier la preuve et l’équivalence des produits. Les prix ne garantissent pas la disponibilité en magasin. Les limites d’authentification utilisent l’adresse IP vue par Flask ; configurer le proxy explicitement lors de l’hébergement.
 
-## 🔐 Espace administrateur
+## Logos
 
-La page `/admin` permet aux administrateurs de consulter, ajouter, modifier et supprimer les prix, magasins, formats et liens d’articles. Les modifications sont enregistrées dans `data/articles.json` et apparaissent dans la recherche de la version Flask. La page utilise un jeton Bearer; il est demandé à l’ouverture et reste en mémoire dans l’onglet jusqu’à sa fermeture.
+Chargement depuis les sites officiels avec `referrerpolicy="no-referrer"` ; le nom du magasin reste affiché si le logo est inaccessible.
 
-Les routes de consultation et de modération des signalements sont protégées par un jeton Bearer. Définissez `COMPAREPRIX_ADMIN_TOKEN` dans l'environnement du serveur avec une valeur secrète suffisamment longue avant le démarrage de l'application.
-
-Ouvrez `http://localhost:5000/admin` après avoir démarré Flask. Sur un hébergeur, définissez le secret `COMPAREPRIX_ADMIN_TOKEN` dans les variables d’environnement du service Flask. La version statique GitHub Pages ne peut pas enregistrer ces changements tant qu’elle n’est pas connectée à un serveur Flask public.
-
-Exemple PowerShell :
-```powershell
-$env:COMPAREPRIX_ADMIN_TOKEN = "<votre-jeton-secret>"
-python app.py
-```
-
-Exemple Linux/macOS :
-```bash
-export COMPAREPRIX_ADMIN_TOKEN="<votre-jeton-secret>"
-python app.py
-```
-
-Envoyez le jeton dans l'en-tête `Authorization: Bearer <votre-jeton-secret>` pour utiliser `GET /api/feedback` et `PUT /api/feedback/<id>`. Le formulaire public `POST /submit_feedback` reste accessible sans jeton. Ne stockez pas le jeton dans le dépôt.
-
-
-### Identification des enseignes
-
-Les logos dans les résultats proviennent des sites officiels :
 - Carrefour : https://carrefour.ci/wp-content/uploads/2023/08/carrefour-ci-logo.svg
 - Cap Sud : https://groupeprosuma.com/wp-content/uploads/2022/10/logo-cap-sud-mini.png
 - Casino : https://groupeprosuma.com/wp-content/uploads/2020/12/logo-casno-supermarche-mini.png
 
-Ils sont chargés à distance avec `referrerpolicy="no-referrer"`. Une initiale remplace le logo si son chargement échoue. Ces marques identifient les lieux/enseignes et ne représentent aucun partenariat. Cap Sud est un centre commercial : un relevé réel doit préciser la boutique. Jumia conserve une initiale faute de logo officiel vérifié pendant cette mise à jour.
-
-La consultation reste sans compte. La version GitHub Pages présente les données de démonstration et n’héberge pas les fonctionnalités serveur. La création de comptes contributeurs et le circuit de validation ne sont pas encore implémentés.
+Les marques identifient les enseignes sans partenariat commercial. Cap Sud est un centre commercial : préciser la boutique dans le lieu du relevé.
