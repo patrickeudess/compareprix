@@ -20,6 +20,8 @@ if(logo){const image=document.createElement('img');image.src=logo;image.alt='';i
 const name=document.createElement('span');name.textContent=row.supermarche;store.append(name);details.append(store);
 const price=document.createElement('div');price.className='price';price.textContent=money.format(row.prix)+' FCFA';
 const unit=document.createElement('span');unit.className='unit';unit.textContent='Format : '+(row.unite||'unité');price.append(unit);card.append(details,price);
+const source=document.createElement('p');source.className='unit';source.textContent=row.date_releve?row.source+' · Relevé le '+row.date_releve+' · '+row.lieu:(row.source||'Prix de démonstration')+' · À confirmer';details.append(source);
+if(Number.isFinite(row.prix_unitaire)){const normalized=document.createElement('span');normalized.className='unit';normalized.textContent=money.format(row.prix_unitaire)+' FCFA / '+row.unite_reference;price.append(normalized);}
 try{const url=new URL(row.url);if(['https:','http:'].includes(url.protocol)&&!url.pathname.includes('example')){const link=document.createElement('a');link.href=url.href;link.target='_blank';link.rel='noopener noreferrer';link.className='product-link';link.textContent='Voir le produit';card.append(link);}}catch{}
 content.append(card);
 });
@@ -40,3 +42,4 @@ section.hidden=!results.length;render();
 form.addEventListener('submit',event=>{event.preventDefault();search();});
 document.querySelectorAll('[data-search]').forEach(button=>button.addEventListener('click',()=>{input.value=button.dataset.search;search();}));
 filter.addEventListener('change',render);
+
