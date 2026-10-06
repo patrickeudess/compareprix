@@ -1954,6 +1954,10 @@
         .admin-entry { padding: 8px 20px 26px; text-align: center; color: #647168; font-size: .9rem; }
         .admin-entry a { color: #176b45; font-weight: 650; text-decoration: none; }
         .admin-entry a:hover { text-decoration: underline; }
+        .supermarket-logo { background: #fff; border: 1px solid #e3e9e5; width: 64px; height: 44px; flex-shrink: 0; border-radius: 8px; overflow: hidden; }
+        .supermarket-logo img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
+        .data-notice { margin: 16px 0; padding: 14px 18px; background: #fff6df; border-radius: 12px; color: #674c18; line-height: 1.6; }
+        .independence-note { text-align: center; color: #65736c; font-size: .85rem; padding: 24px; }
     </style>
 </head>
 <body>
@@ -2018,6 +2022,7 @@
         <div id="resultsSection" class="results-container" style="display: none;">
             <div id="stats" class="stats"></div>
             
+            <p class="data-notice">Consultation libre, sans compte. Les prix de démonstration ne sont pas des offres commerciales vérifiées. Comparez des formats équivalents et confirmez le prix en magasin.</p>
             <div class="filters">
                 <button class="filter-btn active" onclick="filterBySupermarket('all')">Tous</button>
                 <button class="filter-btn" onclick="filterBySupermarket('Carrefour')">Carrefour</button>
@@ -2035,8 +2040,8 @@
             <div class="features-grid">
                 <div class="feature-card">
                     <div class="feature-icon">💰</div>
-                    <h3>Économies garanties</h3>
-                    <p>Trouvez les meilleurs prix et économisez sur vos courses quotidiennes</p>
+                    <h3>Comparez les offres disponibles</h3>
+                    <p>Repérez le prix le plus bas parmi les offres affichées pour un même produit et format</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">⚡</div>
@@ -2051,37 +2056,11 @@
                 <div class="feature-card">
                     <div class="feature-icon">🔄</div>
                     <h3>Mise à jour continue</h3>
-                    <p>Nos prix sont mis à jour régulièrement pour vous garantir des informations fiables</p>
+                    <p>Vérifiez le prix et la disponibilité en magasin avant votre achat</p>
                 </div>
             </div>
         </div>
 
-        <!-- Section des supermarchés partenaires -->
-        <div class="partners-section">
-            <h2>🏪 Nos supermarchés partenaires</h2>
-            <div class="partners-grid">
-                <div class="partner-card">
-                    <div class="partner-logo">C</div>
-                    <h3>Carrefour</h3>
-                    <p>Grande distribution</p>
-                </div>
-                <div class="partner-card">
-                    <div class="partner-logo">CS</div>
-                    <h3>Cap Sud</h3>
-                    <p>Supermarché local</p>
-                </div>
-                <div class="partner-card">
-                    <div class="partner-logo">CA</div>
-                    <h3>Casino</h3>
-                    <p>Chaîne française</p>
-                </div>
-                <div class="partner-card">
-                    <div class="partner-logo">J</div>
-                    <h3>Jumia</h3>
-                    <p>E-commerce</p>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Modal de feedback -->
@@ -2171,6 +2150,30 @@
     </div>
 
     <script>
+        // Logos d'identification issus des sites officiels, sans affiliation.
+        const storeLogos = Object.freeze({
+            'carrefour': 'https://carrefour.ci/wp-content/uploads/2023/08/carrefour-ci-logo.svg',
+            'cap sud': 'https://groupeprosuma.com/wp-content/uploads/2022/10/logo-cap-sud-mini.png',
+            'casino': 'https://groupeprosuma.com/wp-content/uploads/2020/12/logo-casno-supermarche-mini.png'
+        });
+        function storeLogo(name) {
+            const source = storeLogos[String(name).trim().toLowerCase()];
+            return source ? '<img src="' + source + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>' + escapeHtml(String(name).charAt(0)) + '</span>' : escapeHtml(String(name || '?').charAt(0));
+        }
+        function updateStoreFilters(results) {
+            const container = document.querySelector('.filters');
+            container.replaceChildren();
+            const names = ['all', ...new Set(results.map(row => row.supermarche))];
+            names.forEach(name => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'filter-btn' + (name === 'all' ? ' active' : '');
+                button.textContent = name === 'all' ? 'Tous' : name;
+                button.addEventListener('click', () => filterBySupermarket(name, button));
+                container.appendChild(button);
+            });
+            currentFilter = 'all';
+        }
         // Variables globales
         let currentResults = [];
         let currentFilter = 'all';
@@ -2229,6 +2232,7 @@
                     return;
                 }
                 currentResults = data.results;
+                updateStoreFilters(currentResults);
                 displayResults(data.results, searchTerm);
             })
             .catch(error => {
@@ -2237,14 +2241,14 @@
             });
         }
 
-        function filterBySupermarket(supermarket) {
+        function filterBySupermarket(supermarket, button) {
             currentFilter = supermarket;
             
             // Mettre à jour l'état actif des filtres
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            event.target.classList.add('active');
+            (button || event.target).classList.add('active');
             
             // Filtrer les résultats
             let filteredResults = currentResults;
@@ -2336,7 +2340,7 @@
                         </td>
                         <td><strong>${escapeHtml(article.article)}</strong></td>
                         <td class="supermarket-cell">
-                            <div class="supermarket-logo">${escapeHtml(String(article.supermarche || "?").charAt(0))}</div>
+                            <div class="supermarket-logo">${storeLogo(article.supermarche)}</div>
                             <span class="supermarket-name">${escapeHtml(article.supermarche)}</span>
                         </td>
                         <td class="price-cell">${article.prix} FCFA</td>
@@ -2550,5 +2554,6 @@
         });
     </script>
     <footer class="admin-entry"><a href="/admin">Espace administrateur</a></footer>
+<p class="independence-note">ComparePrix est un comparateur indépendant. Les marques et logos identifient les enseignes ; aucun partenariat commercial n’est annoncé. Cap Sud désigne un centre commercial : précisez la boutique lors d’un relevé.</p>
 </body>
 </html>
