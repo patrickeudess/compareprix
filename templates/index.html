@@ -316,6 +316,7 @@
         }
 
         /* Partners Section */
+        [hidden] { display: none !important; }
         .partners-section {
             background: white;
             padding: 40px 30px;
@@ -1741,20 +1742,20 @@
                     <p class="hero-subtitle">Comparez intelligemment, économisez intelligemment !</p>
                     <p class="hero-description">
                         Découvrez les meilleurs prix de vos produits préférés dans les supermarchés de Côte d'Ivoire. 
-                        Notre plateforme vous aide à faire des économies en comparant les prix en temps réel.
+                        Notre plateforme vous aide à faire des économies en comparant les prix relevés en magasin, chacun avec sa date.
                     </p>
                     <div class="hero-stats">
                         <div class="stat-item">
-                            <span class="stat-number">500+</span>
-                            <span class="stat-label">Produits</span>
+                            <span class="stat-number" id="heroProducts">—</span>
+                            <span class="stat-label">Produits comparés</span>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-number">15+</span>
-                            <span class="stat-label">Supermarchés</span>
+                            <span class="stat-number" id="heroStores">—</span>
+                            <span class="stat-label">Magasins</span>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-number">24/7</span>
-                            <span class="stat-label">Mise à jour</span>
+                            <span class="stat-number" id="heroUpdated">—</span>
+                            <span class="stat-label">Dernier relevé</span>
                         </div>
                     </div>
                 </div>
@@ -1793,13 +1794,7 @@
         <div id="resultsSection" class="results-container" style="display: none;">
             <div id="stats" class="stats"></div>
             
-            <div class="filters">
-                <button class="filter-btn active" data-filter="all">Tous</button>
-                <button class="filter-btn" data-filter="Carrefour">Carrefour</button>
-                <button class="filter-btn" data-filter="Cap Sud">Cap Sud</button>
-                <button class="filter-btn" data-filter="Casino">Casino</button>
-                <button class="filter-btn" data-filter="Jumia">Jumia</button>
-            </div>
+            <div class="filters" id="filters"></div>
             
             <div id="resultsContent"></div>
         </div>
@@ -1825,37 +1820,16 @@
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">🔄</div>
-                    <h3>Mise à jour continue</h3>
-                    <p>Nos prix sont mis à jour régulièrement pour vous garantir des informations fiables</p>
+                    <h3>Prix datés</h3>
+                    <p>Chaque prix indique la date de son relevé ; les relevés de plus de 7 jours sont signalés</p>
                 </div>
             </div>
         </div>
 
-        <!-- Section des supermarchés partenaires -->
-        <div class="partners-section">
-            <h2>🏪 Nos supermarchés partenaires</h2>
-            <div class="partners-grid">
-                <div class="partner-card">
-                    <div class="partner-logo">C</div>
-                    <h3>Carrefour</h3>
-                    <p>Grande distribution</p>
-                </div>
-                <div class="partner-card">
-                    <div class="partner-logo">CS</div>
-                    <h3>Cap Sud</h3>
-                    <p>Supermarché local</p>
-                </div>
-                <div class="partner-card">
-                    <div class="partner-logo">CA</div>
-                    <h3>Casino</h3>
-                    <p>Chaîne française</p>
-                </div>
-                <div class="partner-card">
-                    <div class="partner-logo">J</div>
-                    <h3>Jumia</h3>
-                    <p>E-commerce</p>
-                </div>
-            </div>
+        <!-- Magasins comparés : liste générée depuis les relevés réels (voir loadSiteStats) -->
+        <div class="partners-section" id="storesSection" hidden>
+            <h2>🏪 Magasins comparés</h2>
+            <div class="partners-grid" id="storesGrid"></div>
         </div>
     </div>
 
@@ -1985,6 +1959,8 @@
                     return;
                 }
                 currentResults = data.results;
+                currentFilter = 'all';
+                buildFilters(currentResults);
                 displayResults(data.results, searchTerm);
             })
             .catch(error => {
@@ -1992,6 +1968,44 @@
                 alert('Erreur lors de la recherche');
             });
         }
+
+        // Boutons de filtre : un par magasin présent dans les résultats (rien de codé en dur)
+        function buildFilters(results) {
+            const stores = [...new Set(results.map(r => r.supermarche))].sort();
+            const makeBtn = (label, value) => {
+                const b = document.createElement('button');
+                b.className = 'filter-btn' + (value === currentFilter ? ' active' : '');
+                b.dataset.filter = value;
+                b.textContent = label;
+                return b;
+            };
+            document.getElementById('filters').replaceChildren(makeBtn('Tous', 'all'), ...stores.map(s => makeBtn(s, s)));
+        }
+
+        // Chiffres de la page d'accueil : réels (relevés non « exemple »), « — » tant qu'il n'y en a pas
+        function loadSiteStats() {
+            fetch('/api/stats').then(r => r.json()).then(stats => {
+                if (!stats || stats.error) return;
+                const stores = stats.magasins_reels || [];
+                if (stats.produits_reels) document.getElementById('heroProducts').textContent = stats.produits_reels;
+                if (stores.length) document.getElementById('heroStores').textContent = stores.length;
+                if (stats.dernier_releve) {
+                    const d = new Date(stats.dernier_releve + 'T00:00:00');
+                    document.getElementById('heroUpdated').textContent = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+                }
+                if (stores.length) {
+                    document.getElementById('storesGrid').replaceChildren(...stores.map(name => {
+                        const card = document.createElement('div'); card.className = 'partner-card';
+                        const logo = document.createElement('div'); logo.className = 'partner-logo';
+                        logo.textContent = name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+                        const title = document.createElement('h3'); title.textContent = name;
+                        card.append(logo, title); return card;
+                    }));
+                    document.getElementById('storesSection').hidden = false;
+                }
+            }).catch(() => { /* chiffres facultatifs : on garde « — » */ });
+        }
+        loadSiteStats();
 
         function filterBySupermarket(supermarket, button) {
             currentFilter = supermarket;

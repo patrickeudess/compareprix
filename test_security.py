@@ -66,6 +66,14 @@ class TestTemplate(unittest.TestCase):
             self.assertEqual(re.findall(r'<script(?![^>]*nonce=)[^>]*>', html), [], path)
             self.assertNotIn('javascript:', re.sub(r'//.*', '', html).replace("bloque javascript:", ''), path)
 
+    def test_homepage_makes_no_false_marketing_claims(self):
+        with open('templates/index.html', encoding='utf-8') as f:
+            html = f.read()
+        for claim in ('500+', '15+', '24/7', 'temps réel', 'mis à jour régulièrement', 'partenaires'):
+            self.assertNotIn(claim, html, claim)
+        self.assertNotIn('data-filter="Jumia"', html)  # filtres générés depuis les résultats, pas codés en dur
+        self.assertNotIn('data-filter="Carrefour"', html)
+
     def test_admin_page_never_uses_innerhtml(self):
         # la page d'admin affiche des données saisies par des tiers (signalements) : DOM + textContent uniquement
         with open('templates/admin.html', encoding='utf-8') as f:

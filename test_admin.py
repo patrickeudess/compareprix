@@ -236,6 +236,23 @@ class TestStats(unittest.TestCase):
         self.assertEqual(unit_stats([]), {})
         self.assertEqual(store_price_index(enrich_results([art('Pack', 'A', 100, 'lot')])), {})
 
+    def test_home_figures_count_real_data_only(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        os.environ['COMPAREPRIX_DB'] = os.path.join(tmp.name, 'h.db')
+        db.init_db(seed=False)
+        client = appmod.app.test_client()
+        with db.transaction() as c:  # uniquement des données d'exemple
+            db.import_articles(c, [{'article': 'Lait', 'supermarche': 'Casino', 'prix': 118}])
+        s = client.get('/api/stats').get_json()
+        self.assertEqual((s['produits_reels'], s['magasins_reels'], s['dernier_releve']), (0, [], None))
+        with db.transaction() as c:
+            db.import_articles(c, [obs(prix=4500, date_releve='2026-10-01'), obs(supermarche='Cap Sud', prix=4700, date_releve='2026-10-03'),
+                                   obs(article='RIZ parfumé 5kg', supermarche='Casino', prix=4600, date_releve='2026-09-20')])
+        s = client.get('/api/stats').get_json()
+        self.assertEqual((s['produits_reels'], s['magasins_reels'], s['dernier_releve']),
+                         (1, ['Cap Sud', 'Carrefour', 'Casino'], '2026-10-03'))  # casse ignorée, exemple exclu
+
     def test_api_stats_exposes_unit_prices_and_keeps_legacy_keys(self):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)

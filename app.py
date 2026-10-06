@@ -159,6 +159,7 @@ def get_stats():
     if not articles:
         return jsonify({'error': 'Aucune donnée disponible'})
     
+    reels = [x for x in articles if x['statut'] != 'donnee_exemple']
     # Statistiques par supermarché
     supermarkets = {}
     for article in articles:
@@ -168,6 +169,10 @@ def get_stats():
         'total_articles': len(articles),
         'total_supermarkets': len(supermarkets),
         'donnees_exemple': sum(1 for a in articles if a['statut'] == 'donnee_exemple'),
+        # Chiffres affichés sur la page d'accueil : uniquement des relevés réels (jamais les données d'exemple)
+        'produits_reels': len({normalize_key(x['article']) for x in reels}),
+        'magasins_reels': sorted({x['supermarche'] for x in reels}),
+        'dernier_releve': max((x['date_releve'] for x in reels if x['date_releve']), default=None),
         'supermarkets': {},
         'prix_unitaires': unit_stats(articles),
         'indice_prix_magasin': store_price_index(articles),
