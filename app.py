@@ -5,6 +5,8 @@ import os
 from datetime import datetime
 import secrets
 
+from pricing import normalize_article, freshness
+
 app = Flask(__name__, static_folder='static')
 
 # Chemin vers le fichier JSON des données
@@ -32,8 +34,13 @@ def load_articles():
     """Charge les données des articles depuis le fichier JSON"""
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            return [normalize_article(a) for a in json.load(f)]
     return []
+
+def with_freshness(article):
+    """Ajoute la fraîcheur du relevé (recente / perimee / inconnue / exemple)."""
+    level, age = freshness(article)
+    return {**article, 'fraicheur': level, 'age_jours': age}
 
 def save_articles(articles):
     """Sauvegarde les données des articles dans le fichier JSON"""
@@ -59,7 +66,7 @@ def search_articles():
     
     for article in articles:
         if search_term in article['article'].lower():
-            results.append(article)
+            results.append(with_freshness(article))
     
     return jsonify({'results': results})
 
@@ -67,13 +74,13 @@ def search_articles():
 def get_all_articles():
     """API pour récupérer tous les articles (pour debug)"""
     articles = load_articles()
-    return jsonify(articles)
+    return jsonify([with_freshness(a) for a in articles])
 
 @app.route('/api/articles/<article_name>')
 def get_article(article_name):
     """API pour récupérer un article spécifique"""
     articles = load_articles()
-    results = [a for a in articles if article_name.lower() in a['article'].lower()]
+    results = [with_freshness(a) for a in articles if article_name.lower() in a['article'].lower()]
     return jsonify(results)
 
 @app.route('/api/stats')
@@ -95,6 +102,7 @@ def get_stats():
     stats = {
         'total_articles': len(articles),
         'total_supermarkets': len(supermarkets),
+        'donnees_exemple': sum(1 for a in articles if a['statut'] == 'donnee_exemple'),
         'supermarkets': {}
     }
     
@@ -115,14 +123,14 @@ def export_data(format):
     articles = load_articles()
     
     if format == 'json':
-        return jsonify(articles)
+        return jsonify([with_freshness(a) for a in articles])
     elif format == 'csv':
         import csv
         from io import StringIO
         
         output = StringIO()
         writer = csv.writer(output)
-        writer.writerow(['Article', 'Supermarché', 'Prix (FCFA)', 'Unité', 'URL', 'Image URL'])
+        writer.writerow(['Article', 'Supermarché', 'Prix (FCFA)', 'Unité', 'Date relevé', 'Source', 'Statut', 'URL', 'Image URL'])
         
         for article in articles:
             writer.writerow([
@@ -130,6 +138,9 @@ def export_data(format):
                 article['supermarche'],
                 article['prix'],
                 article.get('unite', 'unité'),
+                article.get('date_releve') or '',
+                article.get('source', ''),
+                article.get('statut', ''),
                 article.get('url', ''),
                 article.get('image_url', '')
             ])
@@ -367,25 +378,9 @@ def send_feedback_notification(feedback_entry):
         print(f"   - Photo: {feedback_entry['photo_path']}")
 
 if __name__ == '__main__':
-    # Créer des données d'exemple si le fichier n'existe pas
+    # Aucune donnée factice n'est créée : importer de vrais relevés avec
+    # `python import_prices.py data/releve.csv --apply`
     if not os.path.exists(DATA_FILE):
-        sample_data = [
-            {"article": "Riz Basmati", "supermarche": "Carrefour", "prix": 500, "unite": "kg"},
-            {"article": "Riz Basmati", "supermarche": "Cap Sud", "prix": 520, "unite": "kg"},
-            {"article": "Riz Basmati", "supermarche": "Casino", "prix": 480, "unite": "kg"},
-            {"article": "Huile d'Olive", "supermarche": "Carrefour", "prix": 1200, "unite": "L"},
-            {"article": "Huile d'Olive", "supermarche": "Cap Sud", "prix": 1150, "unite": "L"},
-            {"article": "Huile d'Olive", "supermarche": "Casino", "prix": 1250, "unite": "L"},
-            {"article": "Pâtes Spaghetti", "supermarche": "Carrefour", "prix": 180, "unite": "kg"},
-            {"article": "Pâtes Spaghetti", "supermarche": "Cap Sud", "prix": 175, "unite": "kg"},
-            {"article": "Pâtes Spaghetti", "supermarche": "Casino", "prix": 190, "unite": "kg"},
-            {"article": "Lait", "supermarche": "Carrefour", "prix": 120, "unite": "L"},
-            {"article": "Lait", "supermarche": "Cap Sud", "prix": 125, "unite": "L"},
-            {"article": "Lait", "supermarche": "Casino", "prix": 118, "unite": "L"},
-            {"article": "Pain", "supermarche": "Carrefour", "prix": 85, "unite": "unité"},
-            {"article": "Pain", "supermarche": "Cap Sud", "prix": 90, "unite": "unité"},
-            {"article": "Pain", "supermarche": "Casino", "prix": 82, "unite": "unité"}
-        ]
-        save_articles(sample_data)
+        save_articles([])
     
     app.run(debug=os.environ.get('FLASK_DEBUG', '').lower() == 'true', host='0.0.0.0', port=int(os.environ.get('PORT', '5000')))

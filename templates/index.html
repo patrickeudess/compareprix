@@ -670,6 +670,12 @@
             color: white;
         }
 
+        .data-warning { background: #fff3cd; color: #664d03; padding: 10px 15px; border-radius: 8px; margin: 10px 0; font-size: 0.9em; }
+        .fresh-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; white-space: nowrap; }
+        .fresh-ok { background: #d1e7dd; color: #0f5132; }
+        .fresh-stale { background: #fff3cd; color: #664d03; }
+        .fresh-example, .fresh-unknown { background: #e2e3e5; color: #41464b; }
+
         .feedback-btn {
             display: inline-flex;
             align-items: center;
@@ -2057,6 +2063,7 @@
                 <div class="results-header">
                     📊 Résultats pour '${escapeHtml(searchTerm)}'
                 </div>
+                ${results.some(r => r.fraicheur === 'exemple') ? '<div class="data-warning">⚠️ Certains prix sont des <strong>données d\'exemple</strong> et ne reflètent pas les prix réels.</div>' : ''}
                 <table class="results-table">
                     <thead>
                         <tr>
@@ -2065,6 +2072,7 @@
                             <th>Supermarché</th>
                             <th>Prix</th>
                             <th>Unité</th>
+                            <th>Relevé</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -2089,6 +2097,7 @@
                         </td>
                         <td class="price-cell">${escapeHtml(article.prix)} FCFA</td>
                         <td class="unit-cell">${escapeHtml(article.unite || 'unité')}</td>
+                        <td class="freshness-cell">${freshnessBadge(article)}</td>
                         <td class="actions-cell">
                             ${isBestPrice ? '<span class="trophy-icon">🏆</span>' : ''}
                             ${productUrl ? `<a href="${escapeHtml(productUrl)}" target="_blank" rel="noopener noreferrer" class="view-btn">👁️ Voir</a>` : ''}
@@ -2112,6 +2121,15 @@
             return String(value ?? '').replace(/[&<>"']/g, c => ({
                 '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
             }[c]));
+        }
+        // Badge de fraîcheur du relevé (réponse de l'API : fraicheur + age_jours)
+        function freshnessBadge(article) {
+            switch (article.fraicheur) {
+                case 'exemple':  return '<span class="fresh-badge fresh-example">Exemple</span>';
+                case 'perimee':  return `<span class="fresh-badge fresh-stale" title="${escapeHtml(article.date_releve)}">⚠️ ${escapeHtml(article.age_jours)} j</span>`;
+                case 'recente':  return `<span class="fresh-badge fresh-ok" title="${escapeHtml(article.date_releve)}">${escapeHtml(article.date_releve)}</span>`;
+                default:         return '<span class="fresh-badge fresh-unknown">Date inconnue</span>';
+            }
         }
         // N'autorise que http(s) pour les liens/images (bloque javascript:, data:, etc.)
         function safeUrl(value) {

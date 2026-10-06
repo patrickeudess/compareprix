@@ -45,6 +45,8 @@ def merge_products_data():
             if jumia_product['prix'] != existing_product['prix']:
                 print(f"🔄 Mise à jour du prix pour {jumia_product['article']}: {existing_product['prix']} → {jumia_product['prix']} FCFA")
                 existing_product['prix'] = jumia_product['prix']
+                for champ in ('date_releve', 'source', 'statut'):
+                    existing_product[champ] = jumia_product.get(champ, existing_product.get(champ))
                 existing_product['url'] = jumia_product.get('url', existing_product.get('url', ''))
                 existing_product['image_url'] = jumia_product.get('image_url', existing_product.get('image_url', ''))
         else:
@@ -80,37 +82,13 @@ def merge_products_data():
     
     return merged_data
 
-def create_sample_data():
-    """Crée des données d'exemple si aucun fichier n'existe"""
-    sample_data = [
-        {"article": "Riz Basmati", "supermarche": "Carrefour", "prix": 500, "unite": "kg"},
-        {"article": "Riz Basmati", "supermarche": "Cap Sud", "prix": 520, "unite": "kg"},
-        {"article": "Riz Basmati", "supermarche": "Casino", "prix": 480, "unite": "kg"},
-        {"article": "Huile d'Olive", "supermarche": "Carrefour", "prix": 1200, "unite": "L"},
-        {"article": "Huile d'Olive", "supermarche": "Cap Sud", "prix": 1150, "unite": "L"},
-        {"article": "Huile d'Olive", "supermarche": "Casino", "prix": 1250, "unite": "L"},
-        {"article": "Pâtes Spaghetti", "supermarche": "Carrefour", "prix": 180, "unite": "kg"},
-        {"article": "Pâtes Spaghetti", "supermarche": "Cap Sud", "prix": 175, "unite": "kg"},
-        {"article": "Pâtes Spaghetti", "supermarche": "Casino", "prix": 190, "unite": "kg"},
-        {"article": "Lait", "supermarche": "Carrefour", "prix": 120, "unite": "L"},
-        {"article": "Lait", "supermarche": "Cap Sud", "prix": 125, "unite": "L"},
-        {"article": "Lait", "supermarche": "Casino", "prix": 118, "unite": "L"},
-        {"article": "Pain", "supermarche": "Carrefour", "prix": 85, "unite": "unité"},
-        {"article": "Pain", "supermarche": "Cap Sud", "prix": 90, "unite": "unité"},
-        {"article": "Pain", "supermarche": "Casino", "prix": 82, "unite": "unité"}
-    ]
-    
-    save_json_data(sample_data, 'data/articles.json')
-    print("📝 Données d'exemple créées")
-
 def main():
     print("🔄 Fusion des données ComparePrix")
     print("=" * 40)
     
     # Vérifier si les données existent
     if not os.path.exists('data/articles.json'):
-        print("📝 Création des données d'exemple...")
-        create_sample_data()
+        save_json_data([], 'data/articles.json')
     
     # Fusionner les données
     merged_data = merge_products_data()

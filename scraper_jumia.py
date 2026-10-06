@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup # type: ignore
 import json
+from datetime import date
 import time
 import random
 import re
@@ -221,7 +222,10 @@ class JumiaScraper:
                 'prix': product['price'],
                 'unite': unit,
                 'url': product['url'],
-                'image_url': product['image_url']
+                'image_url': product['image_url'],
+                'date_releve': date.today().isoformat(),
+                'source': 'jumia',
+                'statut': 'a_verifier'
             })
         
         return compareprix_data

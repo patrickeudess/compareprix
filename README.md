@@ -187,3 +187,14 @@ python app.py
 ```
 
 Envoyez le jeton dans l'en-tête `Authorization: Bearer <votre-jeton-secret>` pour utiliser `GET /api/feedback` et `PUT /api/feedback/<id>`. Le formulaire public `POST /submit_feedback` reste accessible sans jeton. Ne stockez pas le jeton dans le dépôt.
+
+
+## 📥 Importer de vrais relevés de prix
+
+Chaque prix porte `date_releve`, `source` (`manuel`, `ticket`, `jumia`, `signalement`) et `statut` (`valide`, `a_verifier`). Les anciennes données sans date sont affichées comme **Exemple** ; un relevé de plus de 7 jours est signalé ⚠️.
+
+1. Remplir une copie de `data/releve_modele.csv` (unités : `kg, g, L, cl, ml, unité, lot` ; date `AAAA-MM-JJ`).
+2. Simuler : `python import_prices.py releve.csv`
+3. Écrire (sauvegarde automatique) : `python import_prices.py releve.csv --apply --replace-examples`
+
+L'import est « tout ou rien » : une ligne invalide annule tout et son numéro est affiché. Tests : `python -m unittest test_pricing -v`.

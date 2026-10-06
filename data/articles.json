@@ -3,142 +3,189 @@
     "article": "Riz Basmati",
     "supermarche": "Carrefour",
     "prix": 500,
-    "unite": "kg"
+    "unite": "kg",
+    "date_releve": null,
+    "source": "exemple",
+    "statut": "donnee_exemple"
   },
   {
     "article": "Riz Basmati",
     "supermarche": "Cap Sud",
     "prix": 520,
-    "unite": "kg"
+    "unite": "kg",
+    "date_releve": null,
+    "source": "exemple",
+    "statut": "donnee_exemple"
   },
   {
     "article": "Riz Basmati",
     "supermarche": "Casino",
     "prix": 480,
-    "unite": "kg"
+    "unite": "kg",
+    "date_releve": null,
+    "source": "exemple",
+    "statut": "donnee_exemple"
   },
   {
     "article": "Huile d'Olive",
     "supermarche": "Carrefour",
     "prix": 1200,
-    "unite": "L"
+    "unite": "L",
+    "date_releve": null,
+    "source": "exemple",
+    "statut": "donnee_exemple"
   },
   {
     "article": "Huile d'Olive",
     "supermarche": "Cap Sud",
     "prix": 1150,
-    "unite": "L"
+    "unite": "L",
+    "date_releve": null,
+    "source": "exemple",
+    "statut": "donnee_exemple"
   },
   {
     "article": "Huile d'Olive",
     "supermarche": "Casino",
     "prix": 1250,
-    "unite": "L"
+    "unite": "L",
+    "date_releve": null,
+    "source": "exemple",
+    "statut": "donnee_exemple"
   },
   {
     "article": "Pâtes Spaghetti",
     "supermarche": "Carrefour",
     "prix": 180,
-    "unite": "kg"
+    "unite": "kg",
+    "date_releve": null,
+    "source": "exemple",
+    "statut": "donnee_exemple"
   },
   {
     "article": "Pâtes Spaghetti",
     "supermarche": "Cap Sud",
     "prix": 175,
-    "unite": "kg"
+    "unite": "kg",
+    "date_releve": null,
+    "source": "exemple",
+    "statut": "donnee_exemple"
   },
   {
     "article": "Pâtes Spaghetti",
     "supermarche": "Casino",
     "prix": 190,
-    "unite": "kg"
+    "unite": "kg",
+    "date_releve": null,
+    "source": "exemple",
+    "statut": "donnee_exemple"
   },
   {
     "article": "Lait",
     "supermarche": "Carrefour",
     "prix": 120,
-    "unite": "L"
+    "unite": "L",
+    "date_releve": null,
+    "source": "exemple",
+    "statut": "donnee_exemple"
   },
   {
     "article": "Lait",
     "supermarche": "Cap Sud",
     "prix": 125,
-    "unite": "L"
+    "unite": "L",
+    "date_releve": null,
+    "source": "exemple",
+    "statut": "donnee_exemple"
   },
   {
     "article": "Lait",
     "supermarche": "Casino",
     "prix": 118,
-    "unite": "L"
+    "unite": "L",
+    "date_releve": null,
+    "source": "exemple",
+    "statut": "donnee_exemple"
   },
   {
     "article": "Pain",
     "supermarche": "Carrefour",
     "prix": 85,
-    "unite": "unité"
+    "unite": "unité",
+    "date_releve": null,
+    "source": "exemple",
+    "statut": "donnee_exemple"
   },
   {
     "article": "Pain",
     "supermarche": "Cap Sud",
     "prix": 90,
-    "unite": "unité"
+    "unite": "unité",
+    "date_releve": null,
+    "source": "exemple",
+    "statut": "donnee_exemple"
   },
   {
     "article": "Pain",
     "supermarche": "Casino",
     "prix": 82,
-    "unite": "unité"
+    "unite": "unité",
+    "date_releve": null,
+    "source": "exemple",
+    "statut": "donnee_exemple"
   },
   {
     "article": "Tomates",
     "supermarche": "Carrefour",
     "prix": 300,
-    "unite": "kg"
+    "unite": "kg",
+    "date_releve": null,
+    "source": "exemple",
+    "statut": "donnee_exemple"
   },
   {
     "article": "Tomates",
     "supermarche": "Cap Sud",
     "prix": 280,
-    "unite": "kg"
+    "unite": "kg",
+    "date_releve": null,
+    "source": "exemple",
+    "statut": "donnee_exemple"
   },
   {
     "article": "Tomates",
     "supermarche": "Casino",
     "prix": 320,
-    "unite": "kg"
+    "unite": "kg",
+    "date_releve": null,
+    "source": "exemple",
+    "statut": "donnee_exemple"
   },
   {
     "article": "Pommes",
     "supermarche": "Carrefour",
     "prix": 450,
-    "unite": "kg"
+    "unite": "kg",
+    "date_releve": null,
+    "source": "exemple",
+    "statut": "donnee_exemple"
   },
   {
     "article": "Pommes",
     "supermarche": "Cap Sud",
     "prix": 420,
-    "unite": "kg"
+    "unite": "kg",
+    "date_releve": null,
+    "source": "exemple",
+    "statut": "donnee_exemple"
   },
   {
     "article": "Pommes",
     "supermarche": "Casino",
     "prix": 480,
-    "unite": "kg"
-  },
-  {
-    "article": "Riz Basmati Jumia",
-    "supermarche": "Jumia",
-    "prix": 550,
     "unite": "kg",
-    "url": "https://www.jumia.ci/example",
-    "image_url": ""
-  },
-  {
-    "article": "Huile d'Olive Jumia",
-    "supermarche": "Jumia",
-    "prix": 1300,
-    "unite": "L",
-    "url": "https://www.jumia.ci/example",
-    "image_url": ""
+    "date_releve": null,
+    "source": "exemple",
+    "statut": "donnee_exemple"
   }
 ]

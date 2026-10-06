@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup # type: ignore # type: ignore
 import json
+from datetime import date
 import time
 import random
 import re
@@ -324,7 +325,10 @@ class JumiaScraperV2:
                 'prix': product['price'],
                 'unite': unit,
                 'url': product['url'],
-                'image_url': product['image_url']
+                'image_url': product['image_url'],
+                'date_releve': date.today().isoformat(),
+                'source': 'jumia',
+                'statut': 'a_verifier'
             })
         
         return compareprix_data
@@ -385,30 +389,7 @@ def main():
     
     else:
         print("❌ Aucun produit trouvé")
-        print("💡 Création de données d'exemple...")
-        
-        # Créer des données d'exemple
-        sample_data = [
-            {
-                'article': 'Riz Basmati Jumia',
-                'supermarche': 'Jumia',
-                'prix': 550,
-                'unite': 'kg',
-                'url': 'https://www.jumia.ci/example',
-                'image_url': ''
-            },
-            {
-                'article': 'Huile d\'Olive Jumia',
-                'supermarche': 'Jumia',
-                'prix': 1300,
-                'unite': 'L',
-                'url': 'https://www.jumia.ci/example',
-                'image_url': ''
-            }
-        ]
-        
-        scraper.save_to_json(sample_data, 'data/jumia_products.json')
-        print("✅ Données d'exemple créées")
+        print("ℹ️ Aucune donnée écrite (jamais de données factices).")
 
 if __name__ == "__main__":
     main()
