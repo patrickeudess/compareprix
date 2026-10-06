@@ -107,6 +107,7 @@
     let adminToken = '';
     let articles = [];
     let editingIndex = null;
+    let isSaving = false;
     const $ = (id) => document.getElementById(id);
     const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 
@@ -196,7 +197,11 @@
     }
 
     async function persistArticles(nextArticles, successMessage) {
+      if (isSaving) return;
+      isSaving = true;
       $('saveArticle').disabled = true;
+      $('logout').disabled = true;
+      $('cancelEdit').disabled = true;
       try {
         const data = await api('/api/admin/articles', {method:'PUT', body:JSON.stringify({articles:nextArticles})});
         articles = data.articles;
@@ -207,6 +212,9 @@
         showNotice($('notice'), error.message, 'error');
       } finally {
         $('saveArticle').disabled = false;
+        $('logout').disabled = false;
+        $('cancelEdit').disabled = false;
+        isSaving = false;
       }
     }
 
@@ -226,6 +234,7 @@
     });
 
     $('articleRows').addEventListener('click', (event) => {
+      if (isSaving) return;
       const edit = event.target.closest('[data-edit]');
       const remove = event.target.closest('[data-delete]');
       if (edit) fillForm(Number(edit.dataset.edit));
@@ -233,11 +242,7 @@
         const index = Number(remove.dataset.delete);
         if (!articles[index] || !window.confirm('Supprimer ce prix de ComparePrix ?')) return;
         const next = articles.filter((_, i) => i !== index);
-        $('saveArticle').disabled = true;
-        api('/api/admin/articles', {method:'PUT', body:JSON.stringify({articles:next})})
-          .then((data) => {articles = data.articles; renderArticles(); showNotice($('notice'),'Prix supprimé de ComparePrix.','ok');})
-          .catch((error) => showNotice($('notice'),error.message,'error'))
-          .finally(() => {$('saveArticle').disabled = false;});
+        persistArticles(next, 'Prix supprimé de ComparePrix.');
       }
     });
 
@@ -246,6 +251,9 @@
     $('logout').addEventListener('click', () => {
       adminToken = '';
       articles = [];
+      resetForm();
+      $('filter').value = '';
+      $('notice').className = 'notice';
       $('dashboard').hidden = true;
       $('loginPanel').hidden = false;
       $('loginNotice').className = 'notice';
