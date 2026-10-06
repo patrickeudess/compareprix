@@ -170,9 +170,13 @@ Ce projet est sous licence MIT.
 **ComparePrix** - Comparez intelligemment, économisez intelligemment ! 🛒💰
 
 
-## 🔐 Administration des signalements
+## 🔐 Espace administrateur
+
+La page `/admin` permet aux administrateurs de consulter, ajouter, modifier et supprimer les prix, magasins, formats et liens d’articles. Les modifications sont enregistrées dans `data/articles.json` et apparaissent dans la recherche de la version Flask. La page utilise un jeton Bearer; il est demandé à l’ouverture et reste en mémoire dans l’onglet jusqu’à sa fermeture.
 
 Les routes de consultation et de modération des signalements sont protégées par un jeton Bearer. Définissez `COMPAREPRIX_ADMIN_TOKEN` dans l'environnement du serveur avec une valeur secrète suffisamment longue avant le démarrage de l'application.
+
+Ouvrez `http://localhost:5000/admin` après avoir démarré Flask. Sur un hébergeur, définissez le secret `COMPAREPRIX_ADMIN_TOKEN` dans les variables d’environnement du service Flask. La version statique GitHub Pages ne peut pas enregistrer ces changements tant qu’elle n’est pas connectée à un serveur Flask public.
 
 Exemple PowerShell :
 ```powershell
