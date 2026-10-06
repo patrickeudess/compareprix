@@ -2228,6 +2228,7 @@
                     currentResults = articles.filter(article =>
                         (article.article || '').toLocaleLowerCase('fr').includes(normalizedTerm)
                     );
+                    updateStoreFilters(currentResults);
                     currentFilter = 'all';
                     document.querySelectorAll('.filter-btn').forEach(btn => {
                         btn.classList.toggle('active', btn.textContent.trim() === 'Tous');
