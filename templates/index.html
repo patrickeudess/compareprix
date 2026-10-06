@@ -2303,8 +2303,8 @@
             results.forEach(article => {
                 const isBestPrice = article.prix === minPrice;
                 const rowClass = isBestPrice ? 'best-price' : '';
-                const imageUrl = article.image_url || '';
-                const productUrl = article.url || '';
+                const imageUrl = safeHttpUrl(article.image_url || '');
+                const productUrl = safeHttpUrl(article.url || '');
 
                 tableHTML += `
                     <tr class="${rowClass}">
