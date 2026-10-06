@@ -1,3 +1,6 @@
+import io
+import re
+
 from flask import Flask, render_template, request, jsonify, send_from_directory, g
 from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -7,7 +10,9 @@ from datetime import datetime
 import secrets
 
 import db
-from pricing import freshness, enrich_results
+from pricing import freshness, enrich_results, unit_stats, store_price_index, validate_article, normalize_key
+from backup_db import create_backup
+import import_prices
 from uploads import MAX_IMAGE_BYTES, detect_image_extension
 from ratelimit import SlidingWindowLimiter
 
@@ -45,7 +50,16 @@ def is_feedback_admin():
     except UnicodeError:
         return False
 
+# Essais de jeton erronés par IP : freine une devinette du jeton (par processus, cf. ratelimit.py)
+ADMIN_FAIL_LIMITER = SlidingWindowLimiter(20, 600)
+
 def admin_auth_error():
+    allowed, retry_after = ADMIN_FAIL_LIMITER.check(request.remote_addr or 'inconnu')
+    if not allowed:
+        response = jsonify({'status': 'error', 'message': 'Trop de tentatives, réessayez plus tard'})
+        response.status_code = 429
+        response.headers['Retry-After'] = str(retry_after)
+        return response
     return jsonify({'status': 'error', 'message': 'Authentification administrateur requise'}), 401
 
 def load_articles():
@@ -78,7 +92,7 @@ def add_security_headers(response):
         "default-src 'self'",
         f"script-src 'self' 'nonce-{nonce}'",
         "style-src 'self' 'unsafe-inline'",        # la page contient un gros bloc <style> inline
-        "img-src 'self' data: https:",              # images produits hébergées par les enseignes (https)
+        "img-src 'self' data: blob: https:",   # blob: = photos de signalements chargées par l'admin avec le jeton              # images produits hébergées par les enseignes (https)
         "connect-src 'self'",
         "object-src 'none'",
         "base-uri 'self'",
@@ -138,8 +152,9 @@ def get_price_history(article_name):
 
 @app.route('/api/stats')
 def get_stats():
-    """API pour récupérer les statistiques globales"""
-    articles = load_articles()
+    """Statistiques globales. `supermarkets` = prix AFFICHÉS (historique de l'API) ;
+    `prix_unitaires` et `indice_prix_magasin` = comparaison fiable (FCFA/kg, FCFA/L)."""
+    articles = present(load_articles())
     
     if not articles:
         return jsonify({'error': 'Aucune donnée disponible'})
@@ -147,16 +162,15 @@ def get_stats():
     # Statistiques par supermarché
     supermarkets = {}
     for article in articles:
-        supermarket = article['supermarche']
-        if supermarket not in supermarkets:
-            supermarkets[supermarket] = []
-        supermarkets[supermarket].append(article)
+        supermarkets.setdefault(article['supermarche'], []).append(article)
     
     stats = {
         'total_articles': len(articles),
         'total_supermarkets': len(supermarkets),
         'donnees_exemple': sum(1 for a in articles if a['statut'] == 'donnee_exemple'),
-        'supermarkets': {}
+        'supermarkets': {},
+        'prix_unitaires': unit_stats(articles),
+        'indice_prix_magasin': store_price_index(articles),
     }
     
     for supermarket, products in supermarkets.items():
@@ -315,6 +329,122 @@ def submit_feedback():
             'status': 'error',
             'message': 'Erreur lors du traitement du signalement'
         }), 500
+
+# ------------------------------------------------------------------ administration
+
+@app.route('/admin')
+def admin_page():
+    """Coquille de la page d'administration : aucune donnée ni secret ; le jeton est saisi dans
+    le navigateur et envoyé en en-tête Authorization à chaque appel d'API."""
+    return render_template('admin.html')
+
+_PHOTO_NAME = re.compile(r'^feedback_[0-9a-f]{32}\.(png|jpg|gif)$')
+
+@app.route('/api/feedback/<feedback_id>/photo')
+def feedback_photo(feedback_id):
+    """Photo d'un signalement (admin). Le nom vient de la base et est revalidé : pas de traversée de chemin."""
+    if not is_feedback_admin():
+        return admin_auth_error()
+    fb = db.get_feedback(feedback_id)
+    name = os.path.basename(fb['photo_path']) if fb and fb['photo_path'] else ''
+    if not _PHOTO_NAME.match(name):
+        return jsonify({'status': 'error', 'message': 'Photo introuvable'}), 404
+    return send_from_directory(os.path.abspath('data/user_photos'), name)
+
+@app.route('/api/observations', methods=['GET'])
+def list_observations():
+    if not is_feedback_admin():
+        return admin_auth_error()
+    return jsonify({'status': 'success', 'observations': db.recent_observations(request.args.get('limit', 50, type=int))})
+
+@app.route('/api/observations', methods=['POST'])
+def create_observation():
+    """Saisie d'un relevé de prix (admin). Retourne aussi un avertissement si le prix est aberrant."""
+    if not is_feedback_admin():
+        return admin_auth_error()
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({'status': 'error', 'message': 'Corps JSON invalide'}), 400
+    rec = {k: (data.get(k).strip() if isinstance(data.get(k), str) else data.get(k))
+           for k in ('article', 'supermarche', 'prix', 'unite', 'date_releve', 'source', 'statut', 'url')}
+    if isinstance(rec['prix'], str) and rec['prix'].isdigit():
+        rec['prix'] = int(rec['prix'])
+    if not rec.get('url'):
+        rec.pop('url', None)
+    errors = validate_article(rec)
+    if errors:
+        return jsonify({'status': 'error', 'message': 'Relevé invalide', 'errors': errors}), 400
+    with db.transaction() as conn:
+        oid, created = db.add_observation(conn, rec)
+    # Contrôle immédiat : le prix saisi est-il aberrant par rapport aux autres magasins ?
+    same = [a for a in present(db.list_current(rec['article']))
+            if normalize_key(a['article']) == normalize_key(rec['article'])]
+    mine = next((a for a in same if a['supermarche'].lower() == rec['supermarche'].lower()), None)
+    return jsonify({'status': 'success', 'observation_id': oid, 'created': created,
+                    'anomalie': mine['anomalie'] if mine else None,
+                    'prix_unitaire': mine['prix_unitaire'] if mine else None}), 201 if created else 200
+
+@app.route('/api/observations/<int:observation_id>', methods=['PUT'])
+def update_observation(observation_id):
+    if not is_feedback_admin():
+        return admin_auth_error()
+    data = request.get_json(silent=True)
+    statut = data.get('statut') if isinstance(data, dict) else None
+    if statut not in ('valide', 'a_verifier'):
+        return jsonify({'status': 'error', 'message': 'Statut invalide (valide, a_verifier)'}), 400
+    if not db.set_observation_status(observation_id, statut):
+        return jsonify({'status': 'error', 'message': "Relevé introuvable ou donnée d'exemple"}), 404
+    return jsonify({'status': 'success'})
+
+@app.route('/api/observations/<int:observation_id>', methods=['DELETE'])
+def delete_observation(observation_id):
+    if not is_feedback_admin():
+        return admin_auth_error()
+    result = db.delete_observation(observation_id)
+    if result == 'not_found':
+        return jsonify({'status': 'error', 'message': 'Relevé introuvable'}), 404
+    if result == 'referenced':
+        return jsonify({'status': 'error', 'message': 'Relevé lié à un signalement approuvé : suppression refusée'}), 409
+    app.logger.info('Relevé %s supprimé par un administrateur', observation_id)
+    return jsonify({'status': 'success'})
+
+MAX_IMPORT_BYTES = 2 * 1024 * 1024
+
+@app.route('/api/observations/import', methods=['POST'])
+def import_observations():
+    """Import d'un CSV de relevés (admin). `apply=1` écrit (après sauvegarde) ; sinon simulation.
+    Même validation et même code que `python import_prices.py`."""
+    if not is_feedback_admin():
+        return admin_auth_error()
+    upload = request.files.get('file')
+    if not upload or not upload.filename:
+        return jsonify({'status': 'error', 'message': 'Fichier CSV manquant'}), 400
+    raw = upload.stream.read(MAX_IMPORT_BYTES + 1)
+    if len(raw) > MAX_IMPORT_BYTES:
+        return jsonify({'status': 'error', 'message': 'Fichier trop volumineux (2 Mo maximum)'}), 413
+    try:
+        rows, errors, skipped = import_prices.parse_csv(io.StringIO(import_prices.decode_csv(raw)))
+    except ValueError as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 400
+    report = {'status': 'success', 'lignes_valides': len(rows), 'lignes_sans_prix_ignorees': skipped,
+              'erreurs': [{'ligne': n, 'erreurs': errs} for n, errs in errors], 'applique': False}
+    if errors:  # tout ou rien
+        report.update(status='error', message=f"{len(errors)} ligne(s) invalide(s) : rien n'a été écrit")
+        return jsonify(report), 400
+    apply_now = request.form.get('apply') == '1'
+    class _DryRun(Exception):
+        pass
+    try:
+        if apply_now and rows:
+            create_backup('data/backups', 'avant_import_web_', keep=30)
+        with db.transaction() as conn:
+            report['resultat'] = import_prices.apply_rows(conn, rows)
+            if not apply_now:
+                raise _DryRun()  # simulation : on annule la transaction
+    except _DryRun:
+        pass
+    report['applique'] = apply_now
+    return jsonify(report)
 
 @app.route('/api/feedback', methods=['GET'])
 def get_feedback():

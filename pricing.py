@@ -203,3 +203,51 @@ def enrich_results(articles, max_deviation_pct=None):
 
 def normalize_key(name):
     return re.sub(r'\s+', ' ', str(name or '')).strip().lower()
+
+
+# ---------------------------------------------------------------- statistiques au prix unitaire
+
+def unit_stats(enriched):
+    """Statistiques au prix unitaire, séparées par unité de base (kg, L, unité).
+
+    `enriched` = sortie de enrich_results. Un sac de 5 kg et un sachet de 1 kg sont ainsi
+    comparables, ce que ne permettent pas les statistiques sur le prix affiché."""
+    groups = defaultdict(list)
+    for a in enriched:
+        if a.get('prix_unitaire') is not None:
+            groups[a['unite_base']].append(a)
+    out = {}
+    for base, items in groups.items():
+        values = sorted(i['prix_unitaire'] for i in items)
+        cheapest = min(items, key=lambda i: i['prix_unitaire'])
+        out[base] = {
+            'count': len(items),
+            'min': values[0],
+            'median': round(statistics.median(values), 2),
+            'max': values[-1],
+            'ecart_pct': round((values[-1] - values[0]) / values[0] * 100, 1),
+            'moins_cher': {'article': cheapest['article'], 'supermarche': cheapest['supermarche'],
+                           'prix_unitaire': cheapest['prix_unitaire']},
+        }
+    return out
+
+
+def store_price_index(enriched):
+    """Indice de prix par magasin : 100 = médiane des magasins, < 100 = moins cher que la médiane.
+
+    Pour chaque produit présent dans au moins 2 magasins, on divise le prix unitaire du magasin par la
+    médiane des magasins ; l'indice du magasin est la moyenne de ces rapports × 100.
+    Retourne {magasin: {'indice', 'produits_compares'}}. Peu fiable sous ~5 produits comparés."""
+    groups = defaultdict(list)
+    for a in enriched:
+        if a.get('prix_unitaire') is not None:
+            groups[(normalize_key(a['article']), a['unite_base'])].append(a)
+    ratios = defaultdict(list)
+    for members in groups.values():
+        if len({m['supermarche'] for m in members}) < 2:
+            continue
+        median = statistics.median(m['prix_unitaire'] for m in members)
+        for m in members:
+            ratios[m['supermarche']].append(m['prix_unitaire'] / median)
+    return {store: {'indice': round(statistics.mean(r) * 100, 1), 'produits_compares': len(r)}
+            for store, r in ratios.items()}

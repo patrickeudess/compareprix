@@ -220,6 +220,45 @@ def price_history(article, supermarche=None):
         return [_clean(r) for r in conn.execute(sql, params)]
 
 
+def recent_observations(limit=50):
+    """Derniers relevés saisis (administration) ; `courant` = c'est le prix actuellement affiché."""
+    with transaction(write=False) as conn:
+        rows = conn.execute(
+            'SELECT o.id, p.name AS article, s.name AS supermarche, o.prix, o.unite, o.date_releve, '
+            'o.source, o.statut, o.created_at, '
+            '(o.id = (SELECT c.id FROM current_price c WHERE c.product_id=o.product_id AND c.store_id=o.store_id)) AS courant '
+            'FROM price_observation o JOIN product p ON p.id=o.product_id JOIN store s ON s.id=o.store_id '
+            'ORDER BY o.id DESC LIMIT ?', (max(1, min(int(limit), 500)),))
+        return [dict(r) for r in rows]
+
+
+def set_observation_status(observation_id, statut):
+    """Passe un relevé de 'a_verifier' à 'valide' (ou inversement). Les données d'exemple sont exclues.
+    Retourne True si un relevé a été modifié."""
+    if statut not in ('valide', 'a_verifier'):
+        raise ValueError('statut invalide')
+    with transaction() as conn:
+        return conn.execute("UPDATE price_observation SET statut=? WHERE id=? AND statut != 'donnee_exemple'",
+                            (statut, observation_id)).rowcount == 1
+
+
+def delete_observation(observation_id):
+    """Supprime un relevé (correction d'une faute de frappe). Retourne 'deleted', 'not_found' ou
+    'referenced' (un signalement approuvé s'appuie dessus : on ne casse pas cette trace)."""
+    try:
+        with transaction() as conn:
+            deleted = conn.execute('DELETE FROM price_observation WHERE id = ?', (observation_id,)).rowcount
+    except sqlite3.IntegrityError:
+        return 'referenced'
+    return 'deleted' if deleted else 'not_found'
+
+
+def get_feedback(feedback_id):
+    with transaction(write=False) as conn:
+        row = conn.execute('SELECT * FROM feedback WHERE id = ?', (feedback_id,)).fetchone()
+        return dict(row) if row else None
+
+
 # ---------------------------------------------------------------- signalements
 
 def add_feedback(entry):

@@ -2024,39 +2024,40 @@
             // Afficher la section des résultats
             document.getElementById('resultsSection').style.display = 'block';
 
-            // Calculer les statistiques
+            // Statistiques AU PRIX UNITAIRE (FCFA/kg, FCFA/L) : un sac de 5 kg et un sachet de 1 kg
+            // ne se comparent pas sur le prix affiché. Repli sur le prix affiché sans quantité reconnue.
             const prices = results.map(r => r.prix);
-            const minPrice = Math.min(...prices);
-            const maxPrice = Math.max(...prices);
-            const avgPrice = Math.round(prices.reduce((a, b) => a + b, 0) / prices.length);
+            const minPrice = Math.min(...prices);        // utilisé en repli pour le trophée
+            const withUnit = results.filter(r => r.prix_unitaire != null);
+            const baseCount = {};
+            withUnit.forEach(r => { baseCount[r.unite_base] = (baseCount[r.unite_base] || 0) + 1; });
+            const mainBase = Object.keys(baseCount).sort((a, b) => baseCount[b] - baseCount[a])[0];
+            const unitValues = withUnit.filter(r => r.unite_base === mainBase).map(r => r.prix_unitaire).sort((a, b) => a - b);
+            let cards;
+            if (unitValues.length > 0) {
+                const median = unitValues.length % 2 ? unitValues[(unitValues.length - 1) / 2]
+                    : (unitValues[unitValues.length / 2 - 1] + unitValues[unitValues.length / 2]) / 2;
+                const gap = unitValues[0] > 0 ? Math.round((unitValues[unitValues.length - 1] - unitValues[0]) / unitValues[0] * 100) : 0;
+                const unit = 'FCFA/' + mainBase;
+                cards = [[results.length, 'Articles trouvés'],
+                         [Math.round(unitValues[0]), 'Meilleur prix unitaire (' + unit + ')'],
+                         [Math.round(median), 'Prix unitaire médian (' + unit + ')'],
+                         [gap + ' %', 'Écart entre le plus cher et le moins cher']];
+            } else {
+                const avgPrice = Math.round(prices.reduce((a, b) => a + b, 0) / prices.length);
+                cards = [[results.length, 'Articles trouvés'], [minPrice, 'Prix minimum (FCFA)'],
+                         [Math.max(...prices), 'Prix maximum (FCFA)'], [avgPrice, 'Prix moyen (FCFA)']];
+            }
 
             // Afficher les statistiques
-            const statsHTML = `
+            const statsHTML = cards.map(([value, label]) => `
                 <div class="stat-card">
                     <div class="stat-card-content">
-                        <h3>${results.length}</h3>
-                        <p>Articles trouvés</p>
+                        <h3>${escapeHtml(value)}</h3>
+                        <p>${escapeHtml(label)}</p>
                     </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-card-content">
-                        <h3>${minPrice}</h3>
-                        <p>Prix minimum (FCFA)</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-card-content">
-                        <h3>${maxPrice}</h3>
-                        <p>Prix maximum (FCFA)</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-card-content">
-                        <h3>${avgPrice}</h3>
-                        <p>Prix moyen (FCFA)</p>
-                    </div>
-                </div>
-            `;
+                </div>`).join('');
+
             document.getElementById('stats').innerHTML = statsHTML;
 
             // Afficher les résultats

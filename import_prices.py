@@ -15,6 +15,7 @@ Un relevé identique déjà présent est ignoré (import rejouable sans doublon)
 """
 import argparse
 import csv
+import io
 import sys
 
 import db
@@ -24,29 +25,56 @@ from pricing import validate_article
 REQUIRED = ['article', 'supermarche', 'prix', 'unite', 'date_releve', 'source', 'statut']
 
 
+def decode_csv(raw):
+    """Octets -> texte. UTF-8 (avec ou sans BOM) d'abord ; sinon Windows-1252, ce qu'Excel en français
+    produit avec « CSV (séparateur : point-virgule) »."""
+    try:
+        return raw.decode('utf-8-sig')
+    except UnicodeDecodeError:
+        return raw.decode('cp1252', errors='replace')
+
+
+def parse_csv(f):
+    """Lit un CSV (objet fichier texte). Retourne (lignes_valides, erreurs, ignorees).
+
+    - Séparateur « , » ou « ; » détecté sur l'en-tête (Excel français utilise « ; »).
+    - Une ligne dont `prix` est vide est IGNOREE (fiche de collecte pas encore remplie), pas rejetée :
+      on peut donc importer une fiche partiellement remplie. Toute autre anomalie est une erreur."""
+    text = f.read()
+    header = text.splitlines()[0] if text.strip() else ''
+    delimiter = ';' if header.count(';') > header.count(',') else ','
+    rows, errors, skipped = [], [], 0
+    reader = csv.DictReader(io.StringIO(text, newline=''), delimiter=delimiter)
+    missing = [c for c in REQUIRED if c not in (reader.fieldnames or [])]
+    if missing:
+        raise ValueError('Colonnes manquantes : ' + ', '.join(missing))
+    for n, row in enumerate(reader, start=2):  # ligne 1 = en-tête
+        rec = {k: (v or '').strip() for k, v in row.items() if k}
+        if not rec.get('prix'):
+            skipped += 1
+            continue
+        try:
+            rec['prix'] = int(rec['prix'])
+        except ValueError:
+            errors.append((n, ['prix doit être un entier FCFA']))
+            continue
+        for opt in ('url', 'image_url'):
+            if not rec.get(opt):
+                rec.pop(opt, None)
+        errs = validate_article(rec)
+        if errs:
+            errors.append((n, errs))
+        else:
+            rows.append(rec)
+    return rows, errors, skipped
+
+
 def read_csv(path):
-    rows, errors = [], []
-    with open(path, encoding='utf-8-sig', newline='') as f:
-        reader = csv.DictReader(f)
-        missing = [c for c in REQUIRED if c not in (reader.fieldnames or [])]
-        if missing:
-            raise SystemExit('Colonnes manquantes : ' + ', '.join(missing))
-        for n, row in enumerate(reader, start=2):  # ligne 1 = en-tête
-            rec = {k: (v or '').strip() for k, v in row.items() if k}
-            try:
-                rec['prix'] = int(rec['prix'])
-            except ValueError:
-                errors.append((n, ['prix doit être un entier FCFA']))
-                continue
-            for opt in ('url', 'image_url'):
-                if not rec.get(opt):
-                    rec.pop(opt, None)
-            errs = validate_article(rec)
-            if errs:
-                errors.append((n, errs))
-            else:
-                rows.append(rec)
-    return rows, errors
+    with open(path, 'rb') as f:
+        try:
+            return parse_csv(io.StringIO(decode_csv(f.read())))
+        except ValueError as e:
+            raise SystemExit(str(e))
 
 
 def apply_rows(conn, rows, replace_examples=False):
@@ -74,7 +102,9 @@ def main():
     p.add_argument('--replace-examples', action='store_true', help="supprime les données d'exemple")
     args = p.parse_args()
 
-    rows, errors = read_csv(args.csv_file)
+    rows, errors, skipped = read_csv(args.csv_file)
+    if skipped:
+        print(f'ℹ️ {skipped} ligne(s) sans prix ignorée(s) (fiche non remplie)')
     for n, errs in errors:
         print(f'❌ ligne {n} : ' + '; '.join(errs))
     if errors:

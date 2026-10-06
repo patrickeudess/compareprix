@@ -26,7 +26,7 @@ class TestHeaders(unittest.TestCase):
         self.client = appmod.app.test_client()
 
     def test_security_headers_present_on_all_responses(self):
-        for url in ('/', '/healthz', '/api/articles', '/static/css/style.css'):
+        for url in ('/', '/admin', '/healthz', '/api/articles', '/static/css/style.css'):
             with self.client.get(url) as response:  # ferme le flux (fichiers statiques)
                 self.assertEqual(response.status_code, 200, url)  # pas de test « à vide » sur une page en erreur
                 h = response.headers
@@ -58,12 +58,20 @@ class TestHeaders(unittest.TestCase):
 
 class TestTemplate(unittest.TestCase):
     def test_no_inline_event_handlers_or_unnonced_scripts(self):
-        with open('templates/index.html', encoding='utf-8') as f:
+        for path in ('templates/index.html', 'templates/admin.html'):
+            with open(path, encoding='utf-8') as f:
+                html = f.read()
+            # attributs onclick=, onerror=... (hors propriétés JS comme reader.onload =)
+            self.assertEqual(re.findall(r'<[^>]*\son[a-z]+\s*=', html), [], path)
+            self.assertEqual(re.findall(r'<script(?![^>]*nonce=)[^>]*>', html), [], path)
+            self.assertNotIn('javascript:', re.sub(r'//.*', '', html).replace("bloque javascript:", ''), path)
+
+    def test_admin_page_never_uses_innerhtml(self):
+        # la page d'admin affiche des données saisies par des tiers (signalements) : DOM + textContent uniquement
+        with open('templates/admin.html', encoding='utf-8') as f:
             html = f.read()
-        # attributs onclick=, onerror=... (hors propriétés JS comme reader.onload =)
-        self.assertEqual(re.findall(r'<[^>]*\son[a-z]+\s*=', html), [])
-        self.assertEqual(re.findall(r'<script(?![^>]*nonce=)[^>]*>', html), [])
-        self.assertNotIn('javascript:', re.sub(r'//.*', '', html).replace("bloque javascript:", ''))
+        usages = re.findall(r'\.\s*(?:innerHTML|outerHTML)\b|insertAdjacentHTML\s*\(|document\.write(?:ln)?\s*\(', html)
+        self.assertEqual(usages, [])  # les commentaires qui citent ces mots ne comptent pas
 
 
 class TestHealth(unittest.TestCase):

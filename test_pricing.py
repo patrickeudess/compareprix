@@ -61,7 +61,7 @@ class TestImport(unittest.TestCase):
         return path
 
     def test_all_or_nothing_reports_line_numbers(self):
-        rows, errors = import_prices.read_csv(self.csv([
+        rows, errors, _ = import_prices.read_csv(self.csv([
             'Riz,Carrefour,4500,kg,2025-01-01,manuel,valide,,',
             'Huile,Carrefour,abc,L,2025-01-01,manuel,valide,,']))
         self.assertEqual([n for n, _ in errors], [3])

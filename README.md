@@ -259,3 +259,15 @@ Planifiez-la (cron : `30 2 * * * cd /chemin && python backup_db.py >> data/backu
 
 ### Intégration continue
 `.github/workflows/ci.yml` : lint (`ruff`), tests sur Python 3.10/3.12/3.13, `pip-audit`, construction de l'image Docker et test de démarrage. `dependabot.yml` propose les mises à jour chaque semaine.
+
+## 🧑‍💼 Administration et collecte des premiers prix
+
+**Page `/admin`** (jeton `COMPAREPRIX_ADMIN_TOKEN`, saisi dans le navigateur et conservé le temps de l'onglet) :
+- **Saisie de relevés** adaptée au téléphone : prix, magasin, date, source. L'application affiche immédiatement le prix au kg/L et **avertit si le prix s'écarte de plus de 20 % de la médiane** des autres magasins (faute de frappe probable). Valider ou supprimer un relevé erroné depuis la liste.
+- **Import CSV** (simulation puis écriture, sauvegarde automatique avant écriture). Accepte les fichiers enregistrés par **Excel en français** (séparateur `;`, encodage Windows-1252) et UTF-8.
+- **Signalements** des utilisateurs avec photo ; « Approuver » met à jour le prix affiché et indique si le prix n'a pas pu être appliqué.
+- Les essais de jeton erronés sont limités (20 par 10 minutes et par IP).
+
+**Fiche de collecte** : `data/fiche_collecte.csv` = 30 produits de base × 3 magasins (Carrefour, Cap Sud, Casino), **prix et dates vides**. À imprimer ou à remplir sur tableur ; ajoutez la **marque** dans le nom (identique dans tous les magasins), remplissez `prix` et `date_releve` (AAAA-MM-JJ), puis importez. Les lignes sans prix sont ignorées : une fiche partiellement remplie est acceptée.
+
+**Statistiques au prix unitaire** : les cartes de la page publique et `GET /api/stats` (`prix_unitaires`, `indice_prix_magasin`) comparent en FCFA/kg ou FCFA/L. L'indice de prix d'un magasin vaut 100 à la médiane des magasins (moins de 100 = moins cher) ; il est peu fiable sous ~5 produits comparés.
