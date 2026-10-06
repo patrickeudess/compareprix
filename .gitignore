@@ -140,3 +140,11 @@ Thumbs.db
 
 # Application specific
 data/articles.json
+
+# Données privées des contributeurs
+*.sqlite3
+*.sqlite3-*
+.session-secret
+proofs/
+data/user_photos/
+data/user_feedback.json
