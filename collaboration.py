@@ -3,6 +3,7 @@ import os
 import secrets
 import sqlite3
 import hashlib
+import re
 from datetime import date, datetime, timedelta, timezone
 from io import BytesIO
 from pathlib import Path
@@ -56,6 +57,10 @@ def register_collaboration(app, is_admin):
         CREATE TABLE IF NOT EXISTS login_attempts (
           identity TEXT PRIMARY KEY, count INTEGER NOT NULL, until_at REAL NOT NULL);
         ''')
+        # Migration additive : conserver les comptes existants et leur historique.
+        if 'phone' not in {row['name'] for row in conn.execute('PRAGMA table_info(users)')}:
+            conn.execute('ALTER TABLE users ADD COLUMN phone TEXT')
+        conn.execute('CREATE UNIQUE INDEX IF NOT EXISTS users_phone_unique ON users(phone)')
 
     def now():
         return datetime.now(timezone.utc).isoformat()
@@ -71,7 +76,7 @@ def register_collaboration(app, is_admin):
 
     def user():
         with db() as conn:
-            return conn.execute('SELECT id, email, name FROM users WHERE id=?', (session.get('uid'),)).fetchone()
+            return conn.execute('SELECT id, phone, name FROM users WHERE id=?', (session.get('uid'),)).fetchone()
 
     def csrf_ok():
         expected = session.get('csrf', '')
@@ -129,12 +134,18 @@ def register_collaboration(app, is_admin):
         data = request.get_json(silent=True) or {}
         if not isinstance(data, dict):
             return error('Formulaire invalide')
-        email, password, name = data.get('email', ''), data.get('password', ''), data.get('name', '')
-        if not all(isinstance(v, str) for v in (email,password,name)):
+        phone, password, name = data.get('phone', ''), data.get('password', ''), data.get('name', '')
+        if not all(isinstance(v, str) for v in (phone,password,name)):
             return error('Formulaire invalide')
-        email = email.strip().lower()
-        if len(email) > 254 or '@' not in email or len(password) > 256:
-            return error('Adresse email ou mot de passe invalide')
+        if len(phone)>40:
+            return error('Numéro de téléphone invalide.')
+        phone = re.sub(r'[\s().-]', '', phone)
+        if phone.startswith('00'):
+            phone = '+' + phone[2:]
+        if re.fullmatch(r'[0-9]{10}', phone):
+            phone = '+225' + phone
+        if not re.fullmatch(r'\+[1-9][0-9]{7,14}', phone) or len(password)>256:
+            return error('Indiquez 10 chiffres pour un numéro ivoirien, ou un numéro international avec + et son indicatif.')
         identity = hashlib.sha256((request.remote_addr or '').encode()).hexdigest()
         timestamp = datetime.now(timezone.utc).timestamp()
         with db() as conn:
@@ -148,16 +159,16 @@ def register_collaboration(app, is_admin):
                 return error('Indiquez un pseudo et un mot de passe de 12 caractères minimum.')
             try:
                 with db() as conn:
-                    cursor = conn.execute('INSERT INTO users(email,name,password_hash,created_at) VALUES (?,?,?,?)',
-                        (email,name.strip(),generate_password_hash(password),now()))
+                    cursor = conn.execute('INSERT INTO users(email,phone,name,password_hash,created_at) VALUES (?,?,?,?,?)',
+                        ('phone:'+phone,phone,name.strip(),generate_password_hash(password),now()))
                     uid = cursor.lastrowid
             except sqlite3.IntegrityError:
-                return error('Inscription impossible avec cette adresse. Essayez de vous connecter.', 409)
+                return error('Ce numéro est déjà utilisé. Essayez de vous connecter.', 409)
         else:
             with db() as conn:
-                found = conn.execute('SELECT * FROM users WHERE email=?', (email,)).fetchone()
+                found = conn.execute('SELECT * FROM users WHERE phone=?', (phone,)).fetchone()
             if not found or not check_password_hash(found['password_hash'], password):
-                return error('Email ou mot de passe incorrect.', 401)
+                return error('Numéro ou mot de passe incorrect.', 401)
             uid = found['id']
         session.clear()
         session.permanent = True
