@@ -5,7 +5,7 @@ from datetime import date
 import time
 import random
 import re
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 import os
 
 class JumiaScraperV2:
@@ -375,7 +375,7 @@ def main():
         scraper.save_to_json(compareprix_data, 'data/jumia_products.json')
         
         # Afficher un résumé
-        print(f"\n📊 Résumé:")
+        print("\n📊 Résumé:")
         print(f"   - Produits trouvés: {len(products)}")
         if products:
             avg_price = sum(p['price'] for p in products if p['price']) // len(products)
@@ -383,7 +383,7 @@ def main():
             print(f"   - Produits avec images: {sum(1 for p in products if p['image_url'])}")
         
         # Afficher quelques exemples
-        print(f"\n📝 Exemples de produits:")
+        print("\n📝 Exemples de produits:")
         for i, product in enumerate(products[:5]):
             print(f"   {i+1}. {product['product_name']} - {product['price']} FCFA")
     

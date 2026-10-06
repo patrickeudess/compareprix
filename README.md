@@ -15,7 +15,7 @@ Une application web simple pour comparer les prix d'articles dans différents su
 
 ## 📋 Prérequis
 
-- Python 3.7 ou supérieur
+- Python 3.10 ou supérieur
 - pip (gestionnaire de paquets Python)
 
 ## 🛠️ Installation
@@ -141,11 +141,8 @@ Le script `scraper_jumia.py` récupère automatiquement :
 python app.py
 ```
 
-### Production (avec Gunicorn)
-```bash
-pip install gunicorn
-gunicorn -w 4 -b 0.0.0.0:5000 app:app
-```
+### Production
+Voir la section **🚀 Mise en production** ci-dessous (Docker ou Gunicorn). Ne pas utiliser `python app.py` en production : c'est le serveur de développement, et il n'écoute que sur `127.0.0.1` par défaut (`COMPAREPRIX_HOST` pour changer).
 
 ## 📝 API Endpoints
 
@@ -219,3 +216,46 @@ L'import est « tout ou rien » : une ligne invalide annule tout et son numéro 
 - **Prix aberrant** ⚠️ : prix unitaire éloigné de plus de `max_deviation_percent` (20 % dans `config/collection_config.json`) de la **médiane** des magasins pour le même nom d'article, avec au moins **3 magasins** (une médiane sur 2 points ne désigne aucun « mauvais » prix). Un signal à vérifier, pas un rejet.
 - **Photos de signalement** : le type est vérifié sur le **contenu** (PNG, JPEG, GIF), pas sur le nom ; l'extension enregistrée vient du contenu ; max 5 Mo ; un fichier invalide est refusé (400).
 - Tests : `python -m unittest test_unit_price test_pricing test_db -v`.
+
+## 🚀 Mise en production
+
+### Avec Docker (recommandé)
+```bash
+export COMPAREPRIX_ADMIN_TOKEN="$(python3 -c 'import secrets;print(secrets.token_urlsafe(32))')"   # à conserver dans un gestionnaire de secrets
+docker compose up -d --build
+curl http://127.0.0.1:8000/healthz      # {"status":"ok"}
+```
+L'image tourne sous un utilisateur non-root, système de fichiers en lecture seule, capacités Linux retirées. La base, les photos et les sauvegardes sont dans le volume `compareprix-data` (`/app/data`). **La base démarre vide : aucune donnée d'exemple en production**, importez vos relevés avec `docker compose exec web python import_prices.py ...` (le fichier CSV doit être dans le conteneur, p. ex. `docker compose cp releve.csv web:/app/data/`).
+
+Le port n'est publié que sur `127.0.0.1` : placez devant un reverse-proxy **HTTPS** (Caddy, Nginx, Traefik...). Une fois derrière **un** proxy de confiance : `COMPAREPRIX_TRUSTED_PROXIES=1` (sinon la limitation de débit voit l'IP du proxy) et `COMPAREPRIX_HSTS=1` (uniquement si le site est servi en HTTPS).
+
+### Sans Docker
+```bash
+pip install -r requirements.txt
+COMPAREPRIX_ADMIN_TOKEN=... gunicorn -c gunicorn.conf.py app:app    # PORT (8000) et WEB_CONCURRENCY (2) modifiables
+```
+
+### Variables d'environnement
+| Variable | Défaut | Rôle |
+|---|---|---|
+| `COMPAREPRIX_ADMIN_TOKEN` | *(vide)* | Jeton Bearer des routes d'administration ; vide = routes fermées (401) |
+| `COMPAREPRIX_DB` | `data/compareprix.db` | Chemin de la base SQLite |
+| `COMPAREPRIX_TRUSTED_PROXIES` | `0` | Nombre de proxys de confiance (`X-Forwarded-For` n'est lu que si > 0) |
+| `COMPAREPRIX_HSTS` | `0` | `1` active `Strict-Transport-Security` (HTTPS uniquement) |
+| `COMPAREPRIX_FEEDBACK_LIMIT` / `_WINDOW` | `10` / `3600` | Signalements autorisés par IP et fenêtre en secondes |
+| `PORT`, `WEB_CONCURRENCY`, `GUNICORN_THREADS` | `8000`, `2`, `2` | Réglages Gunicorn |
+
+### Sécurité en place
+- **CSP à nonce** : aucun script inline sans nonce, aucun `onclick=` dans la page ; une injection HTML ne peut plus exécuter de JavaScript. Autres en-têtes : `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`.
+- Dépendances à jour, **0 vulnérabilité connue** (`pip-audit`), vérifié chaque semaine par la CI ; `lxml` (inutilisé) retiré.
+- `GET /healthz` : sonde de santé (Docker `HEALTHCHECK`, supervision).
+
+### Sauvegardes
+```bash
+python backup_db.py                 # data/backups/, 14 dernières conservées, copie vérifiée (integrity_check)
+docker compose exec web python backup_db.py
+```
+Planifiez-la (cron : `30 2 * * * cd /chemin && python backup_db.py >> data/backup.log 2>&1`) et **copiez les fichiers hors du serveur**. Restauration : arrêter l'application, remplacer `data/compareprix.db` par la sauvegarde, supprimer `data/compareprix.db-wal` et `-shm`, redémarrer.
+
+### Intégration continue
+`.github/workflows/ci.yml` : lint (`ruff`), tests sur Python 3.10/3.12/3.13, `pip-audit`, construction de l'image Docker et test de démarrage. `dependabot.yml` propose les mises à jour chaque semaine.

@@ -1780,12 +1780,12 @@
 
             <div class="quick-search">
                 <p class="quick-search-label">Recherches populaires :</p>
-                <button type="button" class="quick-search-btn" onclick="searchProduct('Riz')">🍚 Riz</button>
-                <button type="button" class="quick-search-btn" onclick="searchProduct('Huile')">🫗 Huile</button>
-                <button type="button" class="quick-search-btn" onclick="searchProduct('Pain')">🍞 Pain</button>
-                <button type="button" class="quick-search-btn" onclick="searchProduct('Lait')">🥛 Lait</button>
-                <button type="button" class="quick-search-btn" onclick="searchProduct('Tomates')">🍅 Tomates</button>
-                <button type="button" class="quick-search-btn" onclick="searchProduct('Pommes')">🍎 Pommes</button>
+                <button type="button" class="quick-search-btn" data-search="Riz">🍚 Riz</button>
+                <button type="button" class="quick-search-btn" data-search="Huile">🫗 Huile</button>
+                <button type="button" class="quick-search-btn" data-search="Pain">🍞 Pain</button>
+                <button type="button" class="quick-search-btn" data-search="Lait">🥛 Lait</button>
+                <button type="button" class="quick-search-btn" data-search="Tomates">🍅 Tomates</button>
+                <button type="button" class="quick-search-btn" data-search="Pommes">🍎 Pommes</button>
             </div>
         </div>
 
@@ -1793,11 +1793,11 @@
             <div id="stats" class="stats"></div>
             
             <div class="filters">
-                <button class="filter-btn active" onclick="filterBySupermarket('all')">Tous</button>
-                <button class="filter-btn" onclick="filterBySupermarket('Carrefour')">Carrefour</button>
-                <button class="filter-btn" onclick="filterBySupermarket('Cap Sud')">Cap Sud</button>
-                <button class="filter-btn" onclick="filterBySupermarket('Casino')">Casino</button>
-                <button class="filter-btn" onclick="filterBySupermarket('Jumia')">Jumia</button>
+                <button class="filter-btn active" data-filter="all">Tous</button>
+                <button class="filter-btn" data-filter="Carrefour">Carrefour</button>
+                <button class="filter-btn" data-filter="Cap Sud">Cap Sud</button>
+                <button class="filter-btn" data-filter="Casino">Casino</button>
+                <button class="filter-btn" data-filter="Jumia">Jumia</button>
             </div>
             
             <div id="resultsContent"></div>
@@ -1863,7 +1863,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2>💬 Signalement de prix</h2>
-                <span class="close" onclick="closeFeedbackModal()">&times;</span>
+                <span class="close" data-action="close-feedback">&times;</span>
             </div>
             
             <form id="feedbackForm" class="feedback-form">
@@ -1906,8 +1906,8 @@
                 
                 <div class="form-group">
                     <label>Photo du prix (optionnel) :</label>
-                    <div class="photo-upload" onclick="document.getElementById('photoUpload').click()">
-                        <input type="file" id="photoUpload" accept="image/*" onchange="previewPhoto(this)">
+                    <div class="photo-upload" data-action="pick-photo">
+                        <input type="file" id="photoUpload" accept="image/*">
                         <p>📷 Cliquez pour ajouter une photo</p>
                         <p style="font-size: 0.8rem; color: #666;">Format: JPG, PNG (max 5MB)</p>
                     </div>
@@ -1944,7 +1944,7 @@
         </div>
     </div>
 
-    <script>
+    <script nonce="{{ csp_nonce }}">
         // Variables globales
         let currentResults = [];
         let currentFilter = 'all';
@@ -1958,7 +1958,7 @@
             }
         });
 
-        function searchProduct(productName) {
+        function searchProduct(productName, button) {
             document.getElementById('searchInput').value = productName;
             searchArticles(productName);
             
@@ -1966,7 +1966,7 @@
             document.querySelectorAll('.quick-search-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            event.target.classList.add('active');
+            if (button) button.classList.add('active');
         }
 
         function searchArticles(searchTerm) {
@@ -1992,14 +1992,14 @@
             });
         }
 
-        function filterBySupermarket(supermarket) {
+        function filterBySupermarket(supermarket, button) {
             currentFilter = supermarket;
             
             // Mettre à jour l'état actif des filtres
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            event.target.classList.add('active');
+            if (button) button.classList.add('active');
             
             // Filtrer les résultats
             let filteredResults = currentResults;
@@ -2091,7 +2091,7 @@
                 tableHTML += `
                     <tr class="${rowClass}">
                         <td>
-                            ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(article.article)}" class="product-image" onerror="this.style.display='none'">` : '<div class="no-image">🛒</div>'}
+                            ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(article.article)}" class="product-image">` : '<div class="no-image">🛒</div>'}
                         </td>
                         <td><strong>${escapeHtml(article.article)}</strong></td>
                         <td class="supermarket-cell">
@@ -2295,6 +2295,25 @@
                 submitBtn.disabled = false;
             });
         });
+
+        // --- Gestionnaires d'événements (la CSP interdit les attributs onclick/onerror inline) ---
+        // Phase de capture : le modal appelle stopPropagation() sur ses clics, ce qui
+        // empêcherait une délégation classique d'atteindre `document`.
+        document.addEventListener('click', function(event) {
+            const el = event.target.closest('[data-search], [data-filter], [data-action]');
+            if (!el) return;
+            if (el.dataset.search) searchProduct(el.dataset.search, el);
+            else if (el.dataset.filter) filterBySupermarket(el.dataset.filter, el);
+            else if (el.dataset.action === 'close-feedback') closeFeedbackModal();
+            else if (el.dataset.action === 'pick-photo') document.getElementById('photoUpload').click();
+        }, true);
+        document.getElementById('photoUpload').addEventListener('change', function() { previewPhoto(this); });
+        // L'événement 'error' des images ne remonte pas : on l'écoute en phase de capture
+        document.addEventListener('error', function(event) {
+            if (event.target.classList && event.target.classList.contains('product-image')) {
+                event.target.style.display = 'none';
+            }
+        }, true);
 
         // Fermer le modal en cliquant à l'extérieur
         window.onclick = function(event) {

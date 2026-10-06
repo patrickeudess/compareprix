@@ -1,4 +1,5 @@
 """Tests du modèle de prix, de l'import CSV et de l'API. Lancer : python -m unittest test_pricing -v"""
+import atexit
 import os
 import tempfile
 import unittest
@@ -6,6 +7,7 @@ from datetime import date, timedelta
 
 # Base jetable AVANT d'importer l'application (qui initialise la base à l'import)
 _TMP = tempfile.TemporaryDirectory()
+atexit.register(_TMP.cleanup)  # nettoyage propre à la sortie
 os.environ['COMPAREPRIX_DB'] = os.path.join(_TMP.name, 'import.db')
 
 import db

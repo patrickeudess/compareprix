@@ -15,12 +15,10 @@ Un relevé identique déjà présent est ignoré (import rejouable sans doublon)
 """
 import argparse
 import csv
-import os
-import sqlite3
 import sys
-from datetime import datetime
 
 import db
+from backup_db import create_backup
 from pricing import validate_article
 
 REQUIRED = ['article', 'supermarche', 'prix', 'unite', 'date_releve', 'source', 'statut']
@@ -69,16 +67,6 @@ def apply_rows(conn, rows, replace_examples=False):
     return stats
 
 
-def backup_database():
-    os.makedirs('data', exist_ok=True)
-    path = f"data/backup_compareprix_{datetime.now():%Y%m%d_%H%M%S}.db"
-    src, dst = sqlite3.connect(db.db_path()), sqlite3.connect(path)
-    with dst:
-        src.backup(dst)  # copie cohérente même si l'application écrit
-    src.close(); dst.close()
-    return path
-
-
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument('csv_file')
@@ -95,7 +83,7 @@ def main():
 
     db.init_db()
     if args.apply:
-        print(f'💾 Sauvegarde : {backup_database()}')
+        print(f"💾 Sauvegarde : {create_backup('data', 'avant_import_', keep=None)}")
     # Même code pour la simulation et l'écriture : la simulation annule la transaction.
     class _Rollback(Exception):
         pass

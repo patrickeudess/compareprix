@@ -5,7 +5,6 @@ Interface pour l'équipe ComparePrix
 """
 
 import json
-import os
 from datetime import datetime
 from typing import List, Dict
 
@@ -180,7 +179,7 @@ def main():
         
         elif choice == '3':
             stats = admin.get_feedback_stats()
-            print(f"\n📊 Statistiques des signalements:")
+            print("\n📊 Statistiques des signalements:")
             print(f"   - Total: {stats['total']}")
             print(f"   - En attente: {stats['pending']}")
             print(f"   - Approuvés: {stats['approved']}")
@@ -189,12 +188,12 @@ def main():
             print(f"   - Récents (7 jours): {len(stats['recent'])}")
             
             if stats['by_type']:
-                print(f"\n📈 Par type:")
+                print("\n📈 Par type:")
                 for feedback_type, count in stats['by_type'].items():
                     print(f"   - {feedback_type}: {count}")
             
             if stats['by_supermarket']:
-                print(f"\n🏪 Par supermarché:")
+                print("\n🏪 Par supermarché:")
                 for supermarket, count in stats['by_supermarket'].items():
                     print(f"   - {supermarket}: {count}")
         
@@ -204,7 +203,7 @@ def main():
                 print("Aucun signalement en attente.")
                 continue
             
-            print(f"\n📋 Signalements en attente:")
+            print("\n📋 Signalements en attente:")
             display_feedback_table(pending_feedback)
             
             feedback_id = input("\nEntrez l'ID du signalement à traiter: ").strip()
@@ -226,7 +225,7 @@ def main():
             display_feedback_details(target_feedback)
             
             # Traitement
-            print(f"\n🔄 Traitement du signalement:")
+            print("\n🔄 Traitement du signalement:")
             print("1. Approuver et mettre à jour le prix")
             print("2. Rejeter")
             print("3. Marquer comme en cours d'investigation")

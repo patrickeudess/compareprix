@@ -1,5 +1,6 @@
 """Tests SQLite : recherche, historique, signalements, concurrence, limiteur.
 Lancer : python -m unittest test_db -v"""
+import atexit
 import os
 import tempfile
 import threading
@@ -7,6 +8,7 @@ import unittest
 from datetime import date
 
 _TMP = tempfile.TemporaryDirectory()
+atexit.register(_TMP.cleanup)  # nettoyage propre à la sortie
 os.environ['COMPAREPRIX_DB'] = os.path.join(_TMP.name, 'boot.db')
 
 import db

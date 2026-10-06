@@ -84,7 +84,6 @@ def validate_article(a, today=None):
 # ---------------------------------------------------------------- prix unitaire
 
 import json
-import os
 import re
 import statistics
 from collections import defaultdict, namedtuple

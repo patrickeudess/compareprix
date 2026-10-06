@@ -1,0 +1,28 @@
+# Démarrage :  export COMPAREPRIX_ADMIN_TOKEN="$(python3 -c 'import secrets;print(secrets.token_urlsafe(32))')"
+#              docker compose up -d --build
+services:
+  web:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"   # exposé en local uniquement ; placez un reverse-proxy HTTPS devant
+    environment:
+      # Obligatoire : sans jeton, les routes d'administration des signalements restent fermées
+      COMPAREPRIX_ADMIN_TOKEN: ${COMPAREPRIX_ADMIN_TOKEN:?Définissez COMPAREPRIX_ADMIN_TOKEN (voir README)}
+      # Nombre de reverse-proxies de confiance devant l'application (0 = aucun, ne jamais faire confiance à X-Forwarded-For)
+      COMPAREPRIX_TRUSTED_PROXIES: ${COMPAREPRIX_TRUSTED_PROXIES:-0}
+      # À activer (=1) uniquement quand le site est servi en HTTPS
+      COMPAREPRIX_HSTS: ${COMPAREPRIX_HSTS:-0}
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+    volumes:
+      - compareprix-data:/app/data
+    restart: unless-stopped
+    read_only: true            # système de fichiers en lecture seule, hors volume et /tmp
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  compareprix-data:

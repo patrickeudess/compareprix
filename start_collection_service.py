@@ -9,7 +9,6 @@ import sys
 import json
 import time
 import subprocess
-from datetime import datetime
 import threading
 
 class CollectionService:
@@ -161,9 +160,9 @@ class CollectionService:
         
         # Vérifier les dépendances
         try:
-            import flask
-            import requests
-            import bs4 # type: ignore
+            import flask  # noqa: F401 (test de présence uniquement)
+            import requests  # noqa: F401 (test de présence uniquement)
+            import bs4  # noqa: F401 (test de présence uniquement)
             print("✅ Toutes les dépendances sont installées")
         except ImportError as e:
             print(f"❌ Dépendance manquante: {e}")
@@ -217,9 +216,9 @@ class CollectionService:
             else:
                 print(f"   - {service_name}: Thread actif")
         
-        print(f"\n🌐 Application web: http://localhost:5000")
-        print(f"📁 Logs: logs/collection_service.log")
-        print(f"⚙️ Configuration: config/collection_config.json")
+        print("\n🌐 Application web: http://localhost:5000")
+        print("📁 Logs: logs/collection_service.log")
+        print("⚙️ Configuration: config/collection_config.json")
         
         print("\n💡 Commandes utiles:")
         print("   - Validation: python validation_tool.py")

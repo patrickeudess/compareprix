@@ -1,0 +1,18 @@
+.git
+.github
+.gitignore
+.dockerignore
+__pycache__/
+*.pyc
+.venv/
+venv/
+# Données locales, secrets et tests : jamais dans l'image
+data/
+*.db
+.env
+.env.*
+test_*.py
+requirements-dev.txt
+*.md
+start.bat
+start.sh

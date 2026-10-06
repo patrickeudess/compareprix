@@ -18,7 +18,7 @@ import unicodedata
 from contextlib import contextmanager
 from datetime import datetime
 
-from pricing import SOURCES, STATUTS, normalize_article
+from pricing import normalize_article
 
 DEFAULT_DB = 'data/compareprix.db'
 LEGACY_ARTICLES = 'data/articles.json'

@@ -1,5 +1,6 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, g
 from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.middleware.proxy_fix import ProxyFix
 import json
 import os
 from datetime import datetime
@@ -11,6 +12,14 @@ from uploads import MAX_IMAGE_BYTES, detect_image_extension
 from ratelimit import SlidingWindowLimiter
 
 app = Flask(__name__, static_folder='static')
+
+# Derrière N reverse-proxies de confiance (Nginx, Caddy, load balancer...), mettre
+# COMPAREPRIX_TRUSTED_PROXIES=N pour que request.remote_addr soit l'IP du client (limiteur de débit).
+# Par défaut 0 : on ne fait JAMAIS confiance à X-Forwarded-For, sinon un client pourrait
+# usurper son IP et contourner la limitation.
+_TRUSTED_PROXIES = int(os.environ.get('COMPAREPRIX_TRUSTED_PROXIES', '0'))
+if _TRUSTED_PROXIES > 0:
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=_TRUSTED_PROXIES, x_proto=_TRUSTED_PROXIES, x_host=_TRUSTED_PROXIES)
 
 # Chemin vers le fichier JSON des données
 # Base SQLite : voir db.py (chemin via COMPAREPRIX_DB, défaut data/compareprix.db)
@@ -51,6 +60,50 @@ def with_freshness(article):
 def present(articles):
     """Prépare des articles pour l'API : fraîcheur, prix unitaire, meilleur prix, prix aberrants."""
     return enrich_results([with_freshness(a) for a in articles])
+
+@app.before_request
+def _new_csp_nonce():
+    g.csp_nonce = secrets.token_urlsafe(16)
+
+@app.context_processor
+def _inject_csp_nonce():
+    return {'csp_nonce': g.get('csp_nonce', '')}
+
+@app.after_request
+def add_security_headers(response):
+    """En-têtes de sécurité. La CSP interdit les scripts inline sans nonce : une injection HTML
+    (XSS) ne peut plus exécuter de JavaScript même si un échappement venait à manquer."""
+    nonce = g.get('csp_nonce', '')
+    response.headers.setdefault('Content-Security-Policy', "; ".join([
+        "default-src 'self'",
+        f"script-src 'self' 'nonce-{nonce}'",
+        "style-src 'self' 'unsafe-inline'",        # la page contient un gros bloc <style> inline
+        "img-src 'self' data: https:",              # images produits hébergées par les enseignes (https)
+        "connect-src 'self'",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "frame-ancestors 'none'",
+    ]))
+    response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    response.headers.setdefault('X-Frame-Options', 'DENY')
+    response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+    response.headers.setdefault('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+    # HSTS uniquement si le site est réellement servi en HTTPS (sinon il bloquerait l'accès en HTTP)
+    if os.environ.get('COMPAREPRIX_HSTS', '').lower() in ('1', 'true'):
+        response.headers.setdefault('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+    return response
+
+@app.route('/healthz')
+def healthz():
+    """Sonde de santé (Docker/orchestrateur/CI) : vérifie que la base répond. Aucune donnée sensible."""
+    try:
+        with db.transaction(write=False) as conn:
+            conn.execute('SELECT 1').fetchone()
+        return jsonify({'status': 'ok'})
+    except Exception:
+        app.logger.exception('Healthcheck en échec')
+        return jsonify({'status': 'error'}), 503
 
 @app.route('/')
 def index():
@@ -256,7 +309,7 @@ def submit_feedback():
         
     except RequestEntityTooLarge:
         return jsonify({'status': 'error', 'message': 'La requête dépasse la taille maximale autorisée'}), 413
-    except Exception as e:
+    except Exception:
         app.logger.exception('Erreur lors du traitement du signalement')
         return jsonify({
             'status': 'error',
@@ -330,7 +383,7 @@ def load_feedback():
 def send_feedback_notification(feedback_entry):
     """Envoie une notification à l'équipe (simulation)"""
     # Ici, on pourrait envoyer un email ou une notification WhatsApp
-    print(f"🔔 Nouveau signalement reçu:")
+    print("🔔 Nouveau signalement reçu:")
     print(f"   - Produit: {feedback_entry['product_name']}")
     print(f"   - Supermarché: {feedback_entry['supermarket']}")
     print(f"   - Prix actuel: {feedback_entry['current_price']} FCFA")
@@ -346,4 +399,6 @@ def send_feedback_notification(feedback_entry):
         print(f"   - Photo: {feedback_entry['photo_path']}")
 
 if __name__ == '__main__':
-    app.run(debug=os.environ.get('FLASK_DEBUG', '').lower() == 'true', host='0.0.0.0', port=int(os.environ.get('PORT', '5000')))
+    # Serveur de DÉVELOPPEMENT, local par défaut. En production : gunicorn (voir Dockerfile).
+    app.run(debug=os.environ.get('FLASK_DEBUG', '').lower() == 'true',
+            host=os.environ.get('COMPAREPRIX_HOST', '127.0.0.1'), port=int(os.environ.get('PORT', '5000')))

@@ -218,7 +218,7 @@ def test_quality_control():
     with open(test_file, 'w', encoding='utf-8') as f:
         json.dump(quality_report, f, ensure_ascii=False, indent=2)
     
-    print(f"✅ Analyse de qualité terminée")
+    print("✅ Analyse de qualité terminée")
     print(f"   - Produits analysés: {quality_report['products_analyzed']}")
     print(f"   - Points de prix: {quality_report['total_price_points']}")
     print(f"   - Anomalies détectées: {len(quality_report['anomalies_detected'])}")
@@ -336,11 +336,11 @@ def main():
     test_whatsapp_integration()
     
     # Générer le rapport de synthèse
-    summary = generate_summary_report()
+    generate_summary_report()
     
-    print(f"\n🎉 Tests terminés avec succès!")
-    print(f"📁 Rapports sauvegardés dans le dossier 'data/'")
-    print(f"📊 Système de collecte prêt pour la production")
+    print("\n🎉 Tests terminés avec succès!")
+    print("📁 Rapports sauvegardés dans le dossier 'data/'")
+    print("📊 Système de collecte prêt pour la production")
 
 if __name__ == "__main__":
     main()

@@ -146,3 +146,6 @@ data/compareprix.db
 data/compareprix.db-*
 data/backup_compareprix_*.db
 data/user_photos/
+data/avant_import_*.db
+data/backups/
+data/backup.log
