@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify, send_from_directory
+from werkzeug.exceptions import RequestEntityTooLarge
 import json
 import os
 from datetime import datetime
@@ -17,7 +18,12 @@ def is_feedback_admin():
     expected = os.environ.get('COMPAREPRIX_ADMIN_TOKEN', '')
     header = request.headers.get('Authorization', '')
     provided = header[7:].strip() if header.lower().startswith('bearer ') else ''
-    return bool(expected and provided and secrets.compare_digest(provided, expected))
+    if not expected or not provided:
+        return False
+    try:
+        return secrets.compare_digest(provided.encode('utf-8'), expected.encode('utf-8'))
+    except UnicodeError:
+        return False
 
 def admin_auth_error():
     return jsonify({'status': 'error', 'message': 'Authentification administrateur requise'}), 401
@@ -234,6 +240,8 @@ def submit_feedback():
             'feedback_id': feedback_entry['id']
         })
         
+    except RequestEntityTooLarge:
+        return jsonify({'status': 'error', 'message': 'La requête dépasse la taille maximale autorisée'}), 413
     except Exception as e:
         app.logger.exception('Erreur lors du traitement du signalement')
         return jsonify({
