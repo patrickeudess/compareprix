@@ -1,5 +1,5 @@
 'use strict';
-let token='',busy=false,proofUrls=[];
+let token='',busy=false,proofUrls=[],loadSequence=0;
 const el=id=>document.getElementById(id);
 function tell(text){el('message').textContent=text;}
 async function api(url,options={}){
@@ -8,8 +8,9 @@ const data=await response.json();if(!response.ok)throw new Error(data.message||'
 }
 function clearPhotos(){proofUrls.forEach(url=>URL.revokeObjectURL(url));proofUrls=[];}
 async function load(){
+const sequence=++loadSequence,expectedToken=token;
 try{
-const data=await api('/api/admin/contributions');clearPhotos();el('rows').replaceChildren();el('login').hidden=true;el('toolbar').hidden=false;
+const data=await api('/api/admin/contributions');if(sequence!==loadSequence||expectedToken!==token)return;clearPhotos();el('rows').replaceChildren();el('login').hidden=true;el('toolbar').hidden=false;tell('Contributions chargées.');
 if(!data.contributions.length)el('rows').textContent='Aucune contribution reçue.';
 const labels={pending:'En attente',approved:'Accepté',rejected:'Refusé'};
 data.contributions.forEach(row=>{
@@ -29,10 +30,9 @@ try{const result=await api('/api/admin/contributions/'+row.id+'/decision',{metho
 }
 el('rows').append(card);
 });
-}catch(error){tell(error.message);}
+}catch(error){if(sequence===loadSequence&&expectedToken===token)tell(error.message);}
 }
 el('loginForm').addEventListener('submit',event=>{event.preventDefault();token=el('token').value.trim();el('token').value='';load();});
 el('refresh').addEventListener('click',load);
-el('logout').addEventListener('click',()=>{if(busy)return;token='';clearPhotos();el('rows').replaceChildren();el('login').hidden=false;el('toolbar').hidden=true;tell('Session fermée.');});
-
+el('logout').addEventListener('click',()=>{if(busy)return;token='';loadSequence++;clearPhotos();el('rows').replaceChildren();el('login').hidden=false;el('toolbar').hidden=true;tell('Session fermée.');});
 
