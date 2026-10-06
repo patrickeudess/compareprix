@@ -252,11 +252,9 @@ def get_feedback():
             'status': 'success',
             'feedback': feedback_list
         })
-    except Exception as e:
-        return jsonify({
-            'status': 'error',
-            'message': f'Erreur: {str(e)}'
-        })
+    except Exception:
+        app.logger.exception('Erreur lors de la lecture des signalements')
+        return jsonify({'status': 'error', 'message': 'Erreur lors de la lecture des signalements'}), 500
 
 @app.route('/api/feedback/<feedback_id>', methods=['PUT'])
 def update_feedback(feedback_id):
@@ -272,6 +270,8 @@ def update_feedback(feedback_id):
             return jsonify({'status': 'error', 'message': 'Statut invalide'}), 400
         review_notes = data.get('review_notes', '')
         reviewer = data.get('reviewer', 'Équipe')
+        if not isinstance(review_notes, str) or not isinstance(reviewer, str) or len(review_notes) > 2000 or len(reviewer) > 120:
+            return jsonify({'status': 'error', 'message': 'Notes ou nom de réviseur invalides'}), 400
         
         feedback_list = load_feedback()
         
