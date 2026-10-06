@@ -2386,7 +2386,7 @@
             const submitBtn = document.getElementById('submitBtn');
             const loading = document.getElementById('loading');
             const successMessage = document.getElementById('successMessage');
-            const errorMessage = document.getElementById('errorMessage');
+            // errorMessage was initialized before the static-mode guard.
             
             // Désactiver le bouton et afficher le loading
             submitBtn.disabled = true;
