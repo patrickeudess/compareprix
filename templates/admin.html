@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Administration · ComparePrix</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='compareprix-mark.svg') }}">
+  <style>
+    :root{color-scheme:light;--green:#176b45;--deep:#104d33;--amber:#f4a62a;--ink:#17231d;--muted:#647168;--line:#e4eae6;--surface:#f5f8f6;--white:#fff;--danger:#b63e36;--radius:18px}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--surface);color:var(--ink);font:15px/1.5 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    button,input{font:inherit}
+    .topbar{background:linear-gradient(120deg,var(--deep),var(--green));color:#fff;padding:20px clamp(18px,5vw,64px);display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .brand{display:flex;align-items:center;gap:12px;color:inherit;text-decoration:none;font-size:1.15rem;font-weight:750}
+    .brand img{width:42px;height:42px;border-radius:12px}
+    .topbar a.back{color:#e4f2e9;text-decoration:none;font-weight:600}
+    main{width:min(1120px,calc(100% - 32px));margin:34px auto 70px}
+    h1,h2,p{margin-top:0}
+    h1{font-size:clamp(1.65rem,4vw,2.3rem);letter-spacing:-.04em;margin-bottom:8px}
+    .lead{color:var(--muted);margin-bottom:24px}
+    .card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:clamp(18px,3vw,28px);box-shadow:0 10px 30px rgba(19,54,35,.05);margin-bottom:20px}
+    .login-card{max-width:520px;margin:58px auto}
+    .field{display:grid;gap:7px}
+    label{font-size:.9rem;font-weight:650}
+    input{width:100%;min-height:46px;padding:11px 13px;border:1px solid #cfd9d2;border-radius:11px;background:#fff;color:var(--ink)}
+    input:focus{outline:3px solid rgba(23,107,69,.15);border-color:var(--green)}
+    .row{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}
+    .span-12{grid-column:span 12}.span-6{grid-column:span 6}.span-4{grid-column:span 4}.span-3{grid-column:span 3}
+    .actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:18px}
+    button{border:0;border-radius:11px;padding:11px 16px;font-weight:700;cursor:pointer}
+    button:focus-visible,a:focus-visible{outline:3px solid var(--amber);outline-offset:3px}
+    .primary{background:var(--green);color:#fff}.primary:hover{background:var(--deep)}
+    .secondary{background:#eaf3ed;color:var(--deep)}
+    .danger{background:#fff0ef;color:var(--danger)}
+    button:disabled{opacity:.55;cursor:wait}
+    .toolbar{display:flex;align-items:end;justify-content:space-between;gap:14px;flex-wrap:wrap}
+    .toolbar .field{flex:1;min-width:min(100%,280px)}
+    .stats{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}
+    .stat{border:1px solid var(--line);background:#f9fbfa;border-radius:13px;padding:12px 16px;min-width:150px}
+    .stat strong{display:block;font-size:1.25rem;color:var(--green)}
+    .stat span{font-size:.82rem;color:var(--muted)}
+    .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:13px}
+    table{width:100%;border-collapse:collapse;min-width:660px}
+    th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+    th{background:#f7faf8;color:#526057;font-size:.76rem;text-transform:uppercase;letter-spacing:.06em}
+    tr:last-child td{border-bottom:0}
+    td strong{display:block}
+    td small{color:var(--muted)}
+    td .actions{margin:0;gap:6px}
+    td button{padding:8px 10px;font-size:.83rem}
+    .notice{display:none;margin:14px 0;padding:12px 14px;border-radius:11px}
+    .notice.ok{display:block;background:#e8f5ed;color:#145536}
+    .notice.error{display:block;background:#fff0ef;color:#8d2924}
+    .empty{padding:28px;text-align:center;color:var(--muted)}
+    [hidden]{display:none!important}
+    @media(max-width:680px){main{margin-top:22px}.span-6,.span-4,.span-3{grid-column:span 12}.topbar{align-items:flex-start}.stats{display:grid;grid-template-columns:1fr 1fr}.stat{min-width:0}}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('index') }}"><img src="{{ url_for('static', filename='compareprix-mark.svg') }}" alt="">ComparePrix <span>· Admin</span></a>
+    <a class="back" href="{{ url_for('index') }}">← Retour à ComparePrix</a>
+  </header>
+  <main>
+    <section id="loginPanel" class="card login-card">
+      <p style="color:var(--green);font-weight:750;margin-bottom:8px">ESPACE SÉCURISÉ</p>
+      <h1>Administration des prix</h1>
+      <p class="lead">Saisissez le jeton administrateur configuré sur le serveur pour modifier les données visibles dans ComparePrix.</p>
+      <form id="loginForm">
+        <div class="field"><label for="adminToken">Jeton administrateur</label><input id="adminToken" type="password" autocomplete="current-password" required></div>
+        <div class="actions"><button class="primary" type="submit">Ouvrir le tableau de bord</button></div>
+      </form>
+      <div id="loginNotice" class="notice" role="alert"></div>
+    </section>
+
+    <section id="dashboard" hidden>
+      <h1>Gérer les produits et les prix</h1>
+      <p class="lead">Chaque enregistrement est publié dans les résultats de recherche de ComparePrix dès qu’il est enregistré.</p>
+      <div id="notice" class="notice" role="status" aria-live="polite"></div>
+      <section class="card">
+        <h2 id="formTitle">Ajouter un prix</h2>
+        <form id="articleForm">
+          <div class="row">
+            <div class="field span-6"><label for="article">Nom de l’article *</label><input id="article" maxlength="200" required placeholder="Ex. Riz parfumé 5 kg"></div>
+            <div class="field span-6"><label for="supermarche">Magasin *</label><input id="supermarche" maxlength="120" required placeholder="Ex. Carrefour"></div>
+            <div class="field span-4"><label for="prix">Prix (FCFA) *</label><input id="prix" type="number" min="1" max="100000000" step="1" required></div>
+            <div class="field span-4"><label for="unite">Unité / format</label><input id="unite" maxlength="40" placeholder="kg, L, unité, 5 kg…"></div>
+            <div class="field span-4"><label for="url">Lien du produit</label><input id="url" type="url" maxlength="2048" placeholder="https://…"></div>
+            <div class="field span-12"><label for="image_url">Lien de l’image</label><input id="image_url" type="url" maxlength="2048" placeholder="https://…"></div>
+          </div>
+          <div class="actions"><button id="saveArticle" class="primary" type="submit">Enregistrer le prix</button><button id="cancelEdit" class="secondary" type="button" hidden>Annuler la modification</button></div>
+        </form>
+      </section>
+
+      <section class="card">
+        <div class="toolbar">
+          <div><h2 style="margin-bottom:4px">Données publiées</h2><p class="lead" style="margin:0">Les prix de même article et magasin restent séparés par leur format.</p></div>
+          <div class="field"><label for="filter">Rechercher dans les données</label><input id="filter" type="search" placeholder="Article ou magasin"></div>
+        </div>
+        <div class="stats"><div class="stat"><strong id="articleCount">0</strong><span>prix enregistrés</span></div><div class="stat"><strong id="storeCount">0</strong><span>magasins référencés</span></div></div>
+        <div class="table-wrap"><table><thead><tr><th>Article</th><th>Magasin</th><th>Prix</th><th>Format</th><th>Actions</th></tr></thead><tbody id="articleRows"></tbody></table><div id="emptyState" class="empty" hidden>Aucun article ne correspond à votre recherche.</div></div>
+      </section>
+      <div class="actions"><button id="logout" class="secondary" type="button">Fermer la session</button></div>
+    </section>
+  </main>
+  <script>
+    let adminToken = '';
+    let articles = [];
+    let editingIndex = null;
+    const $ = (id) => document.getElementById(id);
+    const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+
+    function showNotice(target, message, kind) {
+      target.textContent = message;
+      target.className = 'notice ' + kind;
+    }
+
+    async function api(path, options = {}) {
+      const response = await fetch(path, {
+        ...options,
+        headers: {'Authorization': 'Bearer ' + adminToken, ...(options.body ? {'Content-Type':'application/json'} : {}), ...(options.headers || {})}
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.status === 401) {
+        adminToken = '';
+        $('dashboard').hidden = true;
+        $('loginPanel').hidden = false;
+        throw new Error('Jeton invalide ou session expirée. Veuillez vous reconnecter.');
+      }
+      if (!response.ok) throw new Error(data.message || 'La requête a échoué.');
+      return data;
+    }
+
+    async function connect(token) {
+      adminToken = token;
+      try {
+        const data = await api('/api/admin/articles');
+        articles = data.articles;
+        $('loginPanel').hidden = true;
+        $('dashboard').hidden = false;
+        renderArticles();
+      } catch (error) {
+        adminToken = '';
+        showNotice($('loginNotice'), error.message, 'error');
+      }
+    }
+
+    $('loginForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      showNotice($('loginNotice'), 'Vérification du jeton…', 'ok');
+      connect($('adminToken').value.trim());
+      $('adminToken').value = '';
+    });
+
+    function renderArticles() {
+      const term = $('filter').value.trim().toLocaleLowerCase('fr');
+      const filtered = articles.map((article, index) => ({article, index})).filter(({article}) =>
+        (article.article + ' ' + article.supermarche).toLocaleLowerCase('fr').includes(term)
+      );
+      $('articleCount').textContent = articles.length;
+      $('storeCount').textContent = new Set(articles.map((item) => item.supermarche)).size;
+      $('articleRows').innerHTML = filtered.map(({article, index}) => `
+        <tr>
+          <td><strong>${escapeHtml(article.article)}</strong>${article.url ? `<a href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer"><small>Voir le produit ↗</small></a>` : ''}</td>
+          <td>${escapeHtml(article.supermarche)}</td>
+          <td><strong>${Number(article.prix).toLocaleString('fr-FR')} FCFA</strong></td>
+          <td>${escapeHtml(article.unite || 'unité')}</td>
+          <td><div class="actions"><button class="secondary" type="button" data-edit="${index}">Modifier</button><button class="danger" type="button" data-delete="${index}">Supprimer</button></div></td>
+        </tr>`).join('');
+      $('emptyState').hidden = filtered.length > 0;
+    }
+
+    function resetForm() {
+      editingIndex = null;
+      $('articleForm').reset();
+      $('formTitle').textContent = 'Ajouter un prix';
+      $('saveArticle').textContent = 'Enregistrer le prix';
+      $('cancelEdit').hidden = true;
+    }
+
+    function fillForm(index) {
+      const item = articles[index];
+      if (!item) return;
+      editingIndex = index;
+      $('article').value = item.article || '';
+      $('supermarche').value = item.supermarche || '';
+      $('prix').value = item.prix;
+      $('unite').value = item.unite || '';
+      $('url').value = item.url || '';
+      $('image_url').value = item.image_url || '';
+      $('formTitle').textContent = 'Modifier un prix';
+      $('saveArticle').textContent = 'Enregistrer les changements';
+      $('cancelEdit').hidden = false;
+      $('article').focus();
+      window.scrollTo({top:0,behavior:'smooth'});
+    }
+
+    async function persistArticles(nextArticles, successMessage) {
+      $('saveArticle').disabled = true;
+      try {
+        const data = await api('/api/admin/articles', {method:'PUT', body:JSON.stringify({articles:nextArticles})});
+        articles = data.articles;
+        renderArticles();
+        resetForm();
+        showNotice($('notice'), successMessage, 'ok');
+      } catch (error) {
+        showNotice($('notice'), error.message, 'error');
+      } finally {
+        $('saveArticle').disabled = false;
+      }
+    }
+
+    $('articleForm').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const item = {
+        article:$('article').value.trim(),
+        supermarche:$('supermarche').value.trim(),
+        prix:Number($('prix').value),
+        unite:$('unite').value.trim() || 'unité',
+        url:$('url').value.trim(),
+        image_url:$('image_url').value.trim()
+      };
+      const next = [...articles];
+      if (editingIndex === null) next.push(item); else next[editingIndex] = item;
+      persistArticles(next, editingIndex === null ? 'Prix ajouté et publié dans ComparePrix.' : 'Prix modifié et publié dans ComparePrix.');
+    });
+
+    $('articleRows').addEventListener('click', (event) => {
+      const edit = event.target.closest('[data-edit]');
+      const remove = event.target.closest('[data-delete]');
+      if (edit) fillForm(Number(edit.dataset.edit));
+      if (remove) {
+        const index = Number(remove.dataset.delete);
+        if (!articles[index] || !window.confirm('Supprimer ce prix de ComparePrix ?')) return;
+        const next = articles.filter((_, i) => i !== index);
+        $('saveArticle').disabled = true;
+        api('/api/admin/articles', {method:'PUT', body:JSON.stringify({articles:next})})
+          .then((data) => {articles = data.articles; renderArticles(); showNotice($('notice'),'Prix supprimé de ComparePrix.','ok');})
+          .catch((error) => showNotice($('notice'),error.message,'error'))
+          .finally(() => {$('saveArticle').disabled = false;});
+      }
+    });
+
+    $('filter').addEventListener('input', renderArticles);
+    $('cancelEdit').addEventListener('click', resetForm);
+    $('logout').addEventListener('click', () => {
+      adminToken = '';
+      articles = [];
+      $('dashboard').hidden = true;
+      $('loginPanel').hidden = false;
+      $('loginNotice').className = 'notice';
+      $('adminToken').focus();
+    });
+  </script>
+</body>
+</html>
