@@ -271,3 +271,8 @@ Planifiez-la (cron : `30 2 * * * cd /chemin && python backup_db.py >> data/backu
 **Fiche de collecte** : `data/fiche_collecte.csv` = 30 produits de base × 3 magasins (Carrefour, Cap Sud, Casino), **prix et dates vides**. À imprimer ou à remplir sur tableur ; ajoutez la **marque** dans le nom (identique dans tous les magasins), remplissez `prix` et `date_releve` (AAAA-MM-JJ), puis importez. Les lignes sans prix sont ignorées : une fiche partiellement remplie est acceptée.
 
 **Statistiques au prix unitaire** : les cartes de la page publique et `GET /api/stats` (`prix_unitaires`, `indice_prix_magasin`) comparent en FCFA/kg ou FCFA/L. L'indice de prix d'un magasin vaut 100 à la médiane des magasins (moins de 100 = moins cher) ; il est peu fiable sous ~5 produits comparés.
+
+## 🌐 Mettre en ligne
+
+- **GitHub Pages** n'héberge que la **démonstration statique** (`index.html`, prix fictifs, générée par `python tools/build_demo.py`). Il ne peut pas exécuter l'application Flask.
+- Pour l'application complète (recherche, administration, base de données) : voir **[DEPLOIEMENT.md](DEPLOIEMENT.md)** (VPS + Docker, PythonAnywhere).

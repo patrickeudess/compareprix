@@ -1,0 +1,61 @@
+# Mettre ComparePrix en ligne
+
+ComparePrix est une application **Flask** (Python + base SQLite). Elle a besoin d'un serveur qui exécute du Python et d'un
+disque qui conserve la base. **GitHub Pages ne peut pas l'héberger** : il ne sert que des fichiers statiques.
+
+## Ce que GitHub Pages peut faire : la démonstration
+Le fichier `index.html` à la racine est une **démonstration interactive avec des prix fictifs**, sans serveur. Il est généré par
+`python tools/build_demo.py` (à relancer après toute modification de l'interface) et publié par GitHub Pages.
+
+Activer Pages (une fois, après avoir fusionné la branche dans `main`) :
+1. GitHub → dépôt → **Settings → Pages**.
+2. *Build and deployment* → *Source* : **Deploy from a branch**.
+3. *Branch* : **main**, dossier **/ (root)** → **Save**.
+4. Attendre 1 à 2 minutes : `https://patrickeudess.github.io/compareprix/`.
+
+Si la page reste vide : onglet **Actions** du dépôt, workflow « pages build and deployment » (erreur éventuelle), et vérifier que
+`index.html` est bien présent sur `main`.
+
+## Vrai hébergement (l'application complète)
+Choisissez selon votre situation. **Aucune de ces procédures n'a été exécutée chez un hébergeur par moi** : elles suivent les
+démarches standard et le code a été vérifié en local (voir les notes).
+
+### A. Serveur privé virtuel (VPS) avec Docker : recommandé pour la durée
+Un petit VPS Linux (Ubuntu) avec Docker. La base et les photos vont dans un volume Docker persistant.
+```bash
+git clone https://github.com/patrickeudess/compareprix && cd compareprix
+export COMPAREPRIX_ADMIN_TOKEN="$(python3 -c 'import secrets;print(secrets.token_urlsafe(32))')"   # à noter dans un gestionnaire de mots de passe
+docker compose up -d --build
+curl http://127.0.0.1:8000/healthz        # {"status":"ok"}
+```
+Placez ensuite un reverse-proxy HTTPS devant (Caddy est le plus simple : `compareprix.exemple.com { reverse_proxy 127.0.0.1:8000 }`),
+puis ajoutez `COMPAREPRIX_TRUSTED_PROXIES=1` et `COMPAREPRIX_HSTS=1` (voir README). Sauvegardes : `docker compose exec web python backup_db.py`.
+*Note : l'image Docker n'a pas pu être construite dans mon environnement (pas de démon Docker) ; la CI GitHub la construit et la teste.*
+
+### B. PythonAnywhere (sans Docker, adapté à un premier essai)
+1. Créer un compte, onglet **Files** : téléverser le dépôt (ou `git clone` dans une console *Bash*).
+2. Console Bash : `mkvirtualenv --python=python3.10 cp && pip install -r requirements.txt`.
+3. Onglet **Web** → *Add a new web app* → *Manual configuration* (Python 3.10) → renseigner le *virtualenv*.
+4. Ouvrir le fichier WSGI indiqué par la page *Web* et le remplacer par :
+   ```python
+   import os, sys
+   sys.path.insert(0, '/home/VOTRE_NOM/compareprix')
+   os.environ['COMPAREPRIX_ADMIN_TOKEN'] = 'UN_JETON_LONG_ET_SECRET'
+   from wsgi import application
+   ```
+5. **Reload**. L'adresse est `VOTRE_NOM.pythonanywhere.com` (HTTPS fourni). Le disque est persistant, donc la base SQLite est conservée.
+
+Le fichier `wsgi.py` du dépôt se place dans le dossier du projet avant de charger l'application, ce qui est nécessaire car elle utilise
+des chemins relatifs (testé : il fonctionne même lancé depuis un autre dossier). À vérifier chez l'hébergeur : quota de disque et
+conditions de l'offre gratuite (par exemple expiration si le site n'est pas réactivé périodiquement).
+
+### C. Hébergeurs « Docker » (Render, Fly.io, Railway...)
+Possible avec le `Dockerfile` fourni, mais **à ne pas faire sans disque persistant** : sans lui, la base est effacée à chaque redémarrage.
+Autre point à traiter : l'image tourne sous un utilisateur non-root, alors que ces hébergeurs montent souvent le disque avec le
+propriétaire root, ce qui empêche l'écriture de la base. Je peux adapter le `Dockerfile` quand vous aurez choisi un hébergeur précis.
+Les offres avec disque persistant sont généralement payantes : vérifiez la grille tarifaire en vigueur.
+
+## Après la mise en ligne
+1. Ouvrir `/admin`, saisir le jeton, importer votre fiche de collecte remplie (`data/fiche_collecte.csv`).
+2. Configurer une sauvegarde régulière (`backup_db.py`) et la copier hors du serveur.
+3. Vérifier `/healthz` et que `/admin` n'est joignable qu'en HTTPS.
