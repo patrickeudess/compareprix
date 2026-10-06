@@ -1915,6 +1915,24 @@
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
         }
+
+        @media (max-width: 640px) {
+            #resultsContent {
+                width: 100%;
+                max-width: 100%;
+                min-width: 0;
+                overflow-x: auto;
+                overscroll-behavior-x: contain;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: thin;
+            }
+            #resultsContent .results-table {
+                width: 740px;
+                min-width: 740px;
+                max-width: none;
+                table-layout: auto;
+            }
+        }
 </style>
 </head>
 <body>
