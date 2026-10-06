@@ -191,3 +191,15 @@ python app.py
 ```
 
 Envoyez le jeton dans l'en-tête `Authorization: Bearer <votre-jeton-secret>` pour utiliser `GET /api/feedback` et `PUT /api/feedback/<id>`. Le formulaire public `POST /submit_feedback` reste accessible sans jeton. Ne stockez pas le jeton dans le dépôt.
+
+
+### Identification des enseignes
+
+Les logos dans les résultats proviennent des sites officiels :
+- Carrefour : https://carrefour.ci/wp-content/uploads/2023/08/carrefour-ci-logo.svg
+- Cap Sud : https://groupeprosuma.com/wp-content/uploads/2022/10/logo-cap-sud-mini.png
+- Casino : https://groupeprosuma.com/wp-content/uploads/2020/12/logo-casno-supermarche-mini.png
+
+Ils sont chargés à distance avec `referrerpolicy="no-referrer"`. Une initiale remplace le logo si son chargement échoue. Ces marques identifient les lieux/enseignes et ne représentent aucun partenariat. Cap Sud est un centre commercial : un relevé réel doit préciser la boutique. Jumia conserve une initiale faute de logo officiel vérifié pendant cette mise à jour.
+
+La consultation reste sans compte. La version GitHub Pages présente les données de démonstration et n’héberge pas les fonctionnalités serveur. La création de comptes contributeurs et le circuit de validation ne sont pas encore implémentés.
