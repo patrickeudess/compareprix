@@ -168,3 +168,22 @@ Ce projet est sous licence MIT.
 ---
 
 **ComparePrix** - Comparez intelligemment, économisez intelligemment ! 🛒💰
+
+
+## 🔐 Administration des signalements
+
+Les routes de consultation et de modération des signalements sont protégées par un jeton Bearer. Définissez `COMPAREPRIX_ADMIN_TOKEN` dans l'environnement du serveur avec une valeur secrète suffisamment longue avant le démarrage de l'application.
+
+Exemple PowerShell :
+```powershell
+$env:COMPAREPRIX_ADMIN_TOKEN = "<votre-jeton-secret>"
+python app.py
+```
+
+Exemple Linux/macOS :
+```bash
+export COMPAREPRIX_ADMIN_TOKEN="<votre-jeton-secret>"
+python app.py
+```
+
+Envoyez le jeton dans l'en-tête `Authorization: Bearer <votre-jeton-secret>` pour utiliser `GET /api/feedback` et `PUT /api/feedback/<id>`. Le formulaire public `POST /submit_feedback` reste accessible sans jeton. Ne stockez pas le jeton dans le dépôt.
