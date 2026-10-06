@@ -60,7 +60,7 @@ python run_complete.py
 
 ## 📊 Structure des données
 
-Les données sont stockées dans `data/articles.json` avec le format suivant :
+Les prix sont stockés dans une base **SQLite** (`data/compareprix.db`, créée automatiquement ; chemin modifiable via `COMPAREPRIX_DB`). `data/articles.json` n'est plus qu'une source d'amorçage. Format des articles renvoyés par l'API :
 
 ```json
 [
@@ -195,6 +195,16 @@ Chaque prix porte `date_releve`, `source` (`manuel`, `ticket`, `jumia`, `signale
 
 1. Remplir une copie de `data/releve_modele.csv` (unités : `kg, g, L, cl, ml, unité, lot` ; date `AAAA-MM-JJ`).
 2. Simuler : `python import_prices.py releve.csv`
-3. Écrire (sauvegarde automatique) : `python import_prices.py releve.csv --apply --replace-examples`
+3. Écrire (sauvegarde automatique de la base) : `python import_prices.py releve.csv --apply --replace-examples`
 
-L'import est « tout ou rien » : une ligne invalide annule tout et son numéro est affiché. Tests : `python -m unittest test_pricing -v`.
+L'import est « tout ou rien » : une ligne invalide annule tout et son numéro est affiché. Les relevés s'ajoutent à l'**historique** (jamais écrasé) ; le prix affiché est le plus récent. Rejouer un import ne crée pas de doublon.
+
+## 🗄️ Base de données et signalements
+
+- Schéma : `store`, `product`, `price_observation` (historique), vue `current_price`, `feedback` (voir `db.py`). Aucune dépendance supplémentaire (SQLite est inclus dans Python).
+- Historique d'un article : `GET /api/history/<article>?supermarche=<nom>`.
+- Un signalement **approuvé** (`PUT /api/feedback/<id>`, jeton admin) crée automatiquement un relevé (`source=signalement`, `statut=valide`, date du jour), une seule fois. La réponse indique `price_applied`. Sans relevé de référence (produit/supermarché inconnus) le prix n'est pas appliqué et la raison est renvoyée.
+- Limitation de débit de `POST /submit_feedback` : 10 par heure et par IP (`COMPAREPRIX_FEEDBACK_LIMIT`, `COMPAREPRIX_FEEDBACK_WINDOW`). Elle est **par processus** : avec 4 workers Gunicorn la limite effective est 4×. Derrière un proxy, configurez `ProxyFix` pour que `remote_addr` soit l'IP du client.
+- Les anciens outils (`data_collection.py`, `validation_tool.py`) écrivent encore dans les JSON : lancez ensuite `python migrate_to_sqlite.py` (idempotent) pour synchroniser la base.
+- Scraping puis import : `python scraper_jumia_v2.py && python merge_data.py`.
+- Tests : `python -m unittest test_pricing test_db -v`.

@@ -5,12 +5,20 @@ import os
 from datetime import datetime
 import secrets
 
-from pricing import normalize_article, freshness
+import db
+from pricing import freshness
+from ratelimit import SlidingWindowLimiter
 
 app = Flask(__name__, static_folder='static')
 
 # Chemin vers le fichier JSON des données
-DATA_FILE = 'data/articles.json'
+# Base SQLite : voir db.py (chemin via COMPAREPRIX_DB, défaut data/compareprix.db)
+db.init_db()
+
+# Limite des signalements publics par adresse IP (par processus, cf. ratelimit.py)
+FEEDBACK_LIMITER = SlidingWindowLimiter(
+    int(os.environ.get('COMPAREPRIX_FEEDBACK_LIMIT', '10')),
+    int(os.environ.get('COMPAREPRIX_FEEDBACK_WINDOW', '3600')))
 MAX_FEEDBACK_PHOTO_BYTES = 5 * 1024 * 1024
 ALLOWED_FEEDBACK_STATUSES = {'pending_review', 'approved', 'rejected', 'in_progress'}
 app.config['MAX_CONTENT_LENGTH'] = 6 * 1024 * 1024
@@ -31,22 +39,13 @@ def admin_auth_error():
     return jsonify({'status': 'error', 'message': 'Authentification administrateur requise'}), 401
 
 def load_articles():
-    """Charge les données des articles depuis le fichier JSON"""
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            return [normalize_article(a) for a in json.load(f)]
-    return []
+    """Prix courants (dernier relevé par produit et supermarché)"""
+    return db.list_current()
 
 def with_freshness(article):
     """Ajoute la fraîcheur du relevé (recente / perimee / inconnue / exemple)."""
     level, age = freshness(article)
     return {**article, 'fraicheur': level, 'age_jours': age}
-
-def save_articles(articles):
-    """Sauvegarde les données des articles dans le fichier JSON"""
-    os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
-    with open(DATA_FILE, 'w', encoding='utf-8') as f:
-        json.dump(articles, f, ensure_ascii=False, indent=2)
 
 @app.route('/')
 def index():
@@ -61,13 +60,7 @@ def search_articles():
     if not search_term:
         return jsonify({'error': 'Veuillez entrer un terme de recherche'})
     
-    articles = load_articles()
-    results = []
-    
-    for article in articles:
-        if search_term in article['article'].lower():
-            results.append(with_freshness(article))
-    
+    results = [with_freshness(a) for a in db.list_current(search_term)]
     return jsonify({'results': results})
 
 @app.route('/api/articles')
@@ -79,9 +72,12 @@ def get_all_articles():
 @app.route('/api/articles/<article_name>')
 def get_article(article_name):
     """API pour récupérer un article spécifique"""
-    articles = load_articles()
-    results = [with_freshness(a) for a in articles if article_name.lower() in a['article'].lower()]
-    return jsonify(results)
+    return jsonify([with_freshness(a) for a in db.list_current(article_name)])
+
+@app.route('/api/history/<path:article_name>')
+def get_price_history(article_name):
+    """Historique complet des relevés d'un article (nom exact), filtrable par ?supermarche="""
+    return jsonify(db.price_history(article_name, request.args.get('supermarche')))
 
 @app.route('/api/stats')
 def get_stats():
@@ -168,6 +164,12 @@ def static_files(filename):
 @app.route('/submit_feedback', methods=['POST'])
 def submit_feedback():
     """Traite les signalements d'utilisateurs"""
+    allowed, retry_after = FEEDBACK_LIMITER.check(request.remote_addr or 'inconnu')
+    if not allowed:
+        response = jsonify({'status': 'error', 'message': 'Trop de signalements, réessayez plus tard'})
+        response.status_code = 429
+        response.headers['Retry-After'] = str(retry_after)
+        return response
     try:
         # Récupérer les données du formulaire
         product_name = request.form.get('product_name', '').strip()
@@ -292,27 +294,17 @@ def update_feedback(feedback_id):
         if not isinstance(review_notes, str) or not isinstance(reviewer, str) or len(review_notes) > 2000 or len(reviewer) > 120:
             return jsonify({'status': 'error', 'message': 'Notes ou nom de réviseur invalides'}), 400
         
-        feedback_list = load_feedback()
-        
-        # Trouver et mettre à jour le feedback
-        feedback_found = False
-        for feedback in feedback_list:
-            if feedback['id'] == feedback_id:
-                feedback_found = True
-                feedback['status'] = new_status
-                feedback['review_notes'] = review_notes
-                feedback['reviewed_by'] = reviewer
-                feedback['review_date'] = datetime.now().isoformat()
-                break
-        
-        if not feedback_found:
+        outcome = db.set_feedback_status(feedback_id, new_status, review_notes, reviewer)
+        if outcome is None:
             return jsonify({'status': 'error', 'message': 'Signalement introuvable'}), 404
-        # Sauvegarder les modifications
-        save_feedback_list(feedback_list)
         
         return jsonify({
             'status': 'success',
-            'message': 'Signalement mis à jour'
+            'message': 'Signalement mis à jour',
+            # Un signalement approuvé crée un nouveau relevé de prix (une seule fois)
+            'price_applied': outcome['applied'],
+            'observation_id': outcome['observation_id'],
+            'price_not_applied_reason': None if outcome['applied'] or new_status != 'approved' else outcome['reason']
         })
         
     except Exception:
@@ -322,42 +314,17 @@ def update_feedback(feedback_id):
 def generate_feedback_id():
     """Génère un ID unique pour le feedback"""
     import hashlib
-    import os
     timestamp = datetime.now().isoformat()
     random_component = os.urandom(8).hex()
     return hashlib.md5(f"{timestamp}{random_component}".encode()).hexdigest()[:12]
 
 def save_feedback(feedback_entry):
-    """Sauvegarde un nouveau feedback"""
-    feedback_file = 'data/user_feedback.json'
-    
-    # Charger les feedbacks existants
-    feedback_list = load_feedback()
-    
-    # Ajouter le nouveau feedback
-    feedback_list.append(feedback_entry)
-    
-    # Sauvegarder
-    save_feedback_list(feedback_list)
+    """Sauvegarde un nouveau feedback (transaction SQLite : sûr en multi-workers)"""
+    db.add_feedback(feedback_entry)
 
 def load_feedback():
     """Charge tous les feedbacks"""
-    feedback_file = 'data/user_feedback.json'
-    
-    if os.path.exists(feedback_file):
-        with open(feedback_file, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return []
-
-def save_feedback_list(feedback_list):
-    """Sauvegarde la liste des feedbacks"""
-    feedback_file = 'data/user_feedback.json'
-    
-    # Créer le dossier si nécessaire
-    os.makedirs(os.path.dirname(feedback_file), exist_ok=True)
-    
-    with open(feedback_file, 'w', encoding='utf-8') as f:
-        json.dump(feedback_list, f, ensure_ascii=False, indent=2)
+    return db.list_feedback()
 
 def send_feedback_notification(feedback_entry):
     """Envoie une notification à l'équipe (simulation)"""
@@ -378,9 +345,4 @@ def send_feedback_notification(feedback_entry):
         print(f"   - Photo: {feedback_entry['photo_path']}")
 
 if __name__ == '__main__':
-    # Aucune donnée factice n'est créée : importer de vrais relevés avec
-    # `python import_prices.py data/releve.csv --apply`
-    if not os.path.exists(DATA_FILE):
-        save_articles([])
-    
     app.run(debug=os.environ.get('FLASK_DEBUG', '').lower() == 'true', host='0.0.0.0', port=int(os.environ.get('PORT', '5000')))

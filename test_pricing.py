@@ -1,10 +1,14 @@
 """Tests du modèle de prix, de l'import CSV et de l'API. Lancer : python -m unittest test_pricing -v"""
-import json
 import os
 import tempfile
 import unittest
 from datetime import date, timedelta
 
+# Base jetable AVANT d'importer l'application (qui initialise la base à l'import)
+_TMP = tempfile.TemporaryDirectory()
+os.environ['COMPAREPRIX_DB'] = os.path.join(_TMP.name, 'import.db')
+
+import db
 import import_prices
 import pricing
 import app as appmod
@@ -61,28 +65,30 @@ class TestImport(unittest.TestCase):
         self.assertEqual([n for n, _ in errors], [3])
         self.assertEqual(len(rows), 1)
 
-    def test_merge_keeps_most_recent_and_replaces_examples(self):
-        existing = [{'article': 'Riz 5kg', 'supermarche': 'Carrefour', 'prix': 1, 'unite': 'kg'},
-                    rec(article='Huile', date_releve='2025-06-10')]
-        new = [rec(), rec(article='Huile', date_releve='2025-06-01', prix=999)]
-        merged, added, updated, skipped = import_prices.merge(existing, new, replace_examples=True)
-        self.assertEqual((added, updated, skipped), (1, 0, 1))  # exemple supprimé -> Riz ajouté
-        self.assertEqual(sorted(a['article'] for a in merged), ['Huile', 'Riz 5kg'])
-        self.assertTrue(all(a['statut'] != 'donnee_exemple' for a in merged))
+    def test_apply_keeps_history_and_dedupes(self):
+        os.environ['COMPAREPRIX_DB'] = os.path.join(self.dir.name, 'm.db')
+        db.init_db(seed=False)
+        with db.transaction() as conn:
+            db.import_articles(conn, [{'article': 'Riz 5kg', 'supermarche': 'Carrefour', 'prix': 1, 'unite': 'kg'}])
+            s1 = import_prices.apply_rows(conn, [rec(), rec(date_releve='2025-06-01', prix=999), rec()],
+                                          replace_examples=True)
+        # exemple supprimé ; 2 relevés ajoutés dont 1 plus ancien ; 1 doublon exact ignoré
+        self.assertEqual(s1, {'ajoutes': 2, 'doublons': 1, 'historique': 1, 'exemples_supprimes': 1})
+        self.assertEqual([a['prix'] for a in db.list_current()], [4500])  # le plus récent reste courant
+        self.assertEqual(len(db.price_history('Riz 5kg')), 2)
 
 
 class TestApi(unittest.TestCase):
     def setUp(self):
-        self.client = appmod.app.test_client()
-        self.orig = appmod.load_articles
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        os.environ['COMPAREPRIX_DB'] = os.path.join(self.tmp.name, 'api.db')
+        db.init_db(seed=False)
         recent = (date.today() - timedelta(days=1)).isoformat()
-        data = [pricing.normalize_article(a) for a in [
-            {'article': 'Lait', 'supermarche': 'Casino', 'prix': 118},
-            rec(article='Lait réel', date_releve=recent)]]
-        appmod.load_articles = lambda: data
-
-    def tearDown(self):
-        appmod.load_articles = self.orig
+        with db.transaction() as conn:
+            db.import_articles(conn, [{'article': 'Lait', 'supermarche': 'Casino', 'prix': 118},
+                                      rec(article='Lait réel', date_releve=recent)])
+        self.client = appmod.app.test_client()
 
     def test_search_exposes_freshness(self):
         r = self.client.post('/search', data={'search_term': 'lait'}).get_json()['results']

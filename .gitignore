@@ -140,3 +140,8 @@ Thumbs.db
 
 # Application specific
 data/articles.json
+
+# Base SQLite locale (générée) et ses sauvegardes
+data/compareprix.db
+data/compareprix.db-*
+data/backup_compareprix_*.db
