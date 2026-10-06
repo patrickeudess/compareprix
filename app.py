@@ -4,6 +4,8 @@ import json
 import os
 from datetime import datetime
 import secrets
+import tempfile
+from urllib.parse import urlsplit
 
 app = Flask(__name__, static_folder='static')
 
@@ -36,10 +38,96 @@ def load_articles():
     return []
 
 def save_articles(articles):
-    """Sauvegarde les données des articles dans le fichier JSON"""
-    os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
-    with open(DATA_FILE, 'w', encoding='utf-8') as f:
-        json.dump(articles, f, ensure_ascii=False, indent=2)
+    """Sauvegarde les données de manière atomique pour préserver le fichier en cas d'erreur."""
+    data_path = os.path.abspath(DATA_FILE)
+    data_dir = os.path.dirname(data_path)
+    os.makedirs(data_dir, exist_ok=True)
+    descriptor, temporary_path = tempfile.mkstemp(prefix='.articles-', suffix='.tmp', dir=data_dir)
+    try:
+        with os.fdopen(descriptor, 'w', encoding='utf-8') as f:
+            json.dump(articles, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(temporary_path, data_path)
+    finally:
+        if os.path.exists(temporary_path):
+            os.unlink(temporary_path)
+
+
+def validate_admin_article(value):
+    """Valide et normalise un prix saisi depuis l'espace administrateur."""
+    if not isinstance(value, dict):
+        return None, 'Chaque prix doit être un objet JSON'
+    article = value.get('article')
+    supermarket = value.get('supermarche')
+    unit = value.get('unite', 'unité')
+    if not isinstance(article, str) or not article.strip() or len(article.strip()) > 200:
+        return None, 'Le nom de l’article est obligatoire (200 caractères maximum)'
+    if not isinstance(supermarket, str) or not supermarket.strip() or len(supermarket.strip()) > 120:
+        return None, 'Le magasin est obligatoire (120 caractères maximum)'
+    if isinstance(value.get('prix'), bool) or not isinstance(value.get('prix'), int) or value['prix'] < 1 or value['prix'] > 100000000:
+        return None, 'Le prix doit être un entier entre 1 et 100 000 000 FCFA'
+    if not isinstance(unit, str) or len(unit.strip()) > 40:
+        return None, 'Le format doit contenir au plus 40 caractères'
+
+    normalized = {
+        'article': article.strip(),
+        'supermarche': supermarket.strip(),
+        'prix': value['prix'],
+        'unite': unit.strip() or 'unité'
+    }
+    for field in ('url', 'image_url'):
+        url = value.get(field, '')
+        if not isinstance(url, str) or len(url) > 2048:
+            return None, 'Les liens doivent contenir au plus 2 048 caractères'
+        url = url.strip()
+        if url:
+            try:
+                parsed = urlsplit(url)
+                if parsed.scheme not in {'http', 'https'} or not parsed.netloc:
+                    return None, 'Les liens doivent commencer par http:// ou https://'
+            except ValueError:
+                return None, 'Un lien est invalide'
+        normalized[field] = url
+    return normalized, None
+
+@app.route('/admin')
+def admin_dashboard():
+    """Page de gestion des produits; les données restent protégées par les API Bearer."""
+    return render_template('admin.html')
+
+
+@app.route('/api/admin/articles', methods=['GET', 'PUT'])
+def manage_articles():
+    """Liste et remplace les prix depuis le tableau administrateur authentifié."""
+    if not is_feedback_admin():
+        return admin_auth_error()
+    if request.method == 'GET':
+        try:
+            return jsonify({'status': 'success', 'articles': load_articles()})
+        except Exception:
+            app.logger.exception('Erreur lors de la lecture des articles')
+            return jsonify({'status': 'error', 'message': 'Erreur lors de la lecture des prix'}), 500
+
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict) or not isinstance(data.get('articles'), list):
+        return jsonify({'status': 'error', 'message': 'La liste des prix est invalide'}), 400
+    if len(data['articles']) > 5000:
+        return jsonify({'status': 'error', 'message': 'La liste dépasse la limite de 5 000 prix'}), 400
+
+    normalized = []
+    for index, value in enumerate(data['articles']):
+        article, error = validate_admin_article(value)
+        if error:
+            return jsonify({'status': 'error', 'message': f'Prix {index + 1} : {error}'}), 400
+        normalized.append(article)
+    try:
+        save_articles(normalized)
+        return jsonify({'status': 'success', 'articles': normalized})
+    except Exception:
+        app.logger.exception('Erreur lors de l’enregistrement des prix')
+        return jsonify({'status': 'error', 'message': 'Erreur lors de l’enregistrement des prix'}), 500
+
 
 @app.route('/')
 def index():
