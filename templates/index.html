@@ -8,11 +8,12 @@
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:#f5f7f3;color:#20382b}main{max-width:960px;margin:auto;padding:24px 20px}header{display:flex;align-items:center;gap:12px;margin-bottom:28px}header img{width:44px;height:44px}h1{font-size:1.55rem;margin:0}h2{font-size:1.1rem;margin:0 0 14px}p{line-height:1.5}.intro{margin:0 0 20px;color:#5c6c62}.search-panel{background:white;border:1px solid #e0e7dd;border-radius:18px;padding:24px}label{display:block;font-weight:650;margin-bottom:8px}.search-form{display:flex;gap:10px}input,select,button{font:inherit}input{min-width:0;flex:1;border:1px solid #b5c5b9;border-radius:10px;padding:14px}button{cursor:pointer;border:1px solid #cedace;border-radius:10px;padding:12px 18px;background:white;color:#245539}.search-btn{background:#176b45;color:white;border-color:#176b45;font-weight:650}.suggestions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.suggestions button{padding:8px 14px;font-size:.9rem}.notice{font-size:.85rem;color:#735621;background:#fff4d9;padding:12px 16px;border-radius:10px;margin:18px 0}.results-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:24px 0 14px}.results-bar h2{margin:0}.store-filter{display:flex;align-items:center;gap:8px}.store-filter label{margin:0;font-size:.9rem}select{max-width:200px;padding:9px;border:1px solid #c6d3c9;border-radius:8px;background:white}.results{display:grid;gap:12px}.offer{background:white;border:1px solid #dde6dc;border-radius:14px;padding:18px;display:grid;grid-template-columns:1fr auto;gap:10px 16px}.offer h3{margin:0;font-size:1rem}.store{display:flex;align-items:center;gap:10px;margin-top:10px;color:#56655b;font-size:.9rem}.store-logo{width:54px;height:36px;object-fit:contain;background:white;border:1px solid #edf0eb;border-radius:6px;padding:3px}.price{text-align:right;font-size:1.2rem;font-weight:750;color:#176b45}.unit{display:block;font-size:.85rem;font-weight:400;color:#647269;margin-top:4px}.product-link{grid-column:1/-1;justify-self:end;color:#176b45;font-size:.9rem}.status{padding:18px 0;color:#596c60}.footer{font-size:.8rem;color:#788279;text-align:center;margin:30px 0 12px}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid #e3aa34;outline-offset:3px}[hidden]{display:none!important}
 @media(max-width:600px){main{padding:18px 14px}.search-panel{padding:18px}.search-form{flex-direction:column}.search-btn{width:100%}.results-bar{align-items:flex-start;flex-direction:column}.store-filter{width:100%}.store-filter select{flex:1;max-width:none}.offer{padding:15px}.price{font-size:1.05rem}header{margin-bottom:20px}}
 </style>
-</head>
+<link rel="stylesheet" href="./static/product-design.css"></head>
 <body data-prices="/api/articles">
 <main>
 <header><img src="./static/compareprix-mark.svg" alt=""><h1>ComparePrix</h1></header>
-<nav style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px"><a href="./contribuer.html">Proposer un prix</a><a href="./compte.html">Mon compte</a></nav><p class="intro">Recherchez un produit et comparez les prix affichés en FCFA.</p>
+<nav class="app-nav" aria-label="Navigation principale"><a href="#searchForm">Comparer les prix</a><a href="./contribuer.html" class="nav-action">Partager un prix</a><a href="./compte.html">Mon compte</a></nav>
+<div class="welcome"><p class="eyebrow">Vos courses, mieux informées</p><h2>Comparez les prix.<br>Choisissez où acheter.</h2><p>Retrouvez les prix relevés dans les magasins et marchés. Consultez le format, le lieu et la date avant de faire vos courses. La recherche est libre, sans compte.</p></div>
 <section class="search-panel" aria-label="Recherche de prix">
 <form id="searchForm"><label for="searchInput">Quel produit cherchez-vous ?</label><div class="search-form"><input id="searchInput" type="search" maxlength="200" placeholder="Ex. riz, huile, lait" required><button class="search-btn" type="submit">Comparer</button></div></form>
 <div class="suggestions" aria-label="Exemples de recherche"><button type="button" data-search="Riz">Riz</button><button type="button" data-search="Huile">Huile</button><button type="button" data-search="Lait">Lait</button><button type="button" data-search="Pain">Pain</button></div>
@@ -23,9 +24,13 @@
 <div class="results-bar"><h2 id="resultCount"></h2><div class="store-filter"><label for="storeFilter">Magasin</label><select id="storeFilter"><option value="">Tous les magasins</option></select></div></div>
 <div id="resultsContent" class="results"></div>
 </section>
+
+<aside class="share-callout"><div><h2>Vous avez vu un prix en magasin ?</h2><p>Partagez le produit, son prix et le lieu où vous l’avez vu. Après vérification, votre relevé aide les autres à comparer.</p></div><a class="cta-link" href="./contribuer.html">Partager un prix</a></aside>
+<section class="how-it-works" aria-label="Comment fonctionne ComparePrix"><h2>Comment ça marche ?</h2><ol class="steps"><li><span class="step-number">01</span><strong>Recherchez un produit</strong><span>Entrez son nom, sans créer de compte.</span></li><li><span class="step-number">02</span><strong>Comparez les mêmes formats</strong><span>Consultez les prix, le magasin et la date du relevé.</span></li><li><span class="step-number">03</span><strong>Aidez à actualiser les prix</strong><span>Un compte permet de partager vos observations et de suivre leur validation.</span></li></ol></section>
 </main>
 <script src="./static/compareprix.js"></script>
 </body></html>
+
 
 
 
