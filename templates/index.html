@@ -479,6 +479,9 @@
             font-weight: 600;
         }
 
+        /* Le tableau est plus large qu'un téléphone : il défile dans son conteneur, pas la page entière */
+        #resultsContent { overflow-x: auto; max-width: 100%; }
+
         .results-table {
             width: 100%;
             border-collapse: collapse;
