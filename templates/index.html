@@ -1721,7 +1721,201 @@
             white-space: nowrap;
             border: 0;
         }
-    </style>
+    
+        /* ComparePrix visual refresh */
+        :root {
+            --primary-color: #176b45;
+            --secondary-color: #0f5035;
+            --success-color: #16834f;
+            --warning-color: #d58b17;
+            --danger-color: #bd3d35;
+            --dark-color: #17231d;
+            --light-color: #f4f5ef;
+            --border-radius: 16px;
+            --box-shadow: 0 12px 32px rgba(25, 55, 38, .08);
+        }
+        body {
+            background: #f4f5ef;
+            color: #17231d;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        .container {
+            max-width: 1160px;
+            padding: 28px;
+            background: transparent;
+            border-radius: 0;
+            box-shadow: none;
+            backdrop-filter: none;
+        }
+        .hero-section {
+            overflow: hidden;
+            position: relative;
+            border-radius: 26px;
+            background: linear-gradient(120deg, #143d2d 0%, #176b45 70%, #22875a 100%);
+            box-shadow: 0 20px 45px rgba(20, 61, 45, .18);
+            color: white;
+        }
+        .hero-section::before {
+            background: radial-gradient(circle, rgba(255,255,255,.10) 1px, transparent 1.5px);
+            background-size: 22px 22px;
+            opacity: .34;
+        }
+        .hero-content { gap: 32px; padding: 54px 48px; }
+        .hero-text h1 {
+            color: #fff;
+            font-size: clamp(2.8rem, 6vw, 4.4rem);
+            font-weight: 800;
+            letter-spacing: -.055em;
+            line-height: 1;
+        }
+        .hero-subtitle { color: #d5f0df; font-size: 1.15rem; font-weight: 650; }
+        .hero-description { max-width: 610px; color: rgba(255,255,255,.82); }
+        .hero-stats { gap: 12px; margin-top: 30px; }
+        .stat-item {
+            min-width: 118px;
+            padding: 13px 16px;
+            border: 1px solid rgba(255,255,255,.18);
+            border-radius: 14px;
+            background: rgba(255,255,255,.08);
+            backdrop-filter: blur(8px);
+        }
+        .stat-number { color: #fff; font-size: 1.25rem; }
+        .stat-label { color: #d5f0df; font-size: .76rem; }
+        .image-placeholder {
+            border: 1px solid rgba(255,255,255,.2);
+            border-radius: 22px;
+            background: rgba(255,255,255,.10);
+            color: #fff;
+        }
+        .image-placeholder .icon { font-size: 5rem; }
+        .search-section {
+            position: relative;
+            z-index: 1;
+            margin: -24px auto 34px;
+            max-width: 940px;
+            padding: 30px;
+            border: 1px solid #e6e9e1;
+            border-radius: 20px;
+            background: #fff;
+            box-shadow: 0 16px 40px rgba(25,55,38,.10);
+        }
+        .search-header h2, .features-section h2, .partners-section h2 {
+            color: #17231d;
+            font-size: clamp(1.35rem, 2.5vw, 1.8rem);
+            font-weight: 750;
+            letter-spacing: -.03em;
+        }
+        .search-header p { color: #657169; }
+        .search-form { gap: 10px; }
+        .search-input {
+            min-height: 54px;
+            border: 1px solid #dce3dc;
+            border-radius: 12px;
+            background: #fafbf8;
+            color: #17231d;
+            box-shadow: none;
+        }
+        .search-input:focus {
+            border-color: #27845a;
+            outline: 3px solid rgba(39,132,90,.15);
+            box-shadow: none;
+        }
+        .search-btn, .submit-btn {
+            min-height: 52px;
+            border: 0;
+            border-radius: 12px;
+            background: #176b45;
+            box-shadow: 0 6px 14px rgba(23,107,69,.18);
+            font-weight: 700;
+        }
+        .search-btn:hover, .submit-btn:hover { background: #0f5035; transform: translateY(-1px); }
+        .quick-search { gap: 8px; align-items: center; }
+        .quick-search-label { color: #657169; font-size: .88rem; }
+        .quick-search-btn, .filter-btn {
+            border: 1px solid #dfe6df;
+            border-radius: 999px;
+            background: #fff;
+            color: #405047;
+            transition: background .18s ease, color .18s ease, border-color .18s ease, transform .18s ease;
+        }
+        .quick-search-btn:hover, .quick-search-btn.active, .filter-btn:hover, .filter-btn.active {
+            border-color: #176b45;
+            background: #e9f5ed;
+            color: #145a3b;
+            transform: translateY(-1px);
+        }
+        .results-container {
+            margin: 28px 0;
+            padding: 24px;
+            border: 1px solid #e6e9e1;
+            border-radius: 20px;
+            background: #fff;
+            box-shadow: var(--box-shadow);
+        }
+        .stats { gap: 14px; }
+        .stat-card, .feature-card, .partner-card {
+            border: 1px solid #e6e9e1;
+            border-radius: 16px;
+            background: #fff;
+            box-shadow: 0 6px 20px rgba(25,55,38,.045);
+        }
+        .stat-card::before { background: #27845a; }
+        .stat-card h3, .feature-card h3, .partner-card h3 { color: #17231d; }
+        .stat-card p, .feature-card p, .partner-card p { color: #657169; }
+        .results-table {
+            overflow: hidden;
+            border: 1px solid #e6e9e1;
+            border-radius: 14px;
+            background: #fff;
+        }
+        .results-table th {
+            background: #f0f4ed;
+            color: #405047;
+            font-size: .78rem;
+            letter-spacing: .045em;
+            text-transform: uppercase;
+        }
+        .results-table td { border-color: #edf0ea; }
+        .results-table tr:hover { background: #f7faf5; }
+        .best-price { background: #eaf6ed; color: #145a3b; }
+        .features-section, .partners-section { margin-top: 54px; }
+        .feature-card, .partner-card { padding: 24px; }
+        .feature-card:hover, .partner-card:hover {
+            border-color: #c9dfce;
+            box-shadow: 0 14px 28px rgba(25,55,38,.08);
+            transform: translateY(-3px);
+        }
+        .feature-icon, .partner-logo { color: #176b45; }
+        .modal-content {
+            border: 1px solid #e6e9e1;
+            border-radius: 20px;
+            box-shadow: 0 24px 70px rgba(17,37,26,.24);
+        }
+        .modal-header { background: #176b45; }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            border-color: #27845a;
+            outline: 3px solid rgba(39,132,90,.14);
+        }
+        button, a, input, textarea, select { font: inherit; }
+        button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+            outline: 3px solid #f0b744;
+            outline-offset: 3px;
+        }
+        @media (max-width: 768px) {
+            .container { padding: 14px; }
+            .hero-section { border-radius: 20px; }
+            .hero-content { padding: 34px 22px; }
+            .hero-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .stat-item { min-width: 0; padding: 11px 8px; }
+            .search-section { margin: -16px 8px 28px; padding: 22px 18px; }
+            .search-form { flex-direction: column; }
+            .search-btn { width: 100%; }
+            .results-container { padding: 16px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+        }
+</style>
 </head>
 <body>
     <div class="container">
@@ -1733,7 +1927,7 @@
                     <p class="hero-subtitle">Comparez intelligemment, économisez intelligemment !</p>
                     <p class="hero-description">
                         Découvrez les meilleurs prix de vos produits préférés dans les supermarchés de Côte d'Ivoire. 
-                        Notre plateforme vous aide à faire des économies en comparant les prix en temps réel.
+                        Comparez les prix disponibles et repérez rapidement les options les plus économiques.
                     </p>
                     <div class="hero-stats">
                         <div class="stat-item">
