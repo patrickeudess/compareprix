@@ -31,7 +31,7 @@ function showToast(message, type = 'info') {
     toast.innerHTML = `
         <div style="display: flex; align-items: center; gap: 10px;">
             <span>${getToastIcon(type)}</span>
-            <span>${message}</span>
+            <span>${String(message).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</span>
         </div>
     `;
     

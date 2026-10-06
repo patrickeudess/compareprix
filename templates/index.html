@@ -2055,7 +2055,7 @@
             // Afficher les résultats
             let tableHTML = `
                 <div class="results-header">
-                    📊 Résultats pour '${searchTerm}'
+                    📊 Résultats pour '${escapeHtml(searchTerm)}'
                 </div>
                 <table class="results-table">
                     <thead>
@@ -2074,25 +2074,25 @@
             results.forEach(article => {
                 const isBestPrice = article.prix === minPrice;
                 const rowClass = isBestPrice ? 'best-price' : '';
-                const imageUrl = article.image_url || '';
-                const productUrl = article.url || '';
+                const imageUrl = safeUrl(article.image_url);
+                const productUrl = safeUrl(article.url);
 
                 tableHTML += `
                     <tr class="${rowClass}">
                         <td>
-                            ${imageUrl ? `<img src="${imageUrl}" alt="${article.article}" class="product-image" onerror="this.style.display='none'">` : '<div class="no-image">🛒</div>'}
+                            ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(article.article)}" class="product-image" onerror="this.style.display='none'">` : '<div class="no-image">🛒</div>'}
                         </td>
-                        <td><strong>${article.article}</strong></td>
+                        <td><strong>${escapeHtml(article.article)}</strong></td>
                         <td class="supermarket-cell">
-                            <div class="supermarket-logo">${article.supermarche.charAt(0)}</div>
-                            <span class="supermarket-name">${article.supermarche}</span>
+                            <div class="supermarket-logo">${escapeHtml(String(article.supermarche).charAt(0))}</div>
+                            <span class="supermarket-name">${escapeHtml(article.supermarche)}</span>
                         </td>
-                        <td class="price-cell">${article.prix} FCFA</td>
-                        <td class="unit-cell">${article.unite || 'unité'}</td>
+                        <td class="price-cell">${escapeHtml(article.prix)} FCFA</td>
+                        <td class="unit-cell">${escapeHtml(article.unite || 'unité')}</td>
                         <td class="actions-cell">
                             ${isBestPrice ? '<span class="trophy-icon">🏆</span>' : ''}
-                            ${productUrl ? `<a href="${productUrl}" target="_blank" class="view-btn">👁️ Voir</a>` : ''}
-                            <button class="feedback-btn" data-product="${article.article}" data-supermarket="${article.supermarche}" data-price="${article.prix}">💬 Signalement</button>
+                            ${productUrl ? `<a href="${escapeHtml(productUrl)}" target="_blank" rel="noopener noreferrer" class="view-btn">👁️ Voir</a>` : ''}
+                            <button class="feedback-btn" data-product="${escapeHtml(article.article)}" data-supermarket="${escapeHtml(article.supermarche)}" data-price="${escapeHtml(article.prix)}">💬 Signalement</button>
                         </td>
                     </tr>
                 `;
@@ -2105,6 +2105,20 @@
 
             document.getElementById('resultsContent').innerHTML = tableHTML;
             document.getElementById('resultsSection').style.display = 'block';
+        }
+
+        // --- Protection XSS : toute donnée dynamique injectée dans innerHTML doit passer ici ---
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+        // N'autorise que http(s) pour les liens/images (bloque javascript:, data:, etc.)
+        function safeUrl(value) {
+            try {
+                const u = new URL(String(value ?? ''), window.location.origin);
+                return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : '';
+            } catch (e) { return ''; }
         }
 
         // Fonctions pour le modal de feedback
