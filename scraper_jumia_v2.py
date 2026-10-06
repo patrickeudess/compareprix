@@ -1,10 +1,11 @@
 import requests
 from bs4 import BeautifulSoup # type: ignore # type: ignore
 import json
+from datetime import date
 import time
 import random
 import re
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 import os
 
 class JumiaScraperV2:
@@ -324,7 +325,10 @@ class JumiaScraperV2:
                 'prix': product['price'],
                 'unite': unit,
                 'url': product['url'],
-                'image_url': product['image_url']
+                'image_url': product['image_url'],
+                'date_releve': date.today().isoformat(),
+                'source': 'jumia',
+                'statut': 'a_verifier'
             })
         
         return compareprix_data
@@ -371,7 +375,7 @@ def main():
         scraper.save_to_json(compareprix_data, 'data/jumia_products.json')
         
         # Afficher un résumé
-        print(f"\n📊 Résumé:")
+        print("\n📊 Résumé:")
         print(f"   - Produits trouvés: {len(products)}")
         if products:
             avg_price = sum(p['price'] for p in products if p['price']) // len(products)
@@ -379,36 +383,13 @@ def main():
             print(f"   - Produits avec images: {sum(1 for p in products if p['image_url'])}")
         
         # Afficher quelques exemples
-        print(f"\n📝 Exemples de produits:")
+        print("\n📝 Exemples de produits:")
         for i, product in enumerate(products[:5]):
             print(f"   {i+1}. {product['product_name']} - {product['price']} FCFA")
     
     else:
         print("❌ Aucun produit trouvé")
-        print("💡 Création de données d'exemple...")
-        
-        # Créer des données d'exemple
-        sample_data = [
-            {
-                'article': 'Riz Basmati Jumia',
-                'supermarche': 'Jumia',
-                'prix': 550,
-                'unite': 'kg',
-                'url': 'https://www.jumia.ci/example',
-                'image_url': ''
-            },
-            {
-                'article': 'Huile d\'Olive Jumia',
-                'supermarche': 'Jumia',
-                'prix': 1300,
-                'unite': 'L',
-                'url': 'https://www.jumia.ci/example',
-                'image_url': ''
-            }
-        ]
-        
-        scraper.save_to_json(sample_data, 'data/jumia_products.json')
-        print("✅ Données d'exemple créées")
+        print("ℹ️ Aucune donnée écrite (jamais de données factices).")
 
 if __name__ == "__main__":
     main()

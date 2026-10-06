@@ -7,9 +7,6 @@ Script complet pour ComparePrix
 """
 
 import subprocess
-import sys
-import os
-import time
 
 def run_command(command, description):
     """Exécute une commande avec gestion d'erreur"""

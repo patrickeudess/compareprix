@@ -242,13 +242,13 @@ def main():
         
         elif choice == '4':
             report = tool.generate_validation_report()
-            print(f"\n📊 Rapport de validation:")
+            print("\n📊 Rapport de validation:")
             print(f"   - Validations en attente: {report['summary']['pending_validations']}")
             print(f"   - Anomalies de prix: {report['summary']['price_anomalies']}")
             print(f"   - Taux de validation: {report['summary']['validation_rate']}%")
             
             if report['recommendations']:
-                print(f"\n💡 Recommandations:")
+                print("\n💡 Recommandations:")
                 for rec in report['recommendations']:
                     print(f"   - {rec}")
         

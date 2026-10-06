@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ctext y=%27.9em%27 font-size=%2790%27%3E%F0%9F%9B%92%3C/text%3E%3C/svg%3E">
     <title>ComparePrix - Comparateur de prix</title>
     <style>
         :root {
@@ -315,6 +316,7 @@
         }
 
         /* Partners Section */
+        [hidden] { display: none !important; }
         .partners-section {
             background: white;
             padding: 40px 30px;
@@ -476,6 +478,9 @@
             gap: 10px;
             font-weight: 600;
         }
+
+        /* Le tableau est plus large qu'un téléphone : il défile dans son conteneur, pas la page entière */
+        #resultsContent { overflow-x: auto; max-width: 100%; }
 
         .results-table {
             width: 100%;
@@ -669,6 +674,13 @@
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
             color: white;
         }
+
+        .data-warning { background: #fff3cd; color: #664d03; padding: 10px 15px; border-radius: 8px; margin: 10px 0; font-size: 0.9em; }
+        .unit-price-cell { white-space: nowrap; }
+        .fresh-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; white-space: nowrap; }
+        .fresh-ok { background: #d1e7dd; color: #0f5132; }
+        .fresh-stale { background: #fff3cd; color: #664d03; }
+        .fresh-example, .fresh-unknown { background: #e2e3e5; color: #41464b; }
 
         .feedback-btn {
             display: inline-flex;
@@ -1733,20 +1745,20 @@
                     <p class="hero-subtitle">Comparez intelligemment, économisez intelligemment !</p>
                     <p class="hero-description">
                         Découvrez les meilleurs prix de vos produits préférés dans les supermarchés de Côte d'Ivoire. 
-                        Notre plateforme vous aide à faire des économies en comparant les prix en temps réel.
+                        Notre plateforme vous aide à faire des économies en comparant les prix relevés en magasin, chacun avec sa date.
                     </p>
                     <div class="hero-stats">
                         <div class="stat-item">
-                            <span class="stat-number">500+</span>
-                            <span class="stat-label">Produits</span>
+                            <span class="stat-number" id="heroProducts">—</span>
+                            <span class="stat-label">Produits comparés</span>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-number">15+</span>
-                            <span class="stat-label">Supermarchés</span>
+                            <span class="stat-number" id="heroStores">—</span>
+                            <span class="stat-label">Magasins</span>
                         </div>
                         <div class="stat-item">
-                            <span class="stat-number">24/7</span>
-                            <span class="stat-label">Mise à jour</span>
+                            <span class="stat-number" id="heroUpdated">—</span>
+                            <span class="stat-label">Dernier relevé</span>
                         </div>
                     </div>
                 </div>
@@ -1773,25 +1785,19 @@
 
             <div class="quick-search">
                 <p class="quick-search-label">Recherches populaires :</p>
-                <button type="button" class="quick-search-btn" onclick="searchProduct('Riz')">🍚 Riz</button>
-                <button type="button" class="quick-search-btn" onclick="searchProduct('Huile')">🫗 Huile</button>
-                <button type="button" class="quick-search-btn" onclick="searchProduct('Pain')">🍞 Pain</button>
-                <button type="button" class="quick-search-btn" onclick="searchProduct('Lait')">🥛 Lait</button>
-                <button type="button" class="quick-search-btn" onclick="searchProduct('Tomates')">🍅 Tomates</button>
-                <button type="button" class="quick-search-btn" onclick="searchProduct('Pommes')">🍎 Pommes</button>
+                <button type="button" class="quick-search-btn" data-search="Riz">🍚 Riz</button>
+                <button type="button" class="quick-search-btn" data-search="Huile">🫗 Huile</button>
+                <button type="button" class="quick-search-btn" data-search="Pain">🍞 Pain</button>
+                <button type="button" class="quick-search-btn" data-search="Lait">🥛 Lait</button>
+                <button type="button" class="quick-search-btn" data-search="Tomates">🍅 Tomates</button>
+                <button type="button" class="quick-search-btn" data-search="Pommes">🍎 Pommes</button>
             </div>
         </div>
 
         <div id="resultsSection" class="results-container" style="display: none;">
             <div id="stats" class="stats"></div>
             
-            <div class="filters">
-                <button class="filter-btn active" onclick="filterBySupermarket('all')">Tous</button>
-                <button class="filter-btn" onclick="filterBySupermarket('Carrefour')">Carrefour</button>
-                <button class="filter-btn" onclick="filterBySupermarket('Cap Sud')">Cap Sud</button>
-                <button class="filter-btn" onclick="filterBySupermarket('Casino')">Casino</button>
-                <button class="filter-btn" onclick="filterBySupermarket('Jumia')">Jumia</button>
-            </div>
+            <div class="filters" id="filters"></div>
             
             <div id="resultsContent"></div>
         </div>
@@ -1817,37 +1823,16 @@
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">🔄</div>
-                    <h3>Mise à jour continue</h3>
-                    <p>Nos prix sont mis à jour régulièrement pour vous garantir des informations fiables</p>
+                    <h3>Prix datés</h3>
+                    <p>Chaque prix indique la date de son relevé ; les relevés de plus de 7 jours sont signalés</p>
                 </div>
             </div>
         </div>
 
-        <!-- Section des supermarchés partenaires -->
-        <div class="partners-section">
-            <h2>🏪 Nos supermarchés partenaires</h2>
-            <div class="partners-grid">
-                <div class="partner-card">
-                    <div class="partner-logo">C</div>
-                    <h3>Carrefour</h3>
-                    <p>Grande distribution</p>
-                </div>
-                <div class="partner-card">
-                    <div class="partner-logo">CS</div>
-                    <h3>Cap Sud</h3>
-                    <p>Supermarché local</p>
-                </div>
-                <div class="partner-card">
-                    <div class="partner-logo">CA</div>
-                    <h3>Casino</h3>
-                    <p>Chaîne française</p>
-                </div>
-                <div class="partner-card">
-                    <div class="partner-logo">J</div>
-                    <h3>Jumia</h3>
-                    <p>E-commerce</p>
-                </div>
-            </div>
+        <!-- Magasins comparés : liste générée depuis les relevés réels (voir loadSiteStats) -->
+        <div class="partners-section" id="storesSection" hidden>
+            <h2>🏪 Magasins comparés</h2>
+            <div class="partners-grid" id="storesGrid"></div>
         </div>
     </div>
 
@@ -1856,7 +1841,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h2>💬 Signalement de prix</h2>
-                <span class="close" onclick="closeFeedbackModal()">&times;</span>
+                <span class="close" data-action="close-feedback">&times;</span>
             </div>
             
             <form id="feedbackForm" class="feedback-form">
@@ -1899,8 +1884,8 @@
                 
                 <div class="form-group">
                     <label>Photo du prix (optionnel) :</label>
-                    <div class="photo-upload" onclick="document.getElementById('photoUpload').click()">
-                        <input type="file" id="photoUpload" accept="image/*" onchange="previewPhoto(this)">
+                    <div class="photo-upload" data-action="pick-photo">
+                        <input type="file" id="photoUpload" accept="image/*">
                         <p>📷 Cliquez pour ajouter une photo</p>
                         <p style="font-size: 0.8rem; color: #666;">Format: JPG, PNG (max 5MB)</p>
                     </div>
@@ -1937,7 +1922,7 @@
         </div>
     </div>
 
-    <script>
+    <script nonce="{{ csp_nonce }}">
         // Variables globales
         let currentResults = [];
         let currentFilter = 'all';
@@ -1951,7 +1936,7 @@
             }
         });
 
-        function searchProduct(productName) {
+        function searchProduct(productName, button) {
             document.getElementById('searchInput').value = productName;
             searchArticles(productName);
             
@@ -1959,7 +1944,7 @@
             document.querySelectorAll('.quick-search-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            event.target.classList.add('active');
+            if (button) button.classList.add('active');
         }
 
         function searchArticles(searchTerm) {
@@ -1977,6 +1962,8 @@
                     return;
                 }
                 currentResults = data.results;
+                currentFilter = 'all';
+                buildFilters(currentResults);
                 displayResults(data.results, searchTerm);
             })
             .catch(error => {
@@ -1985,14 +1972,52 @@
             });
         }
 
-        function filterBySupermarket(supermarket) {
+        // Boutons de filtre : un par magasin présent dans les résultats (rien de codé en dur)
+        function buildFilters(results) {
+            const stores = [...new Set(results.map(r => r.supermarche))].sort();
+            const makeBtn = (label, value) => {
+                const b = document.createElement('button');
+                b.className = 'filter-btn' + (value === currentFilter ? ' active' : '');
+                b.dataset.filter = value;
+                b.textContent = label;
+                return b;
+            };
+            document.getElementById('filters').replaceChildren(makeBtn('Tous', 'all'), ...stores.map(s => makeBtn(s, s)));
+        }
+
+        // Chiffres de la page d'accueil : réels (relevés non « exemple »), « — » tant qu'il n'y en a pas
+        function loadSiteStats() {
+            fetch('/api/stats').then(r => r.json()).then(stats => {
+                if (!stats || stats.error) return;
+                const stores = stats.magasins_reels || [];
+                if (stats.produits_reels) document.getElementById('heroProducts').textContent = stats.produits_reels;
+                if (stores.length) document.getElementById('heroStores').textContent = stores.length;
+                if (stats.dernier_releve) {
+                    const d = new Date(stats.dernier_releve + 'T00:00:00');
+                    document.getElementById('heroUpdated').textContent = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+                }
+                if (stores.length) {
+                    document.getElementById('storesGrid').replaceChildren(...stores.map(name => {
+                        const card = document.createElement('div'); card.className = 'partner-card';
+                        const logo = document.createElement('div'); logo.className = 'partner-logo';
+                        logo.textContent = name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+                        const title = document.createElement('h3'); title.textContent = name;
+                        card.append(logo, title); return card;
+                    }));
+                    document.getElementById('storesSection').hidden = false;
+                }
+            }).catch(() => { /* chiffres facultatifs : on garde « — » */ });
+        }
+        loadSiteStats();
+
+        function filterBySupermarket(supermarket, button) {
             currentFilter = supermarket;
             
             // Mettre à jour l'état actif des filtres
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            event.target.classList.add('active');
+            if (button) button.classList.add('active');
             
             // Filtrer les résultats
             let filteredResults = currentResults;
@@ -2017,46 +2042,48 @@
             // Afficher la section des résultats
             document.getElementById('resultsSection').style.display = 'block';
 
-            // Calculer les statistiques
+            // Statistiques AU PRIX UNITAIRE (FCFA/kg, FCFA/L) : un sac de 5 kg et un sachet de 1 kg
+            // ne se comparent pas sur le prix affiché. Repli sur le prix affiché sans quantité reconnue.
             const prices = results.map(r => r.prix);
-            const minPrice = Math.min(...prices);
-            const maxPrice = Math.max(...prices);
-            const avgPrice = Math.round(prices.reduce((a, b) => a + b, 0) / prices.length);
+            const minPrice = Math.min(...prices);        // utilisé en repli pour le trophée
+            const withUnit = results.filter(r => r.prix_unitaire != null);
+            const baseCount = {};
+            withUnit.forEach(r => { baseCount[r.unite_base] = (baseCount[r.unite_base] || 0) + 1; });
+            const mainBase = Object.keys(baseCount).sort((a, b) => baseCount[b] - baseCount[a])[0];
+            const unitValues = withUnit.filter(r => r.unite_base === mainBase).map(r => r.prix_unitaire).sort((a, b) => a - b);
+            let cards;
+            if (unitValues.length > 0) {
+                const median = unitValues.length % 2 ? unitValues[(unitValues.length - 1) / 2]
+                    : (unitValues[unitValues.length / 2 - 1] + unitValues[unitValues.length / 2]) / 2;
+                const gap = unitValues[0] > 0 ? Math.round((unitValues[unitValues.length - 1] - unitValues[0]) / unitValues[0] * 100) : 0;
+                const unit = 'FCFA/' + mainBase;
+                cards = [[results.length, 'Articles trouvés'],
+                         [Math.round(unitValues[0]), 'Meilleur prix unitaire (' + unit + ')'],
+                         [Math.round(median), 'Prix unitaire médian (' + unit + ')'],
+                         [gap + ' %', 'Écart entre le plus cher et le moins cher']];
+            } else {
+                const avgPrice = Math.round(prices.reduce((a, b) => a + b, 0) / prices.length);
+                cards = [[results.length, 'Articles trouvés'], [minPrice, 'Prix minimum (FCFA)'],
+                         [Math.max(...prices), 'Prix maximum (FCFA)'], [avgPrice, 'Prix moyen (FCFA)']];
+            }
 
             // Afficher les statistiques
-            const statsHTML = `
+            const statsHTML = cards.map(([value, label]) => `
                 <div class="stat-card">
                     <div class="stat-card-content">
-                        <h3>${results.length}</h3>
-                        <p>Articles trouvés</p>
+                        <h3>${escapeHtml(value)}</h3>
+                        <p>${escapeHtml(label)}</p>
                     </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-card-content">
-                        <h3>${minPrice}</h3>
-                        <p>Prix minimum (FCFA)</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-card-content">
-                        <h3>${maxPrice}</h3>
-                        <p>Prix maximum (FCFA)</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-card-content">
-                        <h3>${avgPrice}</h3>
-                        <p>Prix moyen (FCFA)</p>
-                    </div>
-                </div>
-            `;
+                </div>`).join('');
+
             document.getElementById('stats').innerHTML = statsHTML;
 
             // Afficher les résultats
             let tableHTML = `
                 <div class="results-header">
-                    📊 Résultats pour '${searchTerm}'
+                    📊 Résultats pour '${escapeHtml(searchTerm)}'
                 </div>
+                ${results.some(r => r.fraicheur === 'exemple') ? '<div class="data-warning">⚠️ Certains prix sont des <strong>données d\'exemple</strong> et ne reflètent pas les prix réels.</div>' : ''}
                 <table class="results-table">
                     <thead>
                         <tr>
@@ -2064,7 +2091,9 @@
                             <th>Article</th>
                             <th>Supermarché</th>
                             <th>Prix</th>
+                            <th>Prix unitaire</th>
                             <th>Unité</th>
+                            <th>Relevé</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -2072,27 +2101,30 @@
             `;
 
             results.forEach(article => {
-                const isBestPrice = article.prix === minPrice;
+                // Meilleur prix = prix UNITAIRE le plus bas (kg/L) ; repli sur le prix brut si non calculable
+                const isBestPrice = article.prix_unitaire != null ? article.meilleur_prix : article.prix === minPrice;
                 const rowClass = isBestPrice ? 'best-price' : '';
-                const imageUrl = article.image_url || '';
-                const productUrl = article.url || '';
+                const imageUrl = safeUrl(article.image_url);
+                const productUrl = safeUrl(article.url);
 
                 tableHTML += `
                     <tr class="${rowClass}">
                         <td>
-                            ${imageUrl ? `<img src="${imageUrl}" alt="${article.article}" class="product-image" onerror="this.style.display='none'">` : '<div class="no-image">🛒</div>'}
+                            ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(article.article)}" class="product-image">` : '<div class="no-image">🛒</div>'}
                         </td>
-                        <td><strong>${article.article}</strong></td>
+                        <td><strong>${escapeHtml(article.article)}</strong></td>
                         <td class="supermarket-cell">
-                            <div class="supermarket-logo">${article.supermarche.charAt(0)}</div>
-                            <span class="supermarket-name">${article.supermarche}</span>
+                            <div class="supermarket-logo">${escapeHtml(String(article.supermarche).charAt(0))}</div>
+                            <span class="supermarket-name">${escapeHtml(article.supermarche)}</span>
                         </td>
-                        <td class="price-cell">${article.prix} FCFA</td>
-                        <td class="unit-cell">${article.unite || 'unité'}</td>
+                        <td class="price-cell">${escapeHtml(article.prix)} FCFA${anomalyBadge(article)}</td>
+                        <td class="unit-price-cell">${unitPriceCell(article)}</td>
+                        <td class="unit-cell">${escapeHtml(article.unite || 'unité')}</td>
+                        <td class="freshness-cell">${freshnessBadge(article)}</td>
                         <td class="actions-cell">
                             ${isBestPrice ? '<span class="trophy-icon">🏆</span>' : ''}
-                            ${productUrl ? `<a href="${productUrl}" target="_blank" class="view-btn">👁️ Voir</a>` : ''}
-                            <button class="feedback-btn" data-product="${article.article}" data-supermarket="${article.supermarche}" data-price="${article.prix}">💬 Signalement</button>
+                            ${productUrl ? `<a href="${escapeHtml(productUrl)}" target="_blank" rel="noopener noreferrer" class="view-btn">👁️ Voir</a>` : ''}
+                            <button class="feedback-btn" data-product="${escapeHtml(article.article)}" data-supermarket="${escapeHtml(article.supermarche)}" data-price="${escapeHtml(article.prix)}">💬 Signalement</button>
                         </td>
                     </tr>
                 `;
@@ -2105,6 +2137,43 @@
 
             document.getElementById('resultsContent').innerHTML = tableHTML;
             document.getElementById('resultsSection').style.display = 'block';
+        }
+
+        // --- Protection XSS : toute donnée dynamique injectée dans innerHTML doit passer ici ---
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+        // Prix ramené au kg / L / unité ; le titre précise d'où vient la quantité
+        function unitPriceCell(article) {
+            if (article.prix_unitaire == null) return '<span class="fresh-badge fresh-unknown" title="Quantité non reconnue : comparaison impossible">—</span>';
+            const origin = article.origine_unite === 'nom' ? 'quantité lue dans le nom' : 'unité déclarée';
+            return `<span title="${escapeHtml(origin)}">${escapeHtml(Math.round(article.prix_unitaire))} FCFA/${escapeHtml(article.unite_base)}</span>`;
+        }
+        // Prix éloigné de la médiane des magasins (seuil : config qualité, 20 % par défaut)
+        function anomalyBadge(article) {
+            if (!article.anomalie) return '';
+            const sign = article.anomalie.ecart_pct > 0 ? '+' : '';
+            const tip = `Médiane des magasins : ${Math.round(article.anomalie.mediane)} FCFA/${article.unite_base}. À vérifier.`;
+            return ` <span class="fresh-badge fresh-stale" title="${escapeHtml(tip)}">⚠️ ${escapeHtml(sign + article.anomalie.ecart_pct)} %</span>`;
+        }
+        // Badge de fraîcheur du relevé (réponse de l'API : fraicheur + age_jours)
+        function freshnessBadge(article) {
+            switch (article.fraicheur) {
+                case 'exemple':  return '<span class="fresh-badge fresh-example">Exemple</span>';
+                case 'perimee':  return `<span class="fresh-badge fresh-stale" title="${escapeHtml(article.date_releve)}">⚠️ ${escapeHtml(article.age_jours)} j</span>`;
+                case 'recente':  return `<span class="fresh-badge fresh-ok" title="${escapeHtml(article.date_releve)}">${escapeHtml(article.date_releve)}</span>`;
+                default:         return '<span class="fresh-badge fresh-unknown">Date inconnue</span>';
+            }
+        }
+        // N'autorise que http(s) pour les liens/images (bloque javascript:, data:, etc.)
+        function safeUrl(value) {
+            if (value == null || String(value).trim() === '') return '';  // pas de lien => pas de bouton
+            try {
+                const u = new URL(String(value ?? ''), window.location.origin);
+                return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : '';
+            } catch (e) { return ''; }
         }
 
         // Fonctions pour le modal de feedback
@@ -2245,6 +2314,25 @@
                 submitBtn.disabled = false;
             });
         });
+
+        // --- Gestionnaires d'événements (la CSP interdit les attributs onclick/onerror inline) ---
+        // Phase de capture : le modal appelle stopPropagation() sur ses clics, ce qui
+        // empêcherait une délégation classique d'atteindre `document`.
+        document.addEventListener('click', function(event) {
+            const el = event.target.closest('[data-search], [data-filter], [data-action]');
+            if (!el) return;
+            if (el.dataset.search) searchProduct(el.dataset.search, el);
+            else if (el.dataset.filter) filterBySupermarket(el.dataset.filter, el);
+            else if (el.dataset.action === 'close-feedback') closeFeedbackModal();
+            else if (el.dataset.action === 'pick-photo') document.getElementById('photoUpload').click();
+        }, true);
+        document.getElementById('photoUpload').addEventListener('change', function() { previewPhoto(this); });
+        // L'événement 'error' des images ne remonte pas : on l'écoute en phase de capture
+        document.addEventListener('error', function(event) {
+            if (event.target.classList && event.target.classList.contains('product-image')) {
+                event.target.style.display = 'none';
+            }
+        }, true);
 
         // Fermer le modal en cliquant à l'extérieur
         window.onclick = function(event) {
