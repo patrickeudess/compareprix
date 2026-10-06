@@ -77,6 +77,27 @@ class TestPrices(DbCase):
             again = db.import_articles(c, [article(), article(supermarche='Cap Sud')])
         self.assertEqual((first, again), ((2, 0), (0, 2)))
 
+    def test_same_day_unit_correction_replaces_the_displayed_unit(self):
+        with db.transaction() as c:
+            first, created1 = db.add_observation(c, article(article='Riz parfumé', prix=900, unite='unité'))
+            fixed, created2 = db.add_observation(c, article(article='Riz parfumé', prix=900, unite='kg'))
+            again, created3 = db.add_observation(c, article(article='Riz parfumé', prix=900, unite='kg'))
+        self.assertEqual((created1, created2, created3), (True, True, False))
+        self.assertNotEqual(first, fixed)
+        self.assertEqual(again, fixed)  # rejouer la version corrigée reste idempotent
+        self.assertEqual(db.list_current('riz')[0]['unite'], 'kg')  # la correction s'affiche
+        self.assertEqual([h['unite'] for h in db.price_history('Riz parfumé')], ['kg', 'unité'])  # l'ancien reste en historique
+
+    def test_duplicate_gets_missing_url_and_image_without_creating_a_row(self):
+        with db.transaction() as c:
+            oid, _ = db.add_observation(c, article())
+            same, created = db.add_observation(c, article(url='https://exemple.com/p', image_url='https://exemple.com/i.png'))
+            db.add_observation(c, article())  # sans URL : ne l'efface pas
+        self.assertEqual((same, created), (oid, False))
+        cur = db.list_current('pates')[0]
+        self.assertEqual((cur['url'], cur['image_url']), ('https://exemple.com/p', 'https://exemple.com/i.png'))
+        self.assertEqual(len(db.price_history('Pâtes Spaghetti')), 1)
+
     def test_db_rejects_invalid_price(self):
         import sqlite3
         with self.assertRaises(sqlite3.IntegrityError):

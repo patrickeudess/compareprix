@@ -159,21 +159,29 @@ def current_date(conn, article, supermarche):
 
 
 def add_observation(conn, a):
-    """Insère un relevé. Retourne (id, créé) ; un doublon exact est ignoré (idempotent)."""
+    """Insère un relevé. Retourne (id, créé).
+
+    Identité d'un relevé : produit, magasin, prix, unité, date, source, statut. Un relevé identique est un
+    doublon (import rejouable). Corriger l'UNITÉ le même jour crée un nouveau relevé : à date égale c'est le
+    plus récent qui s'affiche, l'ancien reste dans l'historique. Pour un doublon, une URL ou une image
+    nouvelle (non vide) complète le relevé existant : ce sont des métadonnées, pas une identité."""
     a = normalize_article(a)
     pid = _get_or_create(conn, 'product', a['article'].strip())
     sid = _get_or_create(conn, 'store', a['supermarche'].strip())
+    url, image_url = a.get('url') or None, a.get('image_url') or None
     dup = conn.execute(
-        'SELECT id FROM price_observation WHERE product_id=? AND store_id=? AND prix=? '
+        'SELECT id FROM price_observation WHERE product_id=? AND store_id=? AND prix=? AND unite=? '
         'AND date_releve IS ? AND source=? AND statut=?',
-        (pid, sid, a['prix'], a['date_releve'], a['source'], a['statut'])).fetchone()
+        (pid, sid, a['prix'], a['unite'], a['date_releve'], a['source'], a['statut'])).fetchone()
     if dup:
+        if url or image_url:
+            conn.execute('UPDATE price_observation SET url = COALESCE(?, url), image_url = COALESCE(?, image_url) WHERE id = ?',
+                         (url, image_url, dup['id']))
         return dup['id'], False
     cur = conn.execute(
         'INSERT INTO price_observation(product_id, store_id, prix, unite, date_releve, source, statut, url, image_url) '
         'VALUES (?,?,?,?,?,?,?,?,?)',
-        (pid, sid, int(a['prix']), a['unite'], a['date_releve'], a['source'], a['statut'],
-         a.get('url') or None, a.get('image_url') or None))
+        (pid, sid, int(a['prix']), a['unite'], a['date_releve'], a['source'], a['statut'], url, image_url))
     return cur.lastrowid, True
 
 
