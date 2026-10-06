@@ -3,8 +3,8 @@
 <h1>Partagez un prix observé en magasin</h1><p class="hint">Préparez votre relevé librement. Un compte est nécessaire pour l’envoyer et suivre sa validation.</p>
 <p id="message" class="notice" role="status" aria-live="polite"></p>
 <section id="account"><h2>Mon compte</h2>
-<div id="signedOut"><form id="authForm"><label for="email">Email</label><input id="email" type="email" maxlength="254" autocomplete="email" required><label for="password">Mot de passe</label><input id="password" type="password" maxlength="256" autocomplete="current-password" required>
-<div id="registration" hidden><label for="name">Pseudo</label><input id="name" maxlength="80" autocomplete="nickname"><p class="hint">Utilisez au moins 12 caractères pour votre mot de passe. Votre email n’est pas affiché publiquement.</p></div>
+<div id="signedOut"><form id="authForm"><label for="phone">Numéro de téléphone portable</label><input id="phone" type="tel" inputmode="tel" maxlength="40" autocomplete="tel" placeholder="Ex. 07 12 34 56 78 ou +225…" required><p class="hint">10 chiffres pour la Côte d’Ivoire, ou le numéro avec son indicatif international.</p><label for="password">Mot de passe</label><input id="password" type="password" maxlength="256" autocomplete="current-password" required>
+<div id="registration" hidden><label for="name">Pseudo</label><input id="name" maxlength="80" autocomplete="nickname"><p class="hint">Utilisez au moins 12 caractères pour votre mot de passe. Votre numéro reste privé. Connexion par numéro et mot de passe ; la vérification SMS n’est pas encore activée.</p></div>
 <div class="actions"><button id="authSubmit" type="submit">Se connecter</button><button type="button" id="switchAuth" class="secondary">Créer un compte</button></div></form></div>
 <div id="signedIn" hidden><p id="greeting"></p><button id="logout" class="secondary" type="button">Se déconnecter</button></div></section>
 <section id="contribution"><h2>Proposer un prix</h2><form id="contributionForm">
