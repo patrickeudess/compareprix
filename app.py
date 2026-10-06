@@ -6,7 +6,8 @@ from datetime import datetime
 import secrets
 
 import db
-from pricing import freshness
+from pricing import freshness, enrich_results
+from uploads import MAX_IMAGE_BYTES, detect_image_extension
 from ratelimit import SlidingWindowLimiter
 
 app = Flask(__name__, static_folder='static')
@@ -19,7 +20,7 @@ db.init_db()
 FEEDBACK_LIMITER = SlidingWindowLimiter(
     int(os.environ.get('COMPAREPRIX_FEEDBACK_LIMIT', '10')),
     int(os.environ.get('COMPAREPRIX_FEEDBACK_WINDOW', '3600')))
-MAX_FEEDBACK_PHOTO_BYTES = 5 * 1024 * 1024
+MAX_FEEDBACK_PHOTO_BYTES = MAX_IMAGE_BYTES
 ALLOWED_FEEDBACK_STATUSES = {'pending_review', 'approved', 'rejected', 'in_progress'}
 app.config['MAX_CONTENT_LENGTH'] = 6 * 1024 * 1024
 
@@ -47,6 +48,10 @@ def with_freshness(article):
     level, age = freshness(article)
     return {**article, 'fraicheur': level, 'age_jours': age}
 
+def present(articles):
+    """Prépare des articles pour l'API : fraîcheur, prix unitaire, meilleur prix, prix aberrants."""
+    return enrich_results([with_freshness(a) for a in articles])
+
 @app.route('/')
 def index():
     """Page d'accueil avec le formulaire de recherche"""
@@ -60,19 +65,18 @@ def search_articles():
     if not search_term:
         return jsonify({'error': 'Veuillez entrer un terme de recherche'})
     
-    results = [with_freshness(a) for a in db.list_current(search_term)]
-    return jsonify({'results': results})
+    return jsonify({'results': present(db.list_current(search_term))})
 
 @app.route('/api/articles')
 def get_all_articles():
     """API pour récupérer tous les articles (pour debug)"""
     articles = load_articles()
-    return jsonify([with_freshness(a) for a in articles])
+    return jsonify(present(articles))
 
 @app.route('/api/articles/<article_name>')
 def get_article(article_name):
     """API pour récupérer un article spécifique"""
-    return jsonify([with_freshness(a) for a in db.list_current(article_name)])
+    return jsonify(present(db.list_current(article_name)))
 
 @app.route('/api/history/<path:article_name>')
 def get_price_history(article_name):
@@ -116,17 +120,17 @@ def get_stats():
 @app.route('/api/export/<format>')
 def export_data(format):
     """API pour exporter les données"""
-    articles = load_articles()
+    articles = present(load_articles())
     
     if format == 'json':
-        return jsonify([with_freshness(a) for a in articles])
+        return jsonify(articles)
     elif format == 'csv':
         import csv
         from io import StringIO
         
         output = StringIO()
         writer = csv.writer(output)
-        writer.writerow(['Article', 'Supermarché', 'Prix (FCFA)', 'Unité', 'Date relevé', 'Source', 'Statut', 'URL', 'Image URL'])
+        writer.writerow(['Article', 'Supermarché', 'Prix (FCFA)', 'Unité', 'Prix unitaire', 'Unité de base', 'Date relevé', 'Source', 'Statut', 'URL', 'Image URL'])
         
         for article in articles:
             writer.writerow([
@@ -134,6 +138,8 @@ def export_data(format):
                 article['supermarche'],
                 article['prix'],
                 article.get('unite', 'unité'),
+                article.get('prix_unitaire') if article.get('prix_unitaire') is not None else '',
+                article.get('unite_base') or '',
                 article.get('date_releve') or '',
                 article.get('source', ''),
                 article.get('statut', ''),
@@ -197,28 +203,23 @@ def submit_feedback():
         if current_price_value < 0 or new_price_value < 0:
             return jsonify({'status': 'error', 'message': 'Les prix doivent être positifs'}), 400
         
-        # Traitement de la photo si présente
+        # Photo facultative : validée sur son CONTENU (octets de signature), pas sur son nom
         photo_path = None
-        if 'photo' in request.files:
-            photo = request.files['photo']
-            if photo and photo.filename:
-                # Vérifier le type de fichier
-                allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
-                if '.' in photo.filename and photo.filename.rsplit('.', 1)[1].lower() in allowed_extensions:
-                    # Créer le dossier pour les photos si nécessaire
-                    os.makedirs('data/user_photos', exist_ok=True)
-                    
-                    photo.stream.seek(0, os.SEEK_END)
-                    photo_size = photo.stream.tell()
-                    photo.stream.seek(0)
-                    if photo_size > MAX_FEEDBACK_PHOTO_BYTES:
-                        return jsonify({'status': 'error', 'message': 'La photo ne doit pas dépasser 5 Mo'}), 400
-                    extension = photo.filename.rsplit('.', 1)[1].lower()
-                    filename = f"feedback_{secrets.token_hex(16)}.{extension}"
-                    photo_path = os.path.join('data/user_photos', filename)
-                    
-                    # Sauvegarder la photo
-                    photo.save(photo_path)
+        photo = request.files.get('photo')
+        if photo and photo.filename:
+            header = photo.stream.read(16)
+            photo.stream.seek(0, os.SEEK_END)
+            photo_size = photo.stream.tell()
+            photo.stream.seek(0)
+            extension = detect_image_extension(header)
+            if extension is None:
+                return jsonify({'status': 'error', 'message': 'La photo doit être une image PNG, JPEG ou GIF valide'}), 400
+            if photo_size > MAX_FEEDBACK_PHOTO_BYTES:
+                return jsonify({'status': 'error', 'message': 'La photo ne doit pas dépasser 5 Mo'}), 400
+            os.makedirs('data/user_photos', exist_ok=True)
+            # Nom aléatoire + extension déduite du contenu : le nom envoyé par le client est ignoré
+            photo_path = os.path.join('data/user_photos', f"feedback_{secrets.token_hex(16)}.{extension}")
+            photo.save(photo_path)
         
         # Créer l'entrée de feedback
         feedback_entry = {

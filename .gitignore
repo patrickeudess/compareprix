@@ -145,3 +145,4 @@ data/articles.json
 data/compareprix.db
 data/compareprix.db-*
 data/backup_compareprix_*.db
+data/user_photos/

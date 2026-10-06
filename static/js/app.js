@@ -97,7 +97,7 @@ function exportResults(format = 'json') {
 }
 
 function convertToCSV(data) {
-    const headers = ['Article', 'Supermarché', 'Prix (FCFA)', 'Unité', 'Date relevé', 'Source', 'URL'];
+    const headers = ['Article', 'Supermarché', 'Prix (FCFA)', 'Unité', 'Prix unitaire', 'Unité de base', 'Date relevé', 'Source', 'URL'];
     const csvRows = [headers.join(',')];
     
     data.forEach(item => {
@@ -106,6 +106,8 @@ function convertToCSV(data) {
             `"${item.supermarche}"`,
             item.prix,
             `"${item.unite}"`,
+            item.prix_unitaire ?? '',
+            `"${item.unite_base || ''}"`,
             `"${item.date_releve || ''}"`,
             `"${item.source || ''}"`,
             `"${item.url || ''}"`

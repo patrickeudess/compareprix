@@ -671,6 +671,7 @@
         }
 
         .data-warning { background: #fff3cd; color: #664d03; padding: 10px 15px; border-radius: 8px; margin: 10px 0; font-size: 0.9em; }
+        .unit-price-cell { white-space: nowrap; }
         .fresh-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; white-space: nowrap; }
         .fresh-ok { background: #d1e7dd; color: #0f5132; }
         .fresh-stale { background: #fff3cd; color: #664d03; }
@@ -2071,6 +2072,7 @@
                             <th>Article</th>
                             <th>Supermarché</th>
                             <th>Prix</th>
+                            <th>Prix unitaire</th>
                             <th>Unité</th>
                             <th>Relevé</th>
                             <th>Actions</th>
@@ -2080,7 +2082,8 @@
             `;
 
             results.forEach(article => {
-                const isBestPrice = article.prix === minPrice;
+                // Meilleur prix = prix UNITAIRE le plus bas (kg/L) ; repli sur le prix brut si non calculable
+                const isBestPrice = article.prix_unitaire != null ? article.meilleur_prix : article.prix === minPrice;
                 const rowClass = isBestPrice ? 'best-price' : '';
                 const imageUrl = safeUrl(article.image_url);
                 const productUrl = safeUrl(article.url);
@@ -2095,7 +2098,8 @@
                             <div class="supermarket-logo">${escapeHtml(String(article.supermarche).charAt(0))}</div>
                             <span class="supermarket-name">${escapeHtml(article.supermarche)}</span>
                         </td>
-                        <td class="price-cell">${escapeHtml(article.prix)} FCFA</td>
+                        <td class="price-cell">${escapeHtml(article.prix)} FCFA${anomalyBadge(article)}</td>
+                        <td class="unit-price-cell">${unitPriceCell(article)}</td>
                         <td class="unit-cell">${escapeHtml(article.unite || 'unité')}</td>
                         <td class="freshness-cell">${freshnessBadge(article)}</td>
                         <td class="actions-cell">
@@ -2122,6 +2126,19 @@
                 '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
             }[c]));
         }
+        // Prix ramené au kg / L / unité ; le titre précise d'où vient la quantité
+        function unitPriceCell(article) {
+            if (article.prix_unitaire == null) return '<span class="fresh-badge fresh-unknown" title="Quantité non reconnue : comparaison impossible">—</span>';
+            const origin = article.origine_unite === 'nom' ? 'quantité lue dans le nom' : 'unité déclarée';
+            return `<span title="${escapeHtml(origin)}">${escapeHtml(Math.round(article.prix_unitaire))} FCFA/${escapeHtml(article.unite_base)}</span>`;
+        }
+        // Prix éloigné de la médiane des magasins (seuil : config qualité, 20 % par défaut)
+        function anomalyBadge(article) {
+            if (!article.anomalie) return '';
+            const sign = article.anomalie.ecart_pct > 0 ? '+' : '';
+            const tip = `Médiane des magasins : ${Math.round(article.anomalie.mediane)} FCFA/${article.unite_base}. À vérifier.`;
+            return ` <span class="fresh-badge fresh-stale" title="${escapeHtml(tip)}">⚠️ ${escapeHtml(sign + article.anomalie.ecart_pct)} %</span>`;
+        }
         // Badge de fraîcheur du relevé (réponse de l'API : fraicheur + age_jours)
         function freshnessBadge(article) {
             switch (article.fraicheur) {
@@ -2133,6 +2150,7 @@
         }
         // N'autorise que http(s) pour les liens/images (bloque javascript:, data:, etc.)
         function safeUrl(value) {
+            if (value == null || String(value).trim() === '') return '';  // pas de lien => pas de bouton
             try {
                 const u = new URL(String(value ?? ''), window.location.origin);
                 return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : '';

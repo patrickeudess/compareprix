@@ -208,3 +208,14 @@ L'import est « tout ou rien » : une ligne invalide annule tout et son numéro 
 - Les anciens outils (`data_collection.py`, `validation_tool.py`) écrivent encore dans les JSON : lancez ensuite `python migrate_to_sqlite.py` (idempotent) pour synchroniser la base.
 - Scraping puis import : `python scraper_jumia_v2.py && python merge_data.py`.
 - Tests : `python -m unittest test_pricing test_db -v`.
+
+## ⚖️ Prix unitaire et prix aberrants
+
+- **Prix unitaire** (FCFA/kg, FCFA/L ou FCFA/unité) pour comparer des conditionnements différents. Règles, dans l'ordre :
+  1. le nom contient une quantité (`Riz 5kg`, `Lait 750ml`, `Eau 6x1,5L`, `Coca 33cl x6`) → le prix est celui du **conditionnement** : prix ÷ quantité ;
+  2. sinon, l'`unite` `kg/g/L/cl/ml` signifie que le prix est **déjà** rapporté à cette unité (anciennes données) ;
+  3. les produits `jumia` sans quantité dans le nom n'ont **pas** de prix unitaire (l'unité y est devinée par mots-clés, donc non fiable) ; `lot` n'est pas comparable.
+  Le 🏆 « meilleur prix » désigne le prix unitaire le plus bas par unité de base (kg et L sont comparés séparément).
+- **Prix aberrant** ⚠️ : prix unitaire éloigné de plus de `max_deviation_percent` (20 % dans `config/collection_config.json`) de la **médiane** des magasins pour le même nom d'article, avec au moins **3 magasins** (une médiane sur 2 points ne désigne aucun « mauvais » prix). Un signal à vérifier, pas un rejet.
+- **Photos de signalement** : le type est vérifié sur le **contenu** (PNG, JPEG, GIF), pas sur le nom ; l'extension enregistrée vient du contenu ; max 5 Mo ; un fichier invalide est refusé (400).
+- Tests : `python -m unittest test_unit_price test_pricing test_db -v`.
