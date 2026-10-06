@@ -30,12 +30,16 @@ def is_feedback_admin():
 def admin_auth_error():
     return jsonify({'status': 'error', 'message': 'Authentification administrateur requise'}), 401
 
-def load_articles():
+def load_manual_articles():
     """Charge les données des articles depuis le fichier JSON"""
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, 'r', encoding='utf-8') as f:
             return json.load(f)
     return []
+
+def load_articles():
+    articles = [dict(value, source='Prix sans date', date_releve=None) for value in load_manual_articles()]
+    return articles + load_community_prices()
 
 def save_articles(articles):
     """Sauvegarde les données de manière atomique pour préserver le fichier en cas d'erreur."""
@@ -104,7 +108,7 @@ def manage_articles():
         return admin_auth_error()
     if request.method == 'GET':
         try:
-            return jsonify({'status': 'success', 'articles': load_articles()})
+            return jsonify({'status': 'success', 'articles': load_manual_articles()})
         except Exception:
             app.logger.exception('Erreur lors de la lecture des articles')
             return jsonify({'status': 'error', 'message': 'Erreur lors de la lecture des prix'}), 500
@@ -244,98 +248,7 @@ def static_files(filename):
 
 @app.route('/submit_feedback', methods=['POST'])
 def submit_feedback():
-    """Traite les signalements d'utilisateurs"""
-    try:
-        # Récupérer les données du formulaire
-        product_name = request.form.get('product_name', '').strip()
-        supermarket = request.form.get('supermarket', '').strip()
-        current_price = request.form.get('current_price', '').strip()
-        new_price = request.form.get('new_price', '').strip()
-        feedback_type = request.form.get('feedback_type', '').strip()
-        user_comment = request.form.get('user_comment', '').strip()
-        user_name = request.form.get('user_name', '').strip()
-        user_email = request.form.get('user_email', '').strip()
-        
-        # Valider les champs et les tailles avant de traiter le signalement.
-        if not all([product_name, supermarket, current_price, new_price, feedback_type]):
-            return jsonify({
-                'status': 'error',
-                'message': 'Tous les champs obligatoires doivent être remplis'
-            }), 400
-        if len(product_name) > 200 or len(supermarket) > 120 or len(feedback_type) > 40 or len(user_comment) > 2000 or len(user_name) > 120 or len(user_email) > 254:
-            return jsonify({'status': 'error', 'message': 'Un ou plusieurs champs dépassent la longueur autorisée'}), 400
-        try:
-            current_price_value = int(current_price)
-            new_price_value = int(new_price)
-        except (TypeError, ValueError):
-            return jsonify({'status': 'error', 'message': 'Les prix doivent être des nombres entiers positifs'}), 400
-        if current_price_value < 0 or new_price_value < 0:
-            return jsonify({'status': 'error', 'message': 'Les prix doivent être positifs'}), 400
-        
-        # Traitement de la photo si présente
-        photo_path = None
-        if 'photo' in request.files:
-            photo = request.files['photo']
-            if photo and photo.filename:
-                # Vérifier le type de fichier
-                allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
-                if '.' in photo.filename and photo.filename.rsplit('.', 1)[1].lower() in allowed_extensions:
-                    # Créer le dossier pour les photos si nécessaire
-                    os.makedirs('data/user_photos', exist_ok=True)
-                    
-                    photo.stream.seek(0, os.SEEK_END)
-                    photo_size = photo.stream.tell()
-                    photo.stream.seek(0)
-                    if photo_size > MAX_FEEDBACK_PHOTO_BYTES:
-                        return jsonify({'status': 'error', 'message': 'La photo ne doit pas dépasser 5 Mo'}), 400
-                    extension = photo.filename.rsplit('.', 1)[1].lower()
-                    filename = f"feedback_{secrets.token_hex(16)}.{extension}"
-                    photo_path = os.path.join('data/user_photos', filename)
-                    
-                    # Sauvegarder la photo
-                    photo.save(photo_path)
-        
-        # Créer l'entrée de feedback
-        feedback_entry = {
-            'id': generate_feedback_id(),
-            'timestamp': datetime.now().isoformat(),
-            'date': datetime.now().strftime('%Y-%m-%d'),
-            'product_name': product_name,
-            'supermarket': supermarket,
-            'current_price': current_price_value,
-            'new_price': new_price_value,
-            'price_difference': new_price_value - current_price_value,
-            'feedback_type': feedback_type,
-            'user_comment': user_comment,
-            'user_name': user_name or 'Anonyme',
-            'user_email': user_email,
-            'photo_path': photo_path,
-            'status': 'pending_review',
-            'reviewed_by': None,
-            'review_date': None,
-            'review_notes': None
-        }
-        
-        # Sauvegarder le feedback
-        save_feedback(feedback_entry)
-        
-        # Envoyer une notification à l'équipe (optionnel)
-        send_feedback_notification(feedback_entry)
-        
-        return jsonify({
-            'status': 'success',
-            'message': 'Signalement envoyé avec succès !',
-            'feedback_id': feedback_entry['id']
-        })
-        
-    except RequestEntityTooLarge:
-        return jsonify({'status': 'error', 'message': 'La requête dépasse la taille maximale autorisée'}), 413
-    except Exception as e:
-        app.logger.exception('Erreur lors du traitement du signalement')
-        return jsonify({
-            'status': 'error',
-            'message': 'Erreur lors du traitement du signalement'
-        }), 500
+    return jsonify({'message': 'Utilisez la page Proposer un prix avec votre compte contributeur.'}), 410
 
 @app.route('/api/feedback', methods=['GET'])
 def get_feedback():
@@ -454,6 +367,9 @@ def send_feedback_notification(feedback_entry):
     if feedback_entry['photo_path']:
         print(f"   - Photo: {feedback_entry['photo_path']}")
 
+from collaboration import register_collaboration
+load_community_prices = register_collaboration(app, is_feedback_admin)
+
 if __name__ == '__main__':
     # Créer des données d'exemple si le fichier n'existe pas
     if not os.path.exists(DATA_FILE):
@@ -477,3 +393,5 @@ if __name__ == '__main__':
         save_articles(sample_data)
     
     app.run(debug=os.environ.get('FLASK_DEBUG', '').lower() == 'true', host='0.0.0.0', port=int(os.environ.get('PORT', '5000')))
+
+
