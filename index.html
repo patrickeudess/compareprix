@@ -12,7 +12,7 @@
 <body>
 <main>
 <header><img src="./static/compareprix-mark.svg" alt=""><h1>ComparePrix</h1></header>
-<p class="intro">Recherchez un produit et comparez les prix affichés en FCFA.</p>
+<nav style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px"><a href="./contribuer.html">Proposer un prix</a><a href="./compte.html">Mon compte</a></nav><p class="intro">Recherchez un produit et comparez les prix affichés en FCFA.</p>
 <section class="search-panel" aria-label="Recherche de prix">
 <form id="searchForm"><label for="searchInput">Quel produit cherchez-vous ?</label><div class="search-form"><input id="searchInput" type="search" maxlength="200" placeholder="Ex. riz, huile, lait" required><button class="search-btn" type="submit">Comparer</button></div></form>
 <div class="suggestions" aria-label="Exemples de recherche"><button type="button" data-search="Riz">Riz</button><button type="button" data-search="Huile">Huile</button><button type="button" data-search="Lait">Lait</button><button type="button" data-search="Pain">Pain</button></div>
@@ -27,3 +27,6 @@
 </main>
 <script src="./static/compareprix.js"></script>
 </body></html>
+
+
+
