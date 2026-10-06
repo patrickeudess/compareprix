@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ComparePrix - Comparateur de prix</title>
+    <link rel="icon" type="image/svg+xml" href="./static/compareprix-mark.svg">
     <style>
         :root {
             --primary-color: #667eea;
@@ -1933,7 +1934,23 @@
                 table-layout: auto;
             }
         }
-</style>
+
+        .hero-text h1 {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .brand-mark {
+            width: 58px;
+            height: 58px;
+            flex: 0 0 auto;
+            filter: drop-shadow(0 4px 8px rgba(9, 45, 31, 0.18));
+        }
+        @media (max-width: 640px) {
+            .hero-text h1 { gap: 10px; }
+            .brand-mark { width: 46px; height: 46px; }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -1941,7 +1958,7 @@
         <div class="hero-section">
             <div class="hero-content">
                 <div class="hero-text">
-                    <h1>ComparePrix</h1>
+                    <h1><img class="brand-mark" src="./static/compareprix-mark.svg" alt="" aria-hidden="true">ComparePrix</h1>
                     <p class="hero-subtitle">Comparez intelligemment, économisez intelligemment !</p>
                     <p class="hero-description">
                         Découvrez les meilleurs prix de vos produits préférés dans les supermarchés de Côte d'Ivoire. 
