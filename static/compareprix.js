@@ -25,7 +25,7 @@ if(Number.isFinite(row.prix_unitaire)){const normalized=document.createElement('
 try{const url=new URL(row.url);if(['https:','http:'].includes(url.protocol)&&!url.pathname.includes('example')){const link=document.createElement('a');link.href=url.href;link.target='_blank';link.rel='noopener noreferrer';link.className='product-link';link.textContent='Voir le produit';card.append(link);}}catch{}
 const actions=document.createElement('div');actions.className='offer-actions';
 const report=document.createElement('button');report.type='button';report.textContent='Signaler une erreur';report.addEventListener('click',()=>openReport(row));actions.append(report);
-const update=document.createElement('a');const target=new URL('./contribuer.html',location.href);target.searchParams.set('article',row.article);target.searchParams.set('store',row.supermarche);target.searchParams.set('format',row.unite||'');target.searchParams.set('location',row.lieu||'');target.hash='contribution';update.href=target.href;update.textContent='Partager un prix actualisé';actions.append(update);card.append(actions);
+const update=document.createElement('a');const target=new URL('./compte.html',location.href);target.searchParams.set('article',row.article);target.searchParams.set('store',row.supermarche);target.searchParams.set('format',row.unite||'');target.searchParams.set('location',row.lieu||'');target.searchParams.set('intent','update');target.hash='account';update.href=target.href;update.textContent='Partager un prix actualisé';actions.append(update);card.append(actions);
 content.append(card);
 });
 }
