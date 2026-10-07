@@ -179,12 +179,12 @@ def register_collaboration(app, is_admin):
             count = attempt['count'] + 1 if attempt and attempt['until_at'] > timestamp else 1
             conn.execute('INSERT OR REPLACE INTO login_attempts VALUES (?,?,?)', (identity,count,timestamp+900))
         if action == 'register':
-            if len(password) < 12 or not name.strip() or len(name.strip()) > 80:
-                return error('Indiquez un pseudo et un mot de passe de 12 caractères minimum.')
+            if len(password) < 12 or len(name.strip()) > 80:
+                return error('Choisissez un mot de passe de 12 caractères minimum et un pseudo de 80 caractères maximum.')
             try:
                 with db() as conn:
                     cursor = conn.execute('INSERT INTO users(email,phone,name,password_hash,created_at) VALUES (?,?,?,?,?)',
-                        ('phone:'+phone,phone,name.strip(),generate_password_hash(password),now()))
+                        ('phone:'+phone,phone,name.strip() or 'Contributeur '+secrets.token_hex(3),generate_password_hash(password),now()))
                     uid = cursor.lastrowid
             except sqlite3.IntegrityError:
                 return error('Ce numéro est déjà utilisé. Essayez de vous connecter.', 409)
