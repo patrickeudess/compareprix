@@ -9,7 +9,7 @@ const response=await fetch(url,{...options,headers:{'X-CSRF-Token':csrf,...optio
 let data;try{data=await response.json();}catch{throw new Error('Les comptes et contributions nécessitent la version serveur de ComparePrix.');}
 if(!response.ok)throw new Error(data.message||'La demande a échoué.');return data;
 }
-function displayAccount(data){csrf=data.csrf;currentUser=data.user;byId('signedIn').hidden=!currentUser;byId('signedOut').hidden=!!currentUser;if(currentUser){byId('greeting').textContent='Bonjour '+currentUser.name;byId('password').value='';}loadHistory();}
+function displayAccount(data){csrf=data.csrf;currentUser=data.user;byId('signedIn').hidden=!currentUser;byId('signedOut').hidden=!!currentUser;byId('contribution').hidden=!currentUser;document.querySelector('.account-layout').classList.toggle('account-first',!currentUser);if(currentUser){byId('greeting').textContent='Bonjour '+currentUser.name;byId('password').value='';}loadHistory();}
 async function loadHistory(){
 if(!currentUser){byId('historyRows').textContent='Connectez-vous pour suivre vos relevés.';byId('points').textContent='';return;}
 try{
@@ -47,7 +47,7 @@ byId('send').disabled=true;
 try{const data=await api('/api/contributions',{method:'POST',body:new FormData(form)});tell(data.message);form.reset();try{localStorage.removeItem(draftKey);}catch{}await loadHistory();byId('history').scrollIntoView({behavior:'smooth'});}catch(error){tell(error.message);}finally{byId('send').disabled=false;}
 });
 if(document.body.dataset.preview==='true'){
-tell('Cette version permet de découvrir ComparePrix et de préparer un relevé. La création de compte et l’envoi de prix ne sont pas encore disponibles en ligne.');
+tell('La création de compte et l’envoi de prix ne sont pas encore disponibles sur cette démonstration en ligne.');
 byId('authForm').querySelectorAll('input,button').forEach(field=>field.disabled=true);
 byId('send').disabled=true;
 }else{
@@ -65,3 +65,9 @@ const format=(incoming.get('format')||'').match(/^\s*(?:(\d+(?:[.,]\d+)?)\s*)?(k
 if(format){byId('quantity').value=(format[1]||'1').replace(',','.');byId('unit').value=format[2];}
 byId('price').value='';byId('photo').value='';saveDraft();
 }
+
+document.querySelectorAll('a[href="#contribution"]').forEach(link=>link.addEventListener('click',event=>{if(!currentUser){event.preventDefault();byId('account').scrollIntoView({behavior:'smooth'});tell('Créez votre compte ou connectez-vous avant de renseigner le prix.');}}));
+if(new URLSearchParams(location.search).get('intent')==='update'){
+byId('switchAuth').click();
+}
+document.querySelector('.account-layout').classList.toggle('account-first',!currentUser);
