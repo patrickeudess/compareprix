@@ -31,6 +31,8 @@ jobs:
           cache: pip
           cache-dependency-path: requirements*.txt
       - run: pip install -r requirements-dev.txt
+      - name: Accessibilité du site statique (CSS et HTML, sans navigateur)
+        run: python -W error::ResourceWarning -m unittest test_site_a11y -v
       - name: Lint (erreurs et pyflakes)
         run: ruff check .
       - name: Tests unitaires
