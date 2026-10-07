@@ -55,3 +55,13 @@ api('/api/session').then(data=>{online=true;displayAccount(data);}).catch(error=
 }
 
 
+
+const incoming=new URLSearchParams(location.search);
+if(incoming.has('article')){
+byId('article').value=incoming.get('article').slice(0,200);
+byId('store').value=(incoming.get('store')||'').slice(0,120);
+byId('location').value=(incoming.get('location')||'').slice(0,200);
+const format=(incoming.get('format')||'').match(/^\s*(?:(\d+(?:[.,]\d+)?)\s*)?(kg|g|ml|L|pièce)\s*$/);
+if(format){byId('quantity').value=(format[1]||'1').replace(',','.');byId('unit').value=format[2];}
+byId('price').value='';byId('photo').value='';saveDraft();
+}
