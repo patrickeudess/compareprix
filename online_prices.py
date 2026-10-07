@@ -8,6 +8,10 @@ from datetime import datetime, timezone
 ROOT = Path(__file__).resolve().parent
 DB = ROOT / 'data' / 'online-prices.sqlite3'
 INTERVAL = 21600
+WORKER_LOCK = threading.Lock()
+def run_refresh(rows):
+    try: refresh(rows)
+    finally: WORKER_LOCK.release()
 class StructuredData(HTMLParser):
     def __init__(self):
         super().__init__(); self.capture=False; self.parts=[]; self.documents=[]
@@ -70,17 +74,19 @@ def refresh(rows):
         except sqlite3.Error: continue
 def apply_updates(rows):
     try:
-        with connect() as db: saved={r[0]:(r[1],r[2]) for r in db.execute('SELECT url,payload,state FROM prices')}
+        with connect() as db: saved={r[0]:(r[1],r[2],r[3]) for r in db.execute('SELECT url,payload,state,checked FROM prices')}
         for row in rows:
             if row.get('source')!='prix_internet': continue
-            payload,state=saved.get(row.get('url'),(None,'pending'))
+            payload,state,_=saved.get(row.get('url'),(None,'pending',0))
             previous=row.get('prix')
             if payload:
                 update=json.loads(payload); row.update(update)
                 if previous and row.get('prix_unitaire'):
                     row['prix_unitaire']=round(row['prix_unitaire']*row['prix']/previous,2)
             row['actualisation']=state
-        threading.Thread(target=refresh,args=([dict(r) for r in rows],),daemon=True).start()
+        due=any(r.get('source')=='prix_internet' and time.time()-saved.get(r.get('url'),(None,None,0))[2]>=INTERVAL for r in rows)
+        if due and WORKER_LOCK.acquire(blocking=False):
+            threading.Thread(target=run_refresh,args=([dict(r) for r in rows],),daemon=True).start()
     except sqlite3.Error: pass
     return rows
 if __name__=='__main__':
