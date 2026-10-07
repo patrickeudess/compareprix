@@ -3,9 +3,10 @@
 ComparePrix est une application **Flask** (Python + base SQLite). Elle a besoin d'un serveur qui exécute du Python et d'un
 disque qui conserve la base. **GitHub Pages ne peut pas l'héberger** : il ne sert que des fichiers statiques.
 
-## Ce que GitHub Pages peut faire : la démonstration
-Le fichier `index.html` à la racine est une **démonstration interactive avec des prix fictifs**, sans serveur. Il est généré par
-`python tools/build_demo.py` (à relancer après toute modification de l'interface) et publié par GitHub Pages.
+## Ce que GitHub Pages peut faire : une page publique statique
+Le fichier `index.html` à la racine est la **page publique** servie par GitHub Pages : elle est maintenue à part et ne dépend pas de
+l'application Flask. Pour une démonstration interactive complète avec des prix fictifs (recherche, prix unitaires, prix aberrants,
+sans serveur), `python tools/build_demo.py` écrit `build/demo.html` ; ce fichier n'est pas publié par défaut.
 
 Activer Pages (une fois, après avoir fusionné la branche dans `main`) :
 1. GitHub → dépôt → **Settings → Pages**.

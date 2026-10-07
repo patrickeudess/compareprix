@@ -62,4 +62,5 @@ Chargement depuis les sites officiels avec `referrerpolicy="no-referrer"` ; le n
 - Cap Sud : https://groupeprosuma.com/wp-content/uploads/2022/10/logo-cap-sud-mini.png
 - Casino : https://groupeprosuma.com/wp-content/uploads/2020/12/logo-casno-supermarche-mini.png
 
-Les marques identifient les enseignes sans partenariat commercial. Cap Sud est un centre commercial : préciser la boutique dans le lieu du relevé.
+- **GitHub Pages** n'héberge que des fichiers statiques : `index.html` à la racine est la page publique, maintenue à part. Il ne peut pas exécuter l'application Flask. `python tools/build_demo.py` génère en plus une démonstration interactive complète (prix fictifs) dans `build/demo.html`.
+- Pour l'application complète (recherche, administration, base de données) : voir **[DEPLOIEMENT.md](DEPLOIEMENT.md)** (VPS + Docker, PythonAnywhere).

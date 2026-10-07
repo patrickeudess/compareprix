@@ -141,10 +141,14 @@ Thumbs.db
 # Application specific
 data/articles.json
 
-# Données privées des contributeurs
-*.sqlite3
-*.sqlite3-*
-.session-secret
-proofs/
+# Base SQLite locale (générée) et ses sauvegardes
+data/compareprix.db
+data/compareprix.db-*
+data/backup_compareprix_*.db
 data/user_photos/
-data/user_feedback.json
+data/avant_import_*.db
+data/backups/
+data/backup.log
+
+# Sorties générées
+build/
