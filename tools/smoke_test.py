@@ -11,7 +11,6 @@ Code de sortie : 0 si tout est bon, 1 si au moins un contrôle échoue.
 """
 import json
 import os
-import re
 import ssl
 import sys
 import urllib.error
