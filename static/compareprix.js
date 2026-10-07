@@ -23,7 +23,7 @@ if(logo){const image=document.createElement('img');image.src=logo;image.alt='';i
 const name=document.createElement('span');name.textContent=row.supermarche;store.append(name);identity.append(store);
 const price=document.createElement('div');price.className='price';price.textContent=money.format(row.prix)+' FCFA';
 const unit=document.createElement('span');unit.className='unit';unit.textContent='Format : '+(row.unite||'unité');price.append(unit);card.append(details,price);
-const source=document.createElement('span');source.className='price-badge'+(row.date_releve?' dated':'');source.textContent=row.date_releve?'✓ Validé · '+row.date_releve:'◷ À confirmer';identity.append(source);const stock=document.createElement('p');stock.className='stock-badge '+(row.disponibilite==='available'?'available':row.disponibilite==='out_of_stock'?'out-of-stock':'unknown');stock.textContent=({available:'🟢 Disponible',out_of_stock:'🔴 Rupture de stock'})[row.disponibilite]||'⚪ Disponibilité inconnue';if(row.date_disponibilite)stock.textContent+=' · '+row.date_disponibilite;identity.append(stock);
+const source=document.createElement('span');source.className='price-badge'+(row.date_releve?' dated':'');source.textContent=row.statut==='donnee_exemple'||row.source==='exemple'?'Exemple':row.date_releve?'✓ Validé · '+row.date_releve:'◷ À confirmer';identity.append(source);const stock=document.createElement('p');stock.className='stock-badge '+(row.disponibilite==='available'?'available':row.disponibilite==='out_of_stock'?'out-of-stock':'unknown');stock.textContent=({available:'🟢 Disponible',out_of_stock:'🔴 Rupture de stock'})[row.disponibilite]||'⚪ Disponibilité inconnue';if(row.date_disponibilite)stock.textContent+=' · '+row.date_disponibilite;identity.append(stock);
 if(row.lieu){const place=document.createElement('p');place.className='offer-place';place.textContent='📍 '+row.lieu;identity.append(place);} 
 if(Number.isFinite(row.prix_unitaire)){const normalized=document.createElement('span');normalized.className='unit';normalized.textContent=money.format(row.prix_unitaire)+' FCFA / '+row.unite_reference;price.append(normalized);}
 try{const url=new URL(row.url);if(['https:','http:'].includes(url.protocol)&&!url.pathname.includes('example')){const link=document.createElement('a');link.href=url.href;link.target='_blank';link.rel='noopener noreferrer';link.className='product-link';link.textContent='Voir le produit';card.append(link);}}catch{}
@@ -35,7 +35,7 @@ content.append(card);
 });
 }
 async function search(){
-const term=input.value.trim();if(!term)return;
+const term=input.value.trim();
 const sequence=++searchSequence;status.textContent='Recherche en cours…';section.hidden=true;
 try{
 const response=await fetch(document.body.dataset.prices || './data/articles.json');if(!response.ok)throw new Error();
@@ -78,3 +78,7 @@ event.preventDefault();send.disabled=true;
 try{const response=await fetch('/api/reports',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':sessionToken},body:JSON.stringify({article:row.article,store:row.supermarche,reason:reason.value,comment:comment.value})});const data=await response.json();message.textContent=data.message;if(response.ok){reportForm.hidden=true;}else send.disabled=false;}catch{message.textContent='Envoi impossible. Réessayez.';send.disabled=false;}
 });
 }
+
+
+
+search();
