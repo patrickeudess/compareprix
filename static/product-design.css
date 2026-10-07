@@ -44,3 +44,32 @@ select{min-height:44px}
 /* Barre du panier : visible seulement quand le panier contient un article */
 .basket-dock[hidden]{display:none}
 body:has(.basket-dock[hidden]){padding-bottom:105px}
+
+/* === Design : hiérarchie des cartes d'offres, en-tête compact (guide UI/UX Pro Max : « Trust & Authority », Minimalism) ===
+   Le prix passe en premier plan, le meilleur prix est signalé, l'information secondaire est allégée. */
+.offer{display:flex;flex-direction:column;position:relative}
+.offer-details{align-items:flex-start}
+.offer h3{font-size:1.08rem;font-weight:750;line-height:1.3;margin:0 0 4px}
+.offer.is-best{border-color:#126445;box-shadow:0 0 0 1px #126445,0 10px 26px #12392814}
+.best-flag{display:inline-flex;align-items:center;gap:6px;background:#126445;color:#fff;font-size:12px;font-weight:700;line-height:1.4;border-radius:100px;padding:4px 11px;margin:0 0 8px}
+.best-flag::before{content:"";width:6px;height:6px;border-radius:50%;background:#e9b84a}
+.offer>.price{font-size:1.85rem;font-weight:800;line-height:1.15;color:#0d4f37;border-top:1px solid #edf2ea;padding-top:14px;align-items:baseline}
+.offer>.price .unit{font-size:.82rem;font-weight:500;color:#5c6c62}
+.offer>.price .unit:last-child{font-weight:650;color:#385445}
+.stock-badge.unknown{display:none}
+.offer-place{margin:4px 0}
+.offer-links{display:flex;flex-wrap:wrap;gap:4px 18px;align-items:center}
+.offer .source-link,.offer .product-link{color:#126445;font-size:.82rem;font-weight:650;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:1px}
+.offer .source-link::after{content:"\2197";margin-left:4px;font-size:.9em}
+.offer .source-link:hover,.offer .product-link:hover{color:#0d4f37;text-decoration-thickness:2px}
+.offer-actions{justify-content:flex-start;gap:10px}
+.offer-actions .basket-add{flex:1 1 140px;font-size:.9rem;border-radius:11px}
+.offer-actions button:not(.basket-add),.offer-actions a{color:#4d5f55}
+.results-bar h2{font-size:1.1rem;font-weight:750}
+@media(max-width:700px){
+.welcome{padding:22px 20px;margin:16px 0}
+.welcome h1,.welcome h2{font-size:clamp(1.55rem,7.4vw,1.9rem);margin-bottom:12px}
+.welcome .eyebrow{margin-bottom:10px}
+.offer>.price{font-size:1.65rem}
+}
+@media(max-width:440px){.search-filters{grid-template-columns:minmax(0,1fr)}}
