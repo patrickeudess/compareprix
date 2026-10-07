@@ -23,6 +23,9 @@ const unit=document.createElement('span');unit.className='unit';unit.textContent
 const source=document.createElement('p');source.className='unit';source.textContent=row.date_releve?row.source+' · Relevé le '+row.date_releve+' · '+row.lieu:(row.source||'Prix de démonstration')+' · À confirmer';details.append(source);
 if(Number.isFinite(row.prix_unitaire)){const normalized=document.createElement('span');normalized.className='unit';normalized.textContent=money.format(row.prix_unitaire)+' FCFA / '+row.unite_reference;price.append(normalized);}
 try{const url=new URL(row.url);if(['https:','http:'].includes(url.protocol)&&!url.pathname.includes('example')){const link=document.createElement('a');link.href=url.href;link.target='_blank';link.rel='noopener noreferrer';link.className='product-link';link.textContent='Voir le produit';card.append(link);}}catch{}
+const actions=document.createElement('div');actions.className='offer-actions';
+const report=document.createElement('button');report.type='button';report.textContent='Signaler une erreur';report.addEventListener('click',()=>openReport(row));actions.append(report);
+const update=document.createElement('a');const target=new URL('./contribuer.html',location.href);target.searchParams.set('article',row.article);target.searchParams.set('store',row.supermarche);target.searchParams.set('format',row.unite||'');target.searchParams.set('location',row.lieu||'');target.hash='contribution';update.href=target.href;update.textContent='Partager un prix actualisé';actions.append(update);card.append(actions);
 content.append(card);
 });
 }
@@ -43,3 +46,30 @@ form.addEventListener('submit',event=>{event.preventDefault();search();});
 document.querySelectorAll('[data-search]').forEach(button=>button.addEventListener('click',()=>{input.value=button.dataset.search;search();}));
 filter.addEventListener('change',render);
 
+
+function openReport(row){
+const dialog=document.createElement('dialog');dialog.className='report-dialog';
+const heading=document.createElement('h2');heading.textContent='Signaler une erreur';
+const context=document.createElement('p');context.textContent=row.article+' · '+row.supermarche;
+const message=document.createElement('p');message.setAttribute('role','status');message.setAttribute('aria-live','polite');
+const reportForm=document.createElement('form');
+const label=document.createElement('label');label.textContent='Quelle erreur avez-vous constatée ?';
+const reason=document.createElement('select');[['wrong_price','Prix incorrect'],['unavailable','Produit indisponible'],['wrong_format','Format incorrect'],['other','Autre erreur']].forEach(([value,text])=>reason.append(new Option(text,value)));label.append(reason);
+const commentLabel=document.createElement('label');commentLabel.textContent='Précisions (facultatives)';
+const comment=document.createElement('textarea');comment.maxLength=2000;commentLabel.append(comment);
+const send=document.createElement('button');send.type='submit';send.textContent='Envoyer le signalement';
+const close=document.createElement('button');close.type='button';close.textContent='Fermer';close.addEventListener('click',()=>dialog.close());
+reportForm.append(label,commentLabel,send);dialog.append(heading,context,reportForm,message,close);document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove());dialog.showModal();
+if(!document.body.dataset.prices){message.textContent='L’envoi des signalements n’est pas encore disponible sur cette version en ligne.';send.disabled=true;return;}
+let sessionToken='';
+send.disabled=true;
+fetch('/api/session').then(response=>{if(!response.ok)throw new Error();return response.json();}).then(data=>{
+if(!dialog.isConnected)return;
+sessionToken=data.csrf;
+if(data.user){send.disabled=false;}else{message.textContent='Connectez-vous pour envoyer un signalement. La consultation des prix reste libre.';const login=document.createElement('a');login.href='./compte.html';login.textContent='Se connecter ou créer un compte';dialog.append(login);}
+}).catch(()=>message.textContent='Connexion au serveur impossible. Réessayez plus tard.');
+reportForm.addEventListener('submit',async event=>{
+event.preventDefault();send.disabled=true;
+try{const response=await fetch('/api/reports',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':sessionToken},body:JSON.stringify({article:row.article,store:row.supermarche,reason:reason.value,comment:comment.value})});const data=await response.json();message.textContent=data.message;if(response.ok){reportForm.hidden=true;}else send.disabled=false;}catch{message.textContent='Envoi impossible. Réessayez.';send.disabled=false;}
+});
+}
