@@ -78,9 +78,10 @@ function options(id,values){byId(id).replaceChildren(...[...new Set(values.filte
 function updatePlaceSuggestions(){
 const city=normalizePlace(byId('city').value),district=normalizePlace(byId('district').value),store=normalizePlace(byId('store').value);
 options('cityOptions',[...(locationCatalog.cities||[]),...locationCatalog.locations.map(row=>row.city)]);
-options('districtOptions',locationCatalog.locations.filter(row=>normalizePlace(row.city)===city).map(row=>row.district));
+options('districtOptions',[...(locationCatalog.communesByCity?.[Object.keys(locationCatalog.communesByCity||{}).find(key=>normalizePlace(key)===city)]||locationCatalog.communes||[]),...locationCatalog.locations.filter(row=>normalizePlace(row.city)===city).map(row=>row.district)]);
 options('shopOptions',locationCatalog.locations.filter(row=>normalizePlace(row.city)===city&&normalizePlace(row.district)===district&&(!store||normalizePlace(row.store)===store)).map(row=>row.shop));
 byId('district').disabled=!city;byId('shop').disabled=!city||!district;
+byId('locationHelp').textContent=city && !Object.keys(locationCatalog.communesByCity||{}).some(key=>normalizePlace(key)===city) ? 'Choisissez la commune du lieu dans la liste nationale. Les boutiques proposées dépendent de votre sélection.' : 'Choisissez la ville, puis la commune et la boutique. Vous pouvez saisir une boutique absente de la liste.';
 byId('location').value=['city','district','shop'].map(key=>byId(key).value.trim()).filter(Boolean).join(' · ');
 }
 byId('city').addEventListener('input',()=>{byId('district').value='';byId('shop').value='';updatePlaceSuggestions();saveDraft();});
@@ -90,4 +91,4 @@ byId('shop').addEventListener('input',()=>{updatePlaceSuggestions();saveDraft();
 form.addEventListener('reset',()=>setTimeout(updatePlaceSuggestions,0));
 ['city','district','shop'].forEach(key=>{if(incoming.get(key))byId(key).value=incoming.get(key).slice(0,key==='city'?50:key==='district'?60:80);});
 updatePlaceSuggestions();
-fetch(document.body.dataset.preview==='true'?'./static/locations.json':'/api/locations').then(response=>{if(!response.ok)throw new Error();return response.json();}).then(data=>{if(Array.isArray(data.locations)){locationCatalog=data;updatePlaceSuggestions();}}).catch(()=>{byId('locationHelp').textContent='Les suggestions ne sont pas disponibles pour le moment. Saisissez la ville, le quartier et la boutique dans leurs champs séparés.';});
+fetch(document.body.dataset.preview==='true'?'./static/locations.json':'/api/locations').then(response=>{if(!response.ok)throw new Error();return response.json();}).then(data=>{if(Array.isArray(data.locations)){locationCatalog=data;updatePlaceSuggestions();}}).catch(()=>{byId('locationHelp').textContent='Les suggestions ne sont pas disponibles pour le moment. Saisissez la ville, la commune et la boutique dans leurs champs séparés.';});
