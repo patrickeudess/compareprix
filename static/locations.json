@@ -1,1 +1,1163 @@
-{"cities":["Abidjan"],"locations":[]}
+{
+  "cities": [
+    "Abengourou",
+    "Abidjan",
+    "Aboisso",
+    "Aboisso-Comoe",
+    "Abongoua",
+    "Aboude",
+    "Adaou",
+    "Adiaké",
+    "Adjouan",
+    "Adzopé",
+    "Afféry",
+    "Agboville",
+    "Agnibilékrou",
+    "Agou",
+    "Ahouanou",
+    "Akoboissue",
+    "Akoupé",
+    "Allosso2",
+    "Alépé",
+    "Amelekia",
+    "Ananda",
+    "Ananguie",
+    "Ande",
+    "Aniassue",
+    "Annepe",
+    "Anoumaba",
+    "Anyama",
+    "Arrah",
+    "Assie-Koumassi",
+    "Assikoi",
+    "Assinie-Mafia",
+    "Assuefry",
+    "Attiegouakro",
+    "Attobrou",
+    "Ayamé",
+    "Ayaou-Sokpa",
+    "Azaguié",
+    "Bacanda",
+    "Badikaha",
+    "Bagohouo",
+    "Bangolo",
+    "Banneu",
+    "Baya",
+    "Bayota",
+    "Bazra-Nattis",
+    "Becedi-Brignan",
+    "Becouefin",
+    "Bedy-Goazon",
+    "Begbessou",
+    "Biankouma",
+    "Bianouan",
+    "Bieby",
+    "Bin-Houyé",
+    "Bingerville",
+    "Blapleu",
+    "Blenimeouin",
+    "Blessegue",
+    "Bloléquin",
+    "Boahia",
+    "Bobi",
+    "Bocanda",
+    "Bodokro",
+    "Bogouine",
+    "Boguedia",
+    "Boli",
+    "Bondo",
+    "Bondoukou",
+    "Bongo",
+    "Bongouanou",
+    "Bonikro",
+    "Boniérédougou",
+    "Bonon",
+    "Bonoua",
+    "Booko",
+    "Boron",
+    "Botro",
+    "Bouaflé",
+    "Bouaké",
+    "Bouandougou",
+    "Bougou",
+    "Bouna",
+    "Boundiali",
+    "Brobo",
+    "Brofodoume",
+    "Buyo",
+    "Bédiala",
+    "Béoumi",
+    "Béttié",
+    "Cechi",
+    "Chiepo",
+    "Dabakala",
+    "Dabou",
+    "Dabouyo",
+    "Dahiri",
+    "Dairo-Didizo",
+    "Dakpadou",
+    "Daloa",
+    "Dame",
+    "Dananon",
+    "Danané",
+    "Danguira",
+    "Dania",
+    "Daoukro",
+    "Dapeoua",
+    "Diabo",
+    "Diamarakro",
+    "Diana-Sokourani",
+    "Dianra",
+    "Dianravillage",
+    "Diarabana",
+    "Diawala",
+    "Diboke",
+    "Didiévi",
+    "Didoko",
+    "Dieouzon",
+    "Dignago",
+    "Dikodougou",
+    "Dimbokro",
+    "Divo",
+    "Diégonéfla",
+    "Djebonoua",
+    "Djibrosso",
+    "Djidji",
+    "Djouroutou",
+    "Djèkanou",
+    "Doba",
+    "Dogbo",
+    "Doke",
+    "Domangbeu",
+    "Doropo",
+    "Dougroupalegnoa",
+    "Doukouyo",
+    "Duffrebo",
+    "Duékoué",
+    "Ebilassokro",
+    "Ettrokro",
+    "Facobly",
+    "Fadiadougou",
+    "Famienkro",
+    "Fengolo",
+    "Ferkessédougou",
+    "Foumbolo",
+    "Fresco",
+    "Fronan",
+    "Gabiadji",
+    "Gadouan",
+    "Gagnoa",
+    "Gagore",
+    "Galebre",
+    "Ganaoni",
+    "Gbagbam",
+    "Gbapleu",
+    "Gbeleban",
+    "Gboguhé",
+    "Gbolouville",
+    "Gbon",
+    "Gbongaha",
+    "Gbonné",
+    "Gohitafla",
+    "Gohouo-Zagna",
+    "Gomon",
+    "Gonate",
+    "Goudouko",
+    "Goulaleu",
+    "Goulia",
+    "Goumere",
+    "Grabo",
+    "Grand-Bassam",
+    "Grand-Béréby",
+    "Grand-Lahou",
+    "Grand-Morie",
+    "Grand-Zattry",
+    "Gregbeu",
+    "Grihiri",
+    "Guehiebly",
+    "Guepahouo",
+    "Guessabo",
+    "Guessiguie1&2",
+    "Guezon",
+    "Guibéroua",
+    "Guiembé",
+    "Guiglo",
+    "Guinglo-Tahouake",
+    "Guintéguéla",
+    "Guitry",
+    "Guéyo",
+    "Hiré",
+    "Iboguhe",
+    "Iriefla",
+    "Issia",
+    "Jacqueville",
+    "Kahin-Zarabaon",
+    "Kanakono",
+    "Kani",
+    "Kaniasso",
+    "Kanoroba",
+    "Kanzra",
+    "Kaouara",
+    "Karakoro",
+    "Kasséré",
+    "Katiali",
+    "Katiola",
+    "Katogo",
+    "Ketrobassam",
+    "Kiemou",
+    "Kokomian",
+    "Kokoumbo",
+    "Kolia",
+    "Kombolokoura",
+    "Komborodougou",
+    "Kong",
+    "Kongasso",
+    "Koni",
+    "Kononfla",
+    "Korhogo",
+    "Koro",
+    "Kossou",
+    "Kota",
+    "Kotobi",
+    "Kouakro",
+    "Kouassi-Datékro",
+    "Kouassi-Kouassikro",
+    "Kouetinfla",
+    "Kouibly",
+    "Koun-Fao",
+    "Kounahiri",
+    "Kouto",
+    "Kpouebo",
+    "Kregbe",
+    "Laoudiba",
+    "Lataha",
+    "Lauzoua",
+    "Liliyo",
+    "Lobakuya",
+    "Logoualé",
+    "Lolobo",
+    "Lopou",
+    "Loviguie1&2",
+    "Madinani",
+    "Maféré",
+    "Mahan",
+    "Mahapleu",
+    "Maminigui",
+    "Man",
+    "Mankono",
+    "Marabadjassa",
+    "Marandallah",
+    "Massala",
+    "Mayo",
+    "Medon",
+    "Meo",
+    "Minignan",
+    "Molonou",
+    "Morokro",
+    "Morondo",
+    "Méagui",
+    "M’Bahiakro",
+    "M’Batto",
+    "M’Bengué",
+    "N'Douffoukankro",
+    "N'Ganon",
+    "N'Gattakro",
+    "N'Guessankro",
+    "N'Zecrezessou",
+    "Nafoun",
+    "Nahio",
+    "Namane",
+    "Napié",
+    "Nassian",
+    "Niablé",
+    "Niakaramandougou",
+    "Niambezaria",
+    "Nidrou",
+    "Niemene",
+    "Niofoin",
+    "Nizahon(Nizahon1)",
+    "Niéllé",
+    "Noe",
+    "N’Douci",
+    "Odienné",
+    "Oghlwapo",
+    "Ogoudou",
+    "Okrouyo",
+    "Olodio",
+    "Oress-Krobou",
+    "Ouangolodougou",
+    "Ouaninou",
+    "Ouellé",
+    "Oumé",
+    "Oupoyo",
+    "Ouragahio",
+    "Ouyably-Gnondrou",
+    "Pakouabo",
+    "Papara",
+    "Pehe",
+    "Podiagouine",
+    "Prikro",
+    "Raviart",
+    "Rubino",
+    "Sago",
+    "Sakassou",
+    "Samatiguila",
+    "San Pedro",
+    "Sandégué",
+    "Sangouiné",
+    "Santa",
+    "Sapli-Sepingo",
+    "Sarhala",
+    "Sassandra",
+    "Satama-Sokoro",
+    "Satama-Sokoura",
+    "Saïoua",
+    "Seileu",
+    "Seitifla",
+    "Semien",
+    "Serihio",
+    "Sianhala",
+    "Siempurgo",
+    "Sifié",
+    "Sikensi",
+    "Sinfra",
+    "Sinématiali",
+    "Sipilou",
+    "Sirasso",
+    "Sokoro",
+    "Sominasse",
+    "Songon",
+    "Sorobango",
+    "Soubré",
+    "Séguelon",
+    "Séguéla",
+    "Taabo",
+    "Tabagne",
+    "Tabou",
+    "Tafiré",
+    "Tanda",
+    "Tanguelan",
+    "Tankesse",
+    "Taoudi",
+    "Tapeguia",
+    "Taï",
+    "Teapleu",
+    "Tengréla",
+    "Tiapoum",
+    "Tiassalé",
+    "Tiedio",
+    "Tienko",
+    "Tienkoikro",
+    "Timbe",
+    "Tinhou",
+    "Tioroniaradougou",
+    "Tiébissou",
+    "Tiémé",
+    "Tiémélékro",
+    "Tiéningboué",
+    "Tonla",
+    "Tortiya",
+    "Totrodrou",
+    "Touba",
+    "Tougbo",
+    "Toulépleu",
+    "Toumodi",
+    "Toumoukoro",
+    "Toupah",
+    "Transua",
+    "Téhini",
+    "Vavoua",
+    "Voueboufla",
+    "Worofla",
+    "Yakasse-Feyasse",
+    "Yakasse-Me",
+    "Yakassé-Attobrou",
+    "Yamoussoukro",
+    "Yaou",
+    "Yapleu",
+    "Yelleu",
+    "Yezimala",
+    "Yocoboue",
+    "Yopohue",
+    "Yorobodi",
+    "Yorodougou",
+    "Youndouo",
+    "Zagne",
+    "Zaguieta",
+    "Zaibo",
+    "Zaranou",
+    "Zeaglo",
+    "Zeo",
+    "Zikisso",
+    "Ziogouine",
+    "Zou",
+    "Zouan-Hounien",
+    "Zoukougbeu",
+    "Zuénoula"
+  ],
+  "communes": [
+    "Abengourou",
+    "Abobo",
+    "Aboisso",
+    "Adiaké",
+    "Adjamé",
+    "Adzopé",
+    "Afféry",
+    "Agboville",
+    "Agnibilékrou",
+    "Agou",
+    "Akoupé",
+    "Alépé",
+    "Anoumaba",
+    "Anyama",
+    "Arrah",
+    "Assinie",
+    "Assuéffry",
+    "Attécoubé",
+    "Attiegouakro",
+    "Ayamé",
+    "Azaguié",
+    "Bako",
+    "Bangolo",
+    "Bassawa",
+    "Bédiala",
+    "Béoumi",
+    "Béttié",
+    "Biankouma",
+    "Bin-Houyé",
+    "Bingerville",
+    "Bloléquin",
+    "Bocanda",
+    "Bodokro",
+    "Bondoukou",
+    "Bongouanou",
+    "Boniérédougou",
+    "Bonon",
+    "Bonoua",
+    "Booko",
+    "Borotou",
+    "Botro",
+    "Bouaflé",
+    "Bouaké",
+    "Bouna",
+    "Boundiali",
+    "Brobo",
+    "Buyo",
+    "Cocody",
+    "Dabakala",
+    "Dabou",
+    "Daloa",
+    "Danané",
+    "Daoukro",
+    "Diabo",
+    "Dianra",
+    "Diawala",
+    "Didiévi",
+    "Diégonéfla",
+    "Dikodougou",
+    "Dimbokro",
+    "Dioulatiédougou",
+    "Divo",
+    "Djebonoua",
+    "Djèkanou",
+    "Djibrosso",
+    "Doropo",
+    "Dualla",
+    "Duékoué",
+    "Ettrokro",
+    "Facobly",
+    "Ferkessédougou",
+    "Foumbolo",
+    "Fresco",
+    "Fronan",
+    "Gagnoa",
+    "Gbeleban",
+    "Gboguhé",
+    "Gbon",
+    "Gbonné",
+    "Gohitafla",
+    "Goulia",
+    "Grabo",
+    "Grand-Bassam",
+    "Grand-Béréby",
+    "Grand-Lahou",
+    "Grand-Zattry",
+    "Guéyo",
+    "Guibéroua",
+    "Guiembé",
+    "Guiglo",
+    "Guintéguéla",
+    "Guitry",
+    "Hiré",
+    "Issia",
+    "Jacqueville",
+    "Kanakono",
+    "Kani",
+    "Kaniasso",
+    "Karakoro",
+    "Kasséré",
+    "Katiola",
+    "Kokoumbo",
+    "Kolia",
+    "Komborodougou",
+    "Kong",
+    "Kongasso",
+    "Koonan",
+    "Korhogo",
+    "Koro",
+    "Kouassi-Datékro",
+    "Kouassi-Kouassikro",
+    "Kouibly",
+    "Koumassi",
+    "Koumbala",
+    "Koun-Fao",
+    "Kounahiri",
+    "Kouto",
+    "Lakota",
+    "Logoualé",
+    "M’Bahiakro",
+    "M’Batto",
+    "M’Bengué",
+    "Madinani",
+    "Maféré",
+    "Man",
+    "Mankono",
+    "Marcory",
+    "Massala",
+    "Mayo",
+    "Méagui",
+    "Minignan",
+    "Morondo",
+    "N’Douci",
+    "Napié",
+    "Nassian",
+    "Niablé",
+    "Niakaramandougou",
+    "Niéllé",
+    "Niofoin",
+    "Odienné",
+    "Ouangolodougou",
+    "Ouaninou",
+    "Ouellé",
+    "Oumé",
+    "Ouragahio",
+    "Plateau",
+    "Port-Bouët",
+    "Prikro",
+    "Rubino",
+    "Saïoua",
+    "Sakassou",
+    "Samatiguila",
+    "San Pedro",
+    "Sandégué",
+    "Sangouiné",
+    "Sarhala",
+    "Sassandra",
+    "Satama-Sokoro",
+    "Satama-Sokoura",
+    "Séguéla",
+    "Séguelon",
+    "Seydougou",
+    "Sifié",
+    "Sikensi",
+    "Sinématiali",
+    "Sinfra",
+    "Sipilou",
+    "Sirasso",
+    "Songon",
+    "Soubré",
+    "Taabo",
+    "Tabou",
+    "Tafiré",
+    "Taï",
+    "Tanda",
+    "Téhini",
+    "Tengréla",
+    "Tiapoum",
+    "Tiassalé",
+    "Tié-N’Diekro",
+    "Tiébissou",
+    "Tiémé",
+    "Tiémélékro",
+    "Tiéningboué",
+    "Tienko",
+    "Tioroniaradougou",
+    "Tortiya",
+    "Touba",
+    "Toulépleu",
+    "Toumodi",
+    "Transua",
+    "Treichville",
+    "Vavoua",
+    "Worofla",
+    "Yakassé-Attobrou",
+    "Yamoussoukro",
+    "Yopougon",
+    "Zikisso",
+    "Zouan-Hounien",
+    "Zoukougbeu",
+    "Zuénoula"
+  ],
+  "communesByCity": {
+    "Abengourou": [
+      "Abengourou"
+    ],
+    "Aboisso": [
+      "Aboisso"
+    ],
+    "Adiaké": [
+      "Adiaké"
+    ],
+    "Adzopé": [
+      "Adzopé"
+    ],
+    "Afféry": [
+      "Afféry"
+    ],
+    "Agboville": [
+      "Agboville"
+    ],
+    "Agnibilékrou": [
+      "Agnibilékrou"
+    ],
+    "Agou": [
+      "Agou"
+    ],
+    "Akoupé": [
+      "Akoupé"
+    ],
+    "Alépé": [
+      "Alépé"
+    ],
+    "Anoumaba": [
+      "Anoumaba"
+    ],
+    "Anyama": [
+      "Anyama"
+    ],
+    "Arrah": [
+      "Arrah"
+    ],
+    "Attiegouakro": [
+      "Attiegouakro"
+    ],
+    "Ayamé": [
+      "Ayamé"
+    ],
+    "Azaguié": [
+      "Azaguié"
+    ],
+    "Bangolo": [
+      "Bangolo"
+    ],
+    "Biankouma": [
+      "Biankouma"
+    ],
+    "Bin-Houyé": [
+      "Bin-Houyé"
+    ],
+    "Bingerville": [
+      "Bingerville"
+    ],
+    "Bloléquin": [
+      "Bloléquin"
+    ],
+    "Bocanda": [
+      "Bocanda"
+    ],
+    "Bodokro": [
+      "Bodokro"
+    ],
+    "Bondoukou": [
+      "Bondoukou"
+    ],
+    "Bongouanou": [
+      "Bongouanou"
+    ],
+    "Boniérédougou": [
+      "Boniérédougou"
+    ],
+    "Bonon": [
+      "Bonon"
+    ],
+    "Bonoua": [
+      "Bonoua"
+    ],
+    "Booko": [
+      "Booko"
+    ],
+    "Botro": [
+      "Botro"
+    ],
+    "Bouaflé": [
+      "Bouaflé"
+    ],
+    "Bouaké": [
+      "Bouaké"
+    ],
+    "Bouna": [
+      "Bouna"
+    ],
+    "Boundiali": [
+      "Boundiali"
+    ],
+    "Brobo": [
+      "Brobo"
+    ],
+    "Buyo": [
+      "Buyo"
+    ],
+    "Bédiala": [
+      "Bédiala"
+    ],
+    "Béoumi": [
+      "Béoumi"
+    ],
+    "Béttié": [
+      "Béttié"
+    ],
+    "Dabakala": [
+      "Dabakala"
+    ],
+    "Dabou": [
+      "Dabou"
+    ],
+    "Daloa": [
+      "Daloa"
+    ],
+    "Danané": [
+      "Danané"
+    ],
+    "Daoukro": [
+      "Daoukro"
+    ],
+    "Diabo": [
+      "Diabo"
+    ],
+    "Dianra": [
+      "Dianra"
+    ],
+    "Diawala": [
+      "Diawala"
+    ],
+    "Didiévi": [
+      "Didiévi"
+    ],
+    "Dikodougou": [
+      "Dikodougou"
+    ],
+    "Dimbokro": [
+      "Dimbokro"
+    ],
+    "Divo": [
+      "Divo"
+    ],
+    "Diégonéfla": [
+      "Diégonéfla"
+    ],
+    "Djebonoua": [
+      "Djebonoua"
+    ],
+    "Djibrosso": [
+      "Djibrosso"
+    ],
+    "Djèkanou": [
+      "Djèkanou"
+    ],
+    "Doropo": [
+      "Doropo"
+    ],
+    "Duékoué": [
+      "Duékoué"
+    ],
+    "Ettrokro": [
+      "Ettrokro"
+    ],
+    "Facobly": [
+      "Facobly"
+    ],
+    "Ferkessédougou": [
+      "Ferkessédougou"
+    ],
+    "Foumbolo": [
+      "Foumbolo"
+    ],
+    "Fresco": [
+      "Fresco"
+    ],
+    "Fronan": [
+      "Fronan"
+    ],
+    "Gagnoa": [
+      "Gagnoa"
+    ],
+    "Gbeleban": [
+      "Gbeleban"
+    ],
+    "Gboguhé": [
+      "Gboguhé"
+    ],
+    "Gbon": [
+      "Gbon"
+    ],
+    "Gbonné": [
+      "Gbonné"
+    ],
+    "Gohitafla": [
+      "Gohitafla"
+    ],
+    "Goulia": [
+      "Goulia"
+    ],
+    "Grabo": [
+      "Grabo"
+    ],
+    "Grand-Bassam": [
+      "Grand-Bassam"
+    ],
+    "Grand-Béréby": [
+      "Grand-Béréby"
+    ],
+    "Grand-Lahou": [
+      "Grand-Lahou"
+    ],
+    "Grand-Zattry": [
+      "Grand-Zattry"
+    ],
+    "Guibéroua": [
+      "Guibéroua"
+    ],
+    "Guiembé": [
+      "Guiembé"
+    ],
+    "Guiglo": [
+      "Guiglo"
+    ],
+    "Guintéguéla": [
+      "Guintéguéla"
+    ],
+    "Guitry": [
+      "Guitry"
+    ],
+    "Guéyo": [
+      "Guéyo"
+    ],
+    "Hiré": [
+      "Hiré"
+    ],
+    "Issia": [
+      "Issia"
+    ],
+    "Jacqueville": [
+      "Jacqueville"
+    ],
+    "Kanakono": [
+      "Kanakono"
+    ],
+    "Kani": [
+      "Kani"
+    ],
+    "Kaniasso": [
+      "Kaniasso"
+    ],
+    "Karakoro": [
+      "Karakoro"
+    ],
+    "Kasséré": [
+      "Kasséré"
+    ],
+    "Katiola": [
+      "Katiola"
+    ],
+    "Kokoumbo": [
+      "Kokoumbo"
+    ],
+    "Kolia": [
+      "Kolia"
+    ],
+    "Komborodougou": [
+      "Komborodougou"
+    ],
+    "Kong": [
+      "Kong"
+    ],
+    "Kongasso": [
+      "Kongasso"
+    ],
+    "Korhogo": [
+      "Korhogo"
+    ],
+    "Koro": [
+      "Koro"
+    ],
+    "Kouassi-Datékro": [
+      "Kouassi-Datékro"
+    ],
+    "Kouassi-Kouassikro": [
+      "Kouassi-Kouassikro"
+    ],
+    "Kouibly": [
+      "Kouibly"
+    ],
+    "Koun-Fao": [
+      "Koun-Fao"
+    ],
+    "Kounahiri": [
+      "Kounahiri"
+    ],
+    "Kouto": [
+      "Kouto"
+    ],
+    "Logoualé": [
+      "Logoualé"
+    ],
+    "Madinani": [
+      "Madinani"
+    ],
+    "Maféré": [
+      "Maféré"
+    ],
+    "Man": [
+      "Man"
+    ],
+    "Mankono": [
+      "Mankono"
+    ],
+    "Massala": [
+      "Massala"
+    ],
+    "Mayo": [
+      "Mayo"
+    ],
+    "Minignan": [
+      "Minignan"
+    ],
+    "Morondo": [
+      "Morondo"
+    ],
+    "Méagui": [
+      "Méagui"
+    ],
+    "M’Bahiakro": [
+      "M’Bahiakro"
+    ],
+    "M’Batto": [
+      "M’Batto"
+    ],
+    "M’Bengué": [
+      "M’Bengué"
+    ],
+    "Napié": [
+      "Napié"
+    ],
+    "Nassian": [
+      "Nassian"
+    ],
+    "Niablé": [
+      "Niablé"
+    ],
+    "Niakaramandougou": [
+      "Niakaramandougou"
+    ],
+    "Niofoin": [
+      "Niofoin"
+    ],
+    "Niéllé": [
+      "Niéllé"
+    ],
+    "N’Douci": [
+      "N’Douci"
+    ],
+    "Odienné": [
+      "Odienné"
+    ],
+    "Ouangolodougou": [
+      "Ouangolodougou"
+    ],
+    "Ouaninou": [
+      "Ouaninou"
+    ],
+    "Ouellé": [
+      "Ouellé"
+    ],
+    "Oumé": [
+      "Oumé"
+    ],
+    "Ouragahio": [
+      "Ouragahio"
+    ],
+    "Prikro": [
+      "Prikro"
+    ],
+    "Rubino": [
+      "Rubino"
+    ],
+    "Sakassou": [
+      "Sakassou"
+    ],
+    "Samatiguila": [
+      "Samatiguila"
+    ],
+    "San Pedro": [
+      "San Pedro"
+    ],
+    "Sandégué": [
+      "Sandégué"
+    ],
+    "Sangouiné": [
+      "Sangouiné"
+    ],
+    "Sarhala": [
+      "Sarhala"
+    ],
+    "Sassandra": [
+      "Sassandra"
+    ],
+    "Satama-Sokoro": [
+      "Satama-Sokoro"
+    ],
+    "Satama-Sokoura": [
+      "Satama-Sokoura"
+    ],
+    "Saïoua": [
+      "Saïoua"
+    ],
+    "Sifié": [
+      "Sifié"
+    ],
+    "Sikensi": [
+      "Sikensi"
+    ],
+    "Sinfra": [
+      "Sinfra"
+    ],
+    "Sinématiali": [
+      "Sinématiali"
+    ],
+    "Sipilou": [
+      "Sipilou"
+    ],
+    "Sirasso": [
+      "Sirasso"
+    ],
+    "Songon": [
+      "Songon"
+    ],
+    "Soubré": [
+      "Soubré"
+    ],
+    "Séguelon": [
+      "Séguelon"
+    ],
+    "Séguéla": [
+      "Séguéla"
+    ],
+    "Taabo": [
+      "Taabo"
+    ],
+    "Tabou": [
+      "Tabou"
+    ],
+    "Tafiré": [
+      "Tafiré"
+    ],
+    "Tanda": [
+      "Tanda"
+    ],
+    "Taï": [
+      "Taï"
+    ],
+    "Tengréla": [
+      "Tengréla"
+    ],
+    "Tiapoum": [
+      "Tiapoum"
+    ],
+    "Tiassalé": [
+      "Tiassalé"
+    ],
+    "Tienko": [
+      "Tienko"
+    ],
+    "Tioroniaradougou": [
+      "Tioroniaradougou"
+    ],
+    "Tiébissou": [
+      "Tiébissou"
+    ],
+    "Tiémé": [
+      "Tiémé"
+    ],
+    "Tiémélékro": [
+      "Tiémélékro"
+    ],
+    "Tiéningboué": [
+      "Tiéningboué"
+    ],
+    "Tortiya": [
+      "Tortiya"
+    ],
+    "Touba": [
+      "Touba"
+    ],
+    "Toulépleu": [
+      "Toulépleu"
+    ],
+    "Toumodi": [
+      "Toumodi"
+    ],
+    "Transua": [
+      "Transua"
+    ],
+    "Téhini": [
+      "Téhini"
+    ],
+    "Vavoua": [
+      "Vavoua"
+    ],
+    "Worofla": [
+      "Worofla"
+    ],
+    "Yakassé-Attobrou": [
+      "Yakassé-Attobrou"
+    ],
+    "Yamoussoukro": [
+      "Yamoussoukro"
+    ],
+    "Zikisso": [
+      "Zikisso"
+    ],
+    "Zouan-Hounien": [
+      "Zouan-Hounien"
+    ],
+    "Zoukougbeu": [
+      "Zoukougbeu"
+    ],
+    "Zuénoula": [
+      "Zuénoula"
+    ],
+    "Abidjan": [
+      "Abobo",
+      "Adjamé",
+      "Attécoubé",
+      "Cocody",
+      "Koumassi",
+      "Marcory",
+      "Plateau",
+      "Port-Bouët",
+      "Treichville",
+      "Yopougon"
+    ]
+  },
+  "locations": [],
+  "sources": [
+    {
+      "url": "https://www.anstat.ci/assets/publications/files/Analyses_Thematiques_Tome_13_Urbanisation.pdf",
+      "scope": "Villes du RGPH 2021, annexe 4"
+    },
+    {
+      "url": "https://tresor.gouv.ci/tres/wp-content/uploads/2026/01/LISTE-DES-COLLECTIVITES-TERRITORIALES.pdf",
+      "scope": "201 communes"
+    }
+  ]
+}
