@@ -42,11 +42,12 @@ CREATE TABLE IF NOT EXISTS price_observation (
     store_id    INTEGER NOT NULL REFERENCES store(id),
     prix        INTEGER NOT NULL CHECK (prix > 0),
     unite       TEXT NOT NULL,
-    date_releve TEXT,                       -- AAAA-MM-JJ ; NULL = donnée d'exemple
-    source      TEXT NOT NULL CHECK (source IN ('manuel','ticket','jumia','signalement','exemple')),
+    date_releve TEXT,                       -- AAAA-MM-JJ ; NULL = donnée d'exemple ou prix en ligne non daté
+    source      TEXT NOT NULL CHECK (source IN ('manuel','ticket','jumia','signalement','exemple','prix_internet')),
     statut      TEXT NOT NULL CHECK (statut IN ('valide','a_verifier','donnee_exemple')),
     url         TEXT,
     image_url   TEXT,
+    meta        TEXT,                       -- JSON : champs propres aux prix en ligne (date_consultation, lieu...)
     created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_obs_pair ON price_observation(product_id, store_id, date_releve, id);
@@ -125,12 +126,51 @@ def transaction(write=True):
         conn.close()
 
 
+# Champs propres aux prix en ligne (source 'prix_internet'), stockés en JSON dans price_observation.meta
+META_FIELDS = ('date_consultation', 'disponibilite', 'prix_unitaire', 'unite_reference', 'lieu', 'source_catalogue')
+
+
+def _migrate_observation_table(conn):
+    """Migration des bases créées avant 'prix_internet'.
+
+    SQLite ne sait pas modifier une contrainte CHECK : on reconstruit la table (procédure officielle en
+    12 étapes), données et identifiants conservés (les signalements y font référence). Idempotent."""
+    row = conn.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='price_observation'").fetchone()
+    if row is None or "'prix_internet'" in row['sql']:
+        return
+    ddl = re.search(r'CREATE TABLE IF NOT EXISTS price_observation \(.*?\n\);', SCHEMA, re.S).group(0)
+    ddl = ddl.replace('IF NOT EXISTS price_observation', 'price_observation_new', 1)
+    columns = [c['name'] for c in conn.execute('PRAGMA table_info(price_observation)')]
+    conn.execute('PRAGMA foreign_keys = OFF')  # sans effet dans une transaction : à positionner avant BEGIN
+    try:
+        conn.execute('BEGIN IMMEDIATE')
+        conn.execute('DROP VIEW IF EXISTS current_price')
+        conn.execute('DROP TABLE IF EXISTS price_observation_new')
+        conn.execute(ddl)
+        cols = ','.join(columns)
+        conn.execute(f'INSERT INTO price_observation_new({cols}) SELECT {cols} FROM price_observation')
+        conn.execute('DROP TABLE price_observation')
+        conn.execute('ALTER TABLE price_observation_new RENAME TO price_observation')
+        if conn.execute('PRAGMA foreign_key_check').fetchall():
+            raise sqlite3.IntegrityError('migration price_observation : références orphelines')
+        conn.execute('COMMIT')
+    except BaseException:
+        if conn.in_transaction:
+            conn.execute('ROLLBACK')
+        raise
+    finally:
+        conn.execute('PRAGMA foreign_keys = ON')
+
+
 def init_db(seed=True):
-    """Crée le schéma (idempotent) et, si la base est vide, importe les JSON historiques."""
+    """Crée le schéma (idempotent), migre une ancienne base si besoin et, si la base est vide,
+    importe les JSON historiques."""
     conn = _connect()
     try:
         conn.execute('PRAGMA journal_mode = WAL')
         conn.executescript(SCHEMA)
+        _migrate_observation_table(conn)
+        conn.executescript(SCHEMA)  # recrée l'index et la vue supprimés par la migration
     finally:
         conn.close()
     if seed:
@@ -169,19 +209,21 @@ def add_observation(conn, a):
     pid = _get_or_create(conn, 'product', a['article'].strip())
     sid = _get_or_create(conn, 'store', a['supermarche'].strip())
     url, image_url = a.get('url') or None, a.get('image_url') or None
+    meta = {k: a[k] for k in META_FIELDS if a.get(k) is not None}
+    meta = json.dumps(meta, ensure_ascii=False, sort_keys=True) if meta else None
     dup = conn.execute(
         'SELECT id FROM price_observation WHERE product_id=? AND store_id=? AND prix=? AND unite=? '
         'AND date_releve IS ? AND source=? AND statut=?',
         (pid, sid, a['prix'], a['unite'], a['date_releve'], a['source'], a['statut'])).fetchone()
     if dup:
-        if url or image_url:
-            conn.execute('UPDATE price_observation SET url = COALESCE(?, url), image_url = COALESCE(?, image_url) WHERE id = ?',
-                         (url, image_url, dup['id']))
+        if url or image_url or meta:
+            conn.execute('UPDATE price_observation SET url = COALESCE(?, url), image_url = COALESCE(?, image_url), '
+                         'meta = COALESCE(?, meta) WHERE id = ?', (url, image_url, meta, dup['id']))
         return dup['id'], False
     cur = conn.execute(
-        'INSERT INTO price_observation(product_id, store_id, prix, unite, date_releve, source, statut, url, image_url) '
-        'VALUES (?,?,?,?,?,?,?,?,?)',
-        (pid, sid, int(a['prix']), a['unite'], a['date_releve'], a['source'], a['statut'], url, image_url))
+        'INSERT INTO price_observation(product_id, store_id, prix, unite, date_releve, source, statut, url, image_url, meta) '
+        'VALUES (?,?,?,?,?,?,?,?,?,?)',
+        (pid, sid, int(a['prix']), a['unite'], a['date_releve'], a['source'], a['statut'], url, image_url, meta))
     return cur.lastrowid, True
 
 
@@ -196,12 +238,15 @@ def import_articles(conn, articles):
 
 _SELECT_CURRENT = (
     'SELECT p.name AS article, s.name AS supermarche, c.prix, c.unite, c.date_releve, c.source, '
-    'c.statut, c.url, c.image_url FROM current_price c '
+    'c.statut, c.url, c.image_url, c.meta FROM current_price c '
     'JOIN product p ON p.id=c.product_id JOIN store s ON s.id=c.store_id ')
 
 
 def _clean(row):
     d = dict(row)
+    meta = d.pop('meta', None)
+    if meta:
+        d.update(json.loads(meta))
     return {k: v for k, v in d.items() if v is not None or k == 'date_releve'}
 
 

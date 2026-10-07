@@ -5,6 +5,7 @@ import secrets
 import sqlite3
 import hashlib
 import re
+from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
 from io import BytesIO
 from pathlib import Path
@@ -28,11 +29,18 @@ def register_collaboration(app, is_admin):
                       PERMANENT_SESSION_LIFETIME=timedelta(days=7))
     db_path = root / 'community.sqlite3'
 
+    @contextmanager
     def db():
+        """Connexion validée (commit) ou annulée (rollback) PUIS fermée : `with sqlite3.connect()` seul
+        ne ferme pas la connexion (ResourceWarning, descripteurs de fichier qui fuient)."""
         conn = sqlite3.connect(db_path, timeout=20)
         conn.row_factory = sqlite3.Row
         conn.execute('PRAGMA foreign_keys=ON')
-        return conn
+        try:
+            with conn:
+                yield conn
+        finally:
+            conn.close()
 
     with db() as conn:
         conn.executescript('''

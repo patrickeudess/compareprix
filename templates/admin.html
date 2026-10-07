@@ -1,266 +1,321 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Administration · ComparePrix</title>
-  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='compareprix-mark.svg') }}">
-  <style>
-    :root{color-scheme:light;--green:#176b45;--deep:#104d33;--amber:#f4a62a;--ink:#17231d;--muted:#647168;--line:#e4eae6;--surface:#f5f8f6;--white:#fff;--danger:#b63e36;--radius:18px}
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--surface);color:var(--ink);font:15px/1.5 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-    button,input{font:inherit}
-    .topbar{background:linear-gradient(120deg,var(--deep),var(--green));color:#fff;padding:20px clamp(18px,5vw,64px);display:flex;align-items:center;justify-content:space-between;gap:16px}
-    .brand{display:flex;align-items:center;gap:12px;color:inherit;text-decoration:none;font-size:1.15rem;font-weight:750}
-    .brand img{width:42px;height:42px;border-radius:12px}
-    .topbar a.back{color:#e4f2e9;text-decoration:none;font-weight:600}
-    main{width:min(1120px,calc(100% - 32px));margin:34px auto 70px}
-    h1,h2,p{margin-top:0}
-    h1{font-size:clamp(1.65rem,4vw,2.3rem);letter-spacing:-.04em;margin-bottom:8px}
-    .lead{color:var(--muted);margin-bottom:24px}
-    .card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:clamp(18px,3vw,28px);box-shadow:0 10px 30px rgba(19,54,35,.05);margin-bottom:20px}
-    .login-card{max-width:520px;margin:58px auto}
-    .field{display:grid;gap:7px}
-    label{font-size:.9rem;font-weight:650}
-    input{width:100%;min-height:46px;padding:11px 13px;border:1px solid #cfd9d2;border-radius:11px;background:#fff;color:var(--ink)}
-    input:focus{outline:3px solid rgba(23,107,69,.15);border-color:var(--green)}
-    .row{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}
-    .span-12{grid-column:span 12}.span-6{grid-column:span 6}.span-4{grid-column:span 4}.span-3{grid-column:span 3}
-    .actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:18px}
-    button{border:0;border-radius:11px;padding:11px 16px;font-weight:700;cursor:pointer}
-    button:focus-visible,a:focus-visible{outline:3px solid var(--amber);outline-offset:3px}
-    .primary{background:var(--green);color:#fff}.primary:hover{background:var(--deep)}
-    .secondary{background:#eaf3ed;color:var(--deep)}
-    .danger{background:#fff0ef;color:var(--danger)}
-    button:disabled{opacity:.55;cursor:wait}
-    .toolbar{display:flex;align-items:end;justify-content:space-between;gap:14px;flex-wrap:wrap}
-    .toolbar .field{flex:1;min-width:min(100%,280px)}
-    .stats{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}
-    .stat{border:1px solid var(--line);background:#f9fbfa;border-radius:13px;padding:12px 16px;min-width:150px}
-    .stat strong{display:block;font-size:1.25rem;color:var(--green)}
-    .stat span{font-size:.82rem;color:var(--muted)}
-    .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:13px}
-    table{width:100%;border-collapse:collapse;min-width:660px}
-    th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
-    th{background:#f7faf8;color:#526057;font-size:.76rem;text-transform:uppercase;letter-spacing:.06em}
-    tr:last-child td{border-bottom:0}
-    td strong{display:block}
-    td small{color:var(--muted)}
-    td .actions{margin:0;gap:6px}
-    td button{padding:8px 10px;font-size:.83rem}
-    .notice{display:none;margin:14px 0;padding:12px 14px;border-radius:11px}
-    .notice.ok{display:block;background:#e8f5ed;color:#145536}
-    .notice.error{display:block;background:#fff0ef;color:#8d2924}
-    .empty{padding:28px;text-align:center;color:var(--muted)}
-    [hidden]{display:none!important}
-    @media(max-width:680px){main{margin-top:22px}.span-6,.span-4,.span-3{grid-column:span 12}.topbar{align-items:flex-start}.stats{display:grid;grid-template-columns:1fr 1fr}.stat{min-width:0}}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ctext y=%27.9em%27 font-size=%2790%27%3E%F0%9F%9B%92%3C/text%3E%3C/svg%3E">
+    <title>ComparePrix – Administration</title>
+    <style>
+        :root { --bg:#f4f6fb; --card:#fff; --text:#1f2937; --muted:#6b7280; --line:#e5e7eb; --brand:#4f46e5;
+                --ok:#047857; --okbg:#d1fae5; --warn:#92400e; --warnbg:#fef3c7; --bad:#b91c1c; --badbg:#fee2e2; }
+        @media (prefers-color-scheme: dark) {
+            :root { --bg:#0f172a; --card:#1e293b; --text:#e5e7eb; --muted:#94a3b8; --line:#334155; --brand:#818cf8;
+                    --ok:#6ee7b7; --okbg:#064e3b; --warn:#fcd34d; --warnbg:#451a03; --bad:#fca5a5; --badbg:#450a0a; }
+        }
+        * { box-sizing: border-box; }
+        body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--text); }
+        header { background:var(--brand); color:#fff; padding:14px 16px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+        header h1 { font-size:1.1rem; margin:0; }
+        main { max-width:960px; margin:0 auto; padding:16px; }
+        .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:16px; }
+        h2 { font-size:1.05rem; margin:0 0 12px; }
+        label { display:block; font-size:.85rem; color:var(--muted); margin-bottom:4px; }
+        input, select, textarea { width:100%; padding:10px; font-size:1rem; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--text); }
+        .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:12px; }
+        button { padding:10px 14px; font-size:.95rem; border:0; border-radius:8px; background:var(--brand); color:#fff; cursor:pointer; }
+        button.secondary { background:transparent; color:var(--brand); border:1px solid var(--brand); }
+        button.danger { background:var(--bad); }
+        button.good { background:var(--ok); }
+        button:disabled { opacity:.5; cursor:not-allowed; }
+        .tabs { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+        .tabs button { background:var(--card); color:var(--text); border:1px solid var(--line); }
+        .tabs button.active { background:var(--brand); color:#fff; border-color:var(--brand); }
+        .msg { padding:10px 12px; border-radius:8px; margin-top:12px; font-size:.92rem; }
+        .msg.ok { background:var(--okbg); color:var(--ok); } .msg.warn { background:var(--warnbg); color:var(--warn); } .msg.bad { background:var(--badbg); color:var(--bad); }
+        table { width:100%; border-collapse:collapse; font-size:.9rem; }
+        th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:middle; }
+        .table-wrap { overflow-x:auto; }
+        .badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:.78rem; }
+        .badge.valide { background:var(--okbg); color:var(--ok); } .badge.a_verifier, .badge.pending_review { background:var(--warnbg); color:var(--warn); }
+        .badge.donnee_exemple, .badge.rejected { background:var(--line); color:var(--muted); } .badge.approved { background:var(--okbg); color:var(--ok); }
+        .actions { display:flex; gap:6px; flex-wrap:wrap; }
+        td .actions button { padding:6px 10px; font-size:.82rem; }
+        .fb { border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:12px; }
+        .fb img { max-width:100%; max-height:240px; border-radius:8px; margin-top:8px; display:block; }
+        .muted { color:var(--muted); font-size:.85rem; }
+        .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+        [hidden] { display:none !important; }
+    </style>
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="{{ url_for('index') }}"><img src="{{ url_for('static', filename='compareprix-mark.svg') }}" alt="">ComparePrix <span>· Admin</span></a>
-    <a class="back" href="/admin/contributions">Valider les contributions</a>
-    <a class="back" href="{{ url_for('index') }}">← Retour à ComparePrix</a>
-  </header>
-  <main>
-    <section id="loginPanel" class="card login-card">
-      <p style="color:var(--green);font-weight:750;margin-bottom:8px">ESPACE SÉCURISÉ</p>
-      <h1>Administration des prix</h1>
-      <p class="lead">Saisissez le jeton administrateur configuré sur le serveur pour modifier les données visibles dans ComparePrix.</p>
-      <form id="loginForm">
-        <div class="field"><label for="adminToken">Jeton administrateur</label><input id="adminToken" type="password" autocomplete="current-password" required></div>
-        <div class="actions"><button class="primary" type="submit">Ouvrir le tableau de bord</button></div>
-      </form>
-      <div id="loginNotice" class="notice" role="alert"></div>
-    </section>
-
-    <section id="dashboard" hidden>
-      <h1>Gérer les produits et les prix</h1>
-      <p class="lead">Chaque enregistrement est publié dans les résultats de recherche de ComparePrix dès qu’il est enregistré.</p>
-      <div id="notice" class="notice" role="status" aria-live="polite"></div>
-      <section class="card">
-        <h2 id="formTitle">Ajouter un prix</h2>
-        <form id="articleForm">
-          <div class="row">
-            <div class="field span-6"><label for="article">Nom de l’article *</label><input id="article" maxlength="200" required placeholder="Ex. Riz parfumé 5 kg"></div>
-            <div class="field span-6"><label for="supermarche">Magasin *</label><input id="supermarche" maxlength="120" required placeholder="Ex. Carrefour"></div>
-            <div class="field span-4"><label for="prix">Prix (FCFA) *</label><input id="prix" type="number" min="1" max="100000000" step="1" required></div>
-            <div class="field span-4"><label for="unite">Unité / format</label><input id="unite" maxlength="40" placeholder="kg, L, unité, 5 kg…"></div>
-            <div class="field span-4"><label for="url">Lien du produit</label><input id="url" type="url" maxlength="2048" placeholder="https://…"></div>
-            <div class="field span-12"><label for="image_url">Lien de l’image</label><input id="image_url" type="url" maxlength="2048" placeholder="https://…"></div>
-          </div>
-          <div class="actions"><button id="saveArticle" class="primary" type="submit">Enregistrer le prix</button><button id="cancelEdit" class="secondary" type="button" hidden>Annuler la modification</button></div>
+<header>
+    <h1>🛒 ComparePrix – Administration</h1>
+    <a href="/admin/contributions" style="color:inherit">Valider les contributions</a>
+    <button id="logout" class="secondary" hidden>Se déconnecter</button>
+</header>
+<main>
+    <section id="login" class="card">
+        <h2>Connexion</h2>
+        <p class="muted">Saisissez le jeton d'administration (<code>COMPAREPRIX_ADMIN_TOKEN</code>). Il reste dans cet onglet uniquement et disparaît à sa fermeture.</p>
+        <form id="loginForm" class="row">
+            <input id="token" type="password" autocomplete="off" placeholder="Jeton d'administration" required style="flex:1; min-width:220px">
+            <button type="submit">Se connecter</button>
         </form>
-      </section>
-
-      <section class="card">
-        <div class="toolbar">
-          <div><h2 style="margin-bottom:4px">Données publiées</h2><p class="lead" style="margin:0">Les prix de même article et magasin restent séparés par leur format.</p></div>
-          <div class="field"><label for="filter">Rechercher dans les données</label><input id="filter" type="search" placeholder="Article ou magasin"></div>
-        </div>
-        <div class="stats"><div class="stat"><strong id="articleCount">0</strong><span>prix enregistrés</span></div><div class="stat"><strong id="storeCount">0</strong><span>magasins référencés</span></div></div>
-        <div class="table-wrap"><table><thead><tr><th>Article</th><th>Magasin</th><th>Prix</th><th>Format</th><th>Actions</th></tr></thead><tbody id="articleRows"></tbody></table><div id="emptyState" class="empty" hidden>Aucun article ne correspond à votre recherche.</div></div>
-      </section>
-      <div class="actions"><button id="logout" class="secondary" type="button">Fermer la session</button></div>
+        <div id="loginMsg"></div>
     </section>
-  </main>
-  <script>
-    let adminToken = '';
-    let articles = [];
-    let editingIndex = null;
-    let isSaving = false;
+
+    <div id="app" hidden>
+        <nav class="tabs">
+            <button data-tab="entry" class="active">✏️ Saisie de relevés</button>
+            <button data-tab="import">📥 Importer un CSV</button>
+            <button data-tab="feedback">💬 Signalements <span id="pendingCount"></span></button>
+        </nav>
+
+        <section id="tab-entry">
+            <div class="card">
+                <h2>Nouveau relevé de prix</h2>
+                <form id="entryForm">
+                    <div class="grid">
+                        <div><label for="f-article">Article (avec marque et quantité)</label>
+                            <input id="f-article" list="dl-articles" required maxlength="200" placeholder="Ex. Riz parfumé Uncle Ben's 5kg"></div>
+                        <div><label for="f-store">Supermarché</label>
+                            <input id="f-store" list="dl-stores" required maxlength="120" placeholder="Ex. Carrefour"></div>
+                        <div><label for="f-price">Prix (FCFA, entier)</label>
+                            <input id="f-price" type="number" min="1" step="1" inputmode="numeric" required></div>
+                        <div><label for="f-unit">Unité</label>
+                            <select id="f-unit"><option>kg</option><option>L</option><option>unité</option><option>g</option><option>cl</option><option>ml</option><option>lot</option></select></div>
+                        <div><label for="f-date">Date du relevé</label><input id="f-date" type="date" required></div>
+                        <div><label for="f-source">Source</label>
+                            <select id="f-source"><option value="manuel">Relevé en magasin</option><option value="ticket">Ticket de caisse</option></select></div>
+                        <div><label for="f-status">Statut</label>
+                            <select id="f-status"><option value="a_verifier">À vérifier</option><option value="valide">Validé</option></select></div>
+                        <div><label for="f-url">Lien (optionnel)</label><input id="f-url" type="url" maxlength="500" placeholder="https://"></div>
+                    </div>
+                    <datalist id="dl-articles"></datalist><datalist id="dl-stores"></datalist>
+                    <p class="muted">L'unité et la quantité du nom déterminent le prix au kg / L : écrivez « 5kg », « 750ml », « 6x1L » dans le nom, avec la <strong>même</strong> marque dans tous les magasins.</p>
+                    <button type="submit">Enregistrer</button>
+                </form>
+                <div id="entryMsg"></div>
+            </div>
+            <div class="card">
+                <h2>Derniers relevés</h2>
+                <div class="table-wrap"><table>
+                    <thead><tr><th>Article</th><th>Magasin</th><th>Prix</th><th>Date</th><th>Statut</th></tr></thead>
+                    <tbody id="recent"></tbody>
+                </table></div>
+                <p id="recentEmpty" class="muted" hidden>Aucun relevé pour l'instant.</p>
+            </div>
+        </section>
+
+        <section id="tab-import" hidden>
+            <div class="card">
+                <h2>Importer un fichier CSV</h2>
+                <p class="muted">Colonnes : <code>article, supermarche, prix, unite, date_releve, source, statut, url, image_url</code>. Les lignes <strong>sans prix</strong> sont ignorées (fiche partiellement remplie). Si une ligne est invalide, <strong>rien</strong> n'est écrit. Une sauvegarde de la base est faite avant l'écriture.</p>
+                <form id="importForm" class="row">
+                    <input id="csvFile" type="file" accept=".csv,text/csv" required style="flex:1; min-width:220px">
+                    <button type="submit" data-apply="0" class="secondary">Simuler</button>
+                    <button type="submit" data-apply="1">Importer</button>
+                </form>
+                <div id="importMsg"></div>
+            </div>
+        </section>
+
+        <section id="tab-feedback" hidden>
+            <div class="card">
+                <div class="row"><h2 style="margin:0">Signalements des utilisateurs</h2>
+                    <select id="fbFilter" style="width:auto"><option value="pending_review">En attente</option><option value="all">Tous</option></select></div>
+                <div id="fbList" style="margin-top:12px"></div>
+                <p id="fbEmpty" class="muted" hidden>Aucun signalement.</p>
+            </div>
+        </section>
+    </div>
+</main>
+
+<script nonce="{{ csp_nonce }}">
+(function () {
+    'use strict';
+    let token = '';
+    try { token = sessionStorage.getItem('cp_admin_token') || ''; } catch (e) { /* stockage indisponible */ }
     const $ = (id) => document.getElementById(id);
-    const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 
-    function showNotice(target, message, kind) {
-      target.textContent = message;
-      target.className = 'notice ' + kind;
+    // Construit un élément DOM avec du texte brut (jamais d'innerHTML : pas d'injection possible).
+    function el(tag, props, ...children) {
+        const node = document.createElement(tag);
+        for (const [k, v] of Object.entries(props || {})) {
+            if (k === 'class') node.className = v; else if (k === 'text') node.textContent = v;
+            else if (k.startsWith('data-')) node.setAttribute(k, v); else node[k] = v;
+        }
+        for (const c of children) node.append(c);
+        return node;
+    }
+    function message(target, kind, text, lines) {
+        const box = el('div', { class: 'msg ' + kind, text });
+        (lines || []).forEach(l => box.append(el('div', { text: '• ' + l })));
+        target.replaceChildren(box);
+    }
+    const fmt = (n) => Number(n).toLocaleString('fr-FR');
+
+    async function api(method, url, body, isForm) {
+        const headers = { 'Authorization': 'Bearer ' + token };
+        if (body && !isForm) headers['Content-Type'] = 'application/json';
+        const res = await fetch(url, { method, headers, body: body ? (isForm ? body : JSON.stringify(body)) : undefined });
+        if (res.status === 401) { logout('Jeton refusé ou expiré.'); throw new Error('401'); }
+        return res;
+    }
+    async function json(method, url, body, isForm) {
+        const res = await api(method, url, body, isForm);
+        return { res, data: await res.json().catch(() => ({})) };
     }
 
-    async function api(path, options = {}) {
-      const response = await fetch(path, {
-        ...options,
-        headers: {'Authorization': 'Bearer ' + adminToken, ...(options.body ? {'Content-Type':'application/json'} : {}), ...(options.headers || {})}
-      });
-      const data = await response.json().catch(() => ({}));
-      if (response.status === 401) {
-        adminToken = '';
-        $('dashboard').hidden = true;
-        $('loginPanel').hidden = false;
-        throw new Error('Jeton invalide ou session expirée. Veuillez vous reconnecter.');
-      }
-      if (!response.ok) throw new Error(data.message || 'La requête a échoué.');
-      return data;
+    // ---- connexion
+    function showApp(on) { $('login').hidden = on; $('app').hidden = !on; $('logout').hidden = !on; }
+    function logout(text) {
+        token = ''; try { sessionStorage.removeItem('cp_admin_token'); } catch (e) { /* rien */ }
+        showApp(false); if (text) message($('loginMsg'), 'bad', text);
     }
-
-    async function connect(token) {
-      adminToken = token;
-      try {
-        const data = await api('/api/admin/articles');
-        articles = data.articles;
-        $('loginPanel').hidden = true;
-        $('dashboard').hidden = false;
-        renderArticles();
-      } catch (error) {
-        adminToken = '';
-        showNotice($('loginNotice'), error.message, 'error');
-      }
+    async function start() {
+        const res = await fetch('/api/feedback', { headers: { 'Authorization': 'Bearer ' + token } });
+        if (res.status === 429) { message($('loginMsg'), 'bad', 'Trop de tentatives : réessayez dans quelques minutes.'); return; }
+        if (res.status !== 200) { logout(token ? 'Jeton incorrect.' : ''); return; }
+        try { sessionStorage.setItem('cp_admin_token', token); } catch (e) { /* rien */ }
+        $('loginMsg').replaceChildren(); showApp(true);
+        $('f-date').value = today(); $('f-date').max = today();
+        loadSuggestions(); loadRecent(); loadFeedback();
     }
+    function today() { const d = new Date(); return new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
+    $('loginForm').addEventListener('submit', (e) => { e.preventDefault(); token = $('token').value.trim(); $('token').value = ''; start(); });
+    $('logout').addEventListener('click', () => logout(''));
 
-    $('loginForm').addEventListener('submit', (event) => {
-      event.preventDefault();
-      showNotice($('loginNotice'), 'Vérification du jeton…', 'ok');
-      connect($('adminToken').value.trim());
-      $('adminToken').value = '';
+    // ---- onglets
+    document.querySelector('.tabs').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-tab]'); if (!b) return;
+        document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('active', x === b));
+        ['entry', 'import', 'feedback'].forEach(t => { $('tab-' + t).hidden = (t !== b.dataset.tab); });
+        if (b.dataset.tab === 'feedback') loadFeedback();
     });
 
-    function renderArticles() {
-      const term = $('filter').value.trim().toLocaleLowerCase('fr');
-      const filtered = articles.map((article, index) => ({article, index})).filter(({article}) =>
-        (article.article + ' ' + article.supermarche).toLocaleLowerCase('fr').includes(term)
-      );
-      $('articleCount').textContent = articles.length;
-      $('storeCount').textContent = new Set(articles.map((item) => item.supermarche)).size;
-      $('articleRows').innerHTML = filtered.map(({article, index}) => `
-        <tr>
-          <td><strong>${escapeHtml(article.article)}</strong>${article.url ? `<a href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer"><small>Voir le produit ↗</small></a>` : ''}</td>
-          <td>${escapeHtml(article.supermarche)}</td>
-          <td><strong>${Number(article.prix).toLocaleString('fr-FR')} FCFA</strong></td>
-          <td>${escapeHtml(article.unite || 'unité')}</td>
-          <td><div class="actions"><button class="secondary" type="button" data-edit="${index}">Modifier</button><button class="danger" type="button" data-delete="${index}">Supprimer</button></div></td>
-        </tr>`).join('');
-      $('emptyState').hidden = filtered.length > 0;
+    // ---- saisie
+    async function loadSuggestions() {
+        const res = await fetch('/api/articles'); if (!res.ok) return;
+        const list = await res.json();
+        const fill = (id, values) => $(id).replaceChildren(...[...new Set(values)].sort().map(v => el('option', { value: v })));
+        fill('dl-articles', list.map(a => a.article)); fill('dl-stores', list.map(a => a.supermarche));
     }
-
-    function resetForm() {
-      editingIndex = null;
-      $('articleForm').reset();
-      $('formTitle').textContent = 'Ajouter un prix';
-      $('saveArticle').textContent = 'Enregistrer le prix';
-      $('cancelEdit').hidden = true;
+    $('entryForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const body = { article: $('f-article').value, supermarche: $('f-store').value, prix: $('f-price').value,
+                       unite: $('f-unit').value, date_releve: $('f-date').value, source: $('f-source').value,
+                       statut: $('f-status').value, url: $('f-url').value };
+        const { res, data } = await json('POST', '/api/observations', body);
+        if (!res.ok) { message($('entryMsg'), 'bad', data.message || 'Erreur', data.errors); return; }
+        const pu = data.prix_unitaire != null ? ` (soit ${fmt(Math.round(data.prix_unitaire))} FCFA par kg/L/unité)` : ' (prix unitaire non calculable : ajoutez la quantité au nom)';
+        if (data.anomalie) {
+            message($('entryMsg'), 'warn', `⚠️ Enregistré, mais le prix s'écarte de ${data.anomalie.ecart_pct > 0 ? '+' : ''}${data.anomalie.ecart_pct} % de la médiane des magasins (${fmt(Math.round(data.anomalie.mediane))}). Vérifiez la saisie${pu}.`);
+        } else {
+            message($('entryMsg'), 'ok', (data.created ? '✅ Relevé enregistré' : 'ℹ️ Ce relevé existe déjà') + pu + '.');
+        }
+        $('f-article').value = ''; $('f-price').value = ''; $('f-url').value = ''; $('f-article').focus();
+        loadSuggestions(); loadRecent();
+    });
+    async function loadRecent() {
+        const { data } = await json('GET', '/api/observations?limit=30');
+        // Les actions sont sous le nom de l'article (et non dans une colonne) : toujours visibles sur téléphone
+        const rows = (data.observations || []).map(o => el('tr', {},
+            el('td', {}, el('div', { text: o.article }),
+                o.statut === 'donnee_exemple' ? '' : el('div', { class: 'actions', style: 'margin-top:6px' },
+                    o.statut === 'a_verifier' ? el('button', { class: 'good', text: 'Valider', 'data-act': 'validate', 'data-id': o.id }) : '',
+                    el('button', { class: 'danger', text: 'Supprimer', 'data-act': 'delete', 'data-id': o.id }))),
+            el('td', { text: o.supermarche }),
+            el('td', { text: fmt(o.prix) + ' / ' + o.unite }), el('td', { text: o.date_releve || '—' }),
+            el('td', {}, el('span', { class: 'badge ' + o.statut, text: o.statut === 'valide' ? 'validé' : o.statut === 'a_verifier' ? 'à vérifier' : 'exemple' }))));
+        $('recent').replaceChildren(...rows); $('recentEmpty').hidden = rows.length > 0;
     }
-
-    function fillForm(index) {
-      const item = articles[index];
-      if (!item) return;
-      editingIndex = index;
-      $('article').value = item.article || '';
-      $('supermarche').value = item.supermarche || '';
-      $('prix').value = item.prix;
-      $('unite').value = item.unite || '';
-      $('url').value = item.url || '';
-      $('image_url').value = item.image_url || '';
-      $('formTitle').textContent = 'Modifier un prix';
-      $('saveArticle').textContent = 'Enregistrer les changements';
-      $('cancelEdit').hidden = false;
-      $('article').focus();
-      window.scrollTo({top:0,behavior:'smooth'});
-    }
-
-    async function persistArticles(nextArticles, successMessage) {
-      if (isSaving) return;
-      isSaving = true;
-      $('saveArticle').disabled = true;
-      $('logout').disabled = true;
-      $('cancelEdit').disabled = true;
-      try {
-        const data = await api('/api/admin/articles', {method:'PUT', body:JSON.stringify({articles:nextArticles})});
-        articles = data.articles;
-        renderArticles();
-        resetForm();
-        showNotice($('notice'), successMessage, 'ok');
-      } catch (error) {
-        showNotice($('notice'), error.message, 'error');
-      } finally {
-        $('saveArticle').disabled = false;
-        $('logout').disabled = false;
-        $('cancelEdit').disabled = false;
-        isSaving = false;
-      }
-    }
-
-    $('articleForm').addEventListener('submit', (event) => {
-      event.preventDefault();
-      const item = {
-        article:$('article').value.trim(),
-        supermarche:$('supermarche').value.trim(),
-        prix:Number($('prix').value),
-        unite:$('unite').value.trim() || 'unité',
-        url:$('url').value.trim(),
-        image_url:$('image_url').value.trim()
-      };
-      const next = [...articles];
-      if (editingIndex === null) next.push(item); else next[editingIndex] = item;
-      persistArticles(next, editingIndex === null ? 'Prix ajouté et publié dans ComparePrix.' : 'Prix modifié et publié dans ComparePrix.');
+    $('recent').addEventListener('click', async (e) => {
+        const b = e.target.closest('[data-act]'); if (!b) return;
+        if (b.dataset.act === 'delete') {
+            if (!confirm('Supprimer ce relevé ? (à utiliser pour corriger une faute de frappe)')) return;
+            const { res, data } = await json('DELETE', '/api/observations/' + b.dataset.id);
+            if (!res.ok) { message($('entryMsg'), 'bad', data.message || 'Suppression impossible'); return; }
+        } else {
+            await json('PUT', '/api/observations/' + b.dataset.id, { statut: 'valide' });
+        }
+        loadRecent();
     });
 
-    $('articleRows').addEventListener('click', (event) => {
-      if (isSaving) return;
-      const edit = event.target.closest('[data-edit]');
-      const remove = event.target.closest('[data-delete]');
-      if (edit) fillForm(Number(edit.dataset.edit));
-      if (remove) {
-        const index = Number(remove.dataset.delete);
-        if (!articles[index] || !window.confirm('Supprimer ce prix de ComparePrix ?')) return;
-        const next = articles.filter((_, i) => i !== index);
-        persistArticles(next, 'Prix supprimé de ComparePrix.');
-      }
+    // ---- import CSV
+    $('importForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const apply = e.submitter && e.submitter.dataset.apply === '1';
+        const fd = new FormData(); fd.append('file', $('csvFile').files[0]); if (apply) fd.append('apply', '1');
+        const { res, data } = await json('POST', '/api/observations/import', fd, true);
+        if (!res.ok) {
+            const lines = (data.erreurs || []).slice(0, 30).map(x => `ligne ${x.ligne} : ${x.erreurs.join(' ; ')}`);
+            message($('importMsg'), 'bad', data.message || 'Import refusé', lines); return;
+        }
+        const r = data.resultat || {};
+        message($('importMsg'), data.applique ? 'ok' : 'warn',
+            (data.applique ? '✅ Import effectué : ' : 'Simulation (rien n\'est écrit) : ') +
+            `${data.lignes_valides} ligne(s) valide(s), ${r.ajoutes || 0} ajoutée(s), ${r.doublons || 0} doublon(s) ignoré(s), ` +
+            `${data.lignes_sans_prix_ignorees} sans prix ignorée(s).`);
+        if (data.applique) { loadRecent(); loadSuggestions(); }
     });
 
-    $('filter').addEventListener('input', renderArticles);
-    $('cancelEdit').addEventListener('click', resetForm);
-    $('logout').addEventListener('click', () => {
-      adminToken = '';
-      articles = [];
-      resetForm();
-      $('filter').value = '';
-      $('notice').className = 'notice';
-      $('dashboard').hidden = true;
-      $('loginPanel').hidden = false;
-      $('loginNotice').className = 'notice';
-      $('adminToken').focus();
+    // ---- signalements
+    async function loadFeedback() {
+        const { data } = await json('GET', '/api/feedback');
+        let list = (data.feedback || []).slice().reverse();
+        const pending = list.filter(f => f.status === 'pending_review');
+        $('pendingCount').textContent = pending.length ? `(${pending.length})` : '';
+        if ($('fbFilter').value === 'pending_review') list = pending;
+        $('fbEmpty').hidden = list.length > 0;
+        $('fbList').replaceChildren(...list.map(renderFeedback));
+        list.filter(f => f.photo_path).forEach(loadPhoto);
+    }
+    function renderFeedback(f) {
+        const diff = f.new_price - f.current_price;
+        const pct = f.current_price ? Math.round(diff / f.current_price * 100) : 0;
+        const card = el('div', { class: 'fb', 'data-id': f.id },
+            el('div', { class: 'row' }, el('strong', { text: f.product_name }), el('span', { text: '· ' + f.supermarket }),
+                el('span', { class: 'badge ' + f.status, text: f.status === 'pending_review' ? 'en attente' : f.status === 'approved' ? 'approuvé' : f.status === 'rejected' ? 'rejeté' : 'en cours' })),
+            el('div', { text: `${fmt(f.current_price)} → ${fmt(f.new_price)} FCFA (${diff > 0 ? '+' : ''}${pct} %)`, class: Math.abs(pct) > 20 ? 'msg warn' : '' }),
+            el('div', { class: 'muted', text: `${f.date} · ${f.user_name || 'Anonyme'}${f.user_comment ? ' · « ' + f.user_comment + ' »' : ''}` }));
+        if (f.photo_path) card.append(el('div', { class: 'muted', id: 'ph-' + f.id, text: 'Chargement de la photo…' }));
+        if (f.status === 'pending_review' || f.status === 'in_progress') {
+            card.append(el('div', { class: 'row', style: 'margin-top:8px' },
+                el('input', { placeholder: 'Note (optionnel)', maxLength: 500, 'data-note': f.id, style: 'flex:1; min-width:160px' }),
+                el('button', { class: 'good', text: 'Approuver', 'data-fb': 'approved', 'data-id': f.id }),
+                el('button', { class: 'danger', text: 'Rejeter', 'data-fb': 'rejected', 'data-id': f.id })));
+        } else if (f.review_notes) {
+            card.append(el('div', { class: 'muted', text: 'Note : ' + f.review_notes }));
+        }
+        return card;
+    }
+    async function loadPhoto(f) {
+        const box = $('ph-' + f.id); if (!box) return;
+        try {
+            const res = await api('GET', `/api/feedback/${f.id}/photo`);
+            if (!res.ok) { box.textContent = 'Photo indisponible.'; return; }
+            const url = URL.createObjectURL(await res.blob());
+            box.replaceChildren(el('img', { src: url, alt: 'Photo jointe au signalement' }));
+        } catch (e) { box.textContent = 'Photo indisponible.'; }
+    }
+    $('fbFilter').addEventListener('change', loadFeedback);
+    $('fbList').addEventListener('click', async (e) => {
+        const b = e.target.closest('[data-fb]'); if (!b) return;
+        const note = document.querySelector(`[data-note="${b.dataset.id}"]`);
+        b.disabled = true;
+        const { res, data } = await json('PUT', '/api/feedback/' + b.dataset.id,
+            { status: b.dataset.fb, review_notes: note ? note.value : '', reviewer: 'Admin web' });
+        if (!res.ok) { alert(data.message || 'Erreur'); b.disabled = false; return; }
+        if (b.dataset.fb === 'approved') {
+            alert(data.price_applied ? '✅ Approuvé : le nouveau prix est maintenant affiché.' : '⚠️ Approuvé, mais le prix n\'a PAS été mis à jour : ' + (data.price_not_applied_reason || 'raison inconnue'));
+        }
+        loadFeedback(); loadRecent();
     });
-  </script>
+
+    if (token) start();
+})();
+</script>
 </body>
 </html>
-

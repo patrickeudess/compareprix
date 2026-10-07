@@ -10,7 +10,7 @@ from datetime import date, datetime
 STALE_DAYS = 7
 MAX_PRICE_FCFA = 10_000_000
 
-SOURCES = {'manuel', 'ticket', 'jumia', 'signalement', 'exemple'}
+SOURCES = {'manuel', 'ticket', 'jumia', 'signalement', 'exemple', 'prix_internet'}
 STATUTS = {'valide', 'a_verifier', 'donnee_exemple'}
 UNITES = {'kg', 'g', 'L', 'cl', 'ml', 'unité', 'lot'}
 
@@ -36,6 +36,10 @@ def normalize_article(raw):
     a.setdefault('date_releve', None)
     a.setdefault('source', 'jumia' if a.get('supermarche') == 'Jumia' and a.get('date_releve') else 'exemple')
     a.setdefault('statut', 'donnee_exemple' if a['source'] == 'exemple' else 'a_verifier')
+    # Ancien JSON : 'prix_internet' figurait aussi dans `statut`, qui n'est pas un statut de relecture.
+    # Un prix consulté en ligne n'est pas encore validé par l'équipe : 'a_verifier' (et surtout pas 'exemple').
+    if a['statut'] == 'prix_internet':
+        a['statut'] = 'a_verifier'
     return a
 
 
@@ -177,6 +181,10 @@ def enrich_results(articles, max_deviation_pct=None):
     out = []
     for a in articles:
         pu, base, origin = unit_price(a)
+        if (pu is None and a.get('source') == 'prix_internet' and a.get('unite_reference')
+                and isinstance(a.get('prix_unitaire'), (int, float))):
+            # Prix en ligne : le catalogue donne déjà le prix au kg/L (conditionnement « 5 kg » non analysable)
+            pu, base, origin = a['prix_unitaire'], a['unite_reference'], 'declare'
         out.append({**a, 'prix_unitaire': pu, 'unite_base': base, 'origine_unite': origin,
                     'meilleur_prix': False, 'anomalie': None})
 

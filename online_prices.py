@@ -1,5 +1,6 @@
 """Refresh supported product links; never infer prices from category pages."""
-import json, re, sqlite3, threading, time
+import json, sqlite3, threading, time
+from contextlib import contextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
@@ -53,11 +54,17 @@ def read_price(url):
     if not 1<=value<=100000000 or not value.is_integer(): raise ValueError('Prix invalide')
     stock=str(offer.get('availability','')).rsplit('/',1)[-1]
     return {'prix':int(value),'disponibilite':{'InStock':'available','OutOfStock':'out_of_stock'}.get(stock,'unknown'),'date_consultation':datetime.now(timezone.utc).date().isoformat(),'actualisation':'ok'}
+@contextmanager
 def connect():
+    """Connexion validée ou annulée PUIS fermée (`with sqlite3.connect()` seul ne ferme pas)."""
     DB.parent.mkdir(parents=True,exist_ok=True)
     db=sqlite3.connect(DB,timeout=3)
-    db.execute('CREATE TABLE IF NOT EXISTS prices (url TEXT PRIMARY KEY, checked REAL, payload TEXT, state TEXT)')
-    return db
+    try:
+        with db:
+            db.execute('CREATE TABLE IF NOT EXISTS prices (url TEXT PRIMARY KEY, checked REAL, payload TEXT, state TEXT)')
+            yield db
+    finally:
+        db.close()
 def refresh(rows):
     for row in rows:
         url=row.get('url','')
