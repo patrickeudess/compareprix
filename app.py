@@ -3,6 +3,7 @@ from werkzeug.exceptions import RequestEntityTooLarge
 import json
 import os
 from datetime import datetime
+from online_prices import apply_updates
 import secrets
 import tempfile
 from urllib.parse import urlsplit
@@ -39,7 +40,7 @@ def load_manual_articles():
 
 def load_articles():
     articles = [dict(value, source=value.get('source', 'Prix sans date'), date_releve=value.get('date_releve')) for value in load_manual_articles()]
-    return articles + load_community_prices()
+    return apply_updates(articles) + load_community_prices()
 
 def save_articles(articles):
     """Sauvegarde les données de manière atomique pour préserver le fichier en cas d'erreur."""
