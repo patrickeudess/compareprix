@@ -12,7 +12,7 @@
 <body>
 <main>
 <header><img src="./static/compareprix-mark.svg" alt=""><h1>ComparePrix</h1></header>
-<nav class="app-nav" aria-label="Navigation principale"><a href="#searchForm">Comparer les prix</a><a href="#basket">Mon panier (<span id="basketNavCount">0</span>)</a><a href="./contribuer.html" class="nav-action">Partager un prix</a><a href="./compte.html">Mon compte</a></nav>
+<nav class="page-nav" aria-label="Navigation principale"><a href="./" aria-current="page"><span aria-hidden="true">🔎</span><span>Comparer</span></a><a href="./panier.html"><span aria-hidden="true">🛍️</span><span>Panier <b id="basketNavCount">0</b></span></a><a href="./contribuer.html"><span aria-hidden="true">📸</span><span>Partager</span></a><a href="./compte.html"><span aria-hidden="true">👤</span><span>Compte</span></a></nav>
 <div class="welcome"><p class="eyebrow">Vos courses, mieux informées</p><h2>Comparez les prix.<br>Choisissez où acheter.</h2><p>Trouvez votre prix. Préparez votre panier. Sans compte.</p></div>
 <section class="search-panel" aria-label="Recherche de prix">
 <form id="searchForm"><label for="searchInput">Quel produit cherchez-vous ?</label><div class="search-form"><input id="searchInput" type="search" maxlength="200" placeholder="Ex. riz, huile, lait" required><button class="search-btn" type="submit">Comparer</button></div></form>
@@ -25,17 +25,8 @@
 <div id="resultsContent" class="results"></div>
 </section>
 
-<section id="basket" class="basket-panel" aria-labelledby="basketHeading">
-<div class="basket-heading"><div><p class="eyebrow">Préparez vos courses</p><h2 id="basketHeading">Mon panier virtuel</h2><p id="basketCount">0 article</p></div><button id="clearBasket" type="button">Vider le panier</button></div>
-<p>Choisissez vos articles et leurs quantités.</p>
-<p id="basketEmpty" class="basket-empty">🛍️ Votre panier est vide. Ajoutez une offre.</p>
-<div id="basketItems"></div><div id="basketStores" class="basket-stores"></div>
-<div class="basket-total"><span>Total estimé</span><strong id="basketTotal">0 FCFA</strong></div>
-<details class="quick-help"><summary>ⓘ À propos du total</summary><p>Prix sélectionnés, hors livraison. Prix et disponibilité à confirmer en magasin. Aucune commande n’est passée.</p></details>
-<p class="unit">💾 Conservé sur cet appareil · Sans compte</p><p id="basketNotice" role="status" aria-live="polite"></p>
-</section>
-<aside class="share-callout"><div><h2>Vous avez vu un prix en magasin ?</h2><p>📸 Un prix vu en magasin ? Aidez les autres à économiser.</p></div><a class="cta-link" href="./contribuer.html">Partager un prix</a></aside>
-<section class="how-it-works" aria-label="Comment fonctionne ComparePrix"><h2>Simple comme 1, 2, 3</h2><ol class="steps visual-steps"><li><span class="step-icon" aria-hidden="true">🔎</span><strong>Comparez</strong><span>Le même produit, le même format.</span></li><li><span class="step-icon" aria-hidden="true">🛍️</span><strong>Préparez votre panier</strong><span>Votre budget en un coup d’œil.</span></li><li><span class="step-icon" aria-hidden="true">📸</span><strong>Partagez un prix</strong><span>Avec un compte gratuit.</span></li></ol></section>
-</main><a class="basket-dock" href="#basket" aria-label="Voir mon panier"><span>🛍️ Panier <span id="basketDockCount">0</span></span><strong id="basketDockTotal">0 FCFA</strong><span aria-hidden="true">→</span></a><div id="basketToast" class="basket-toast" role="status" aria-live="polite"></div>
+
+
+</main><a class="basket-dock" href="./panier.html" aria-label="Voir mon panier"><span>🛍️ Panier <span id="basketDockCount">0</span></span><strong id="basketDockTotal">0 FCFA</strong><span aria-hidden="true">→</span></a><div id="basketToast" class="basket-toast" role="status" aria-live="polite"></div>
 <script src="./static/basket.js"></script><script src="./static/compareprix.js"></script>
 </body></html>
