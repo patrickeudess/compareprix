@@ -65,6 +65,10 @@ def register_collaboration(app, is_admin):
         if 'phone' not in {row['name'] for row in conn.execute('PRAGMA table_info(users)')}:
             conn.execute('ALTER TABLE users ADD COLUMN phone TEXT')
         conn.execute('CREATE UNIQUE INDEX IF NOT EXISTS users_phone_unique ON users(phone)')
+        columns = {row['name'] for row in conn.execute('PRAGMA table_info(contributions)')}
+        for field in ('city', 'district', 'shop'):
+            if field not in columns:
+                conn.execute(f"ALTER TABLE contributions ADD COLUMN {field} TEXT NOT NULL DEFAULT ''")
 
     def now():
         return datetime.now(timezone.utc).isoformat()
@@ -104,7 +108,7 @@ def register_collaboration(app, is_admin):
             base = {'g': 'kg', 'ml': 'L'}.get(row['unit'], row['unit'])
             latest[key] = dict(article=' · '.join(filter(None, [row['article'],row['brand'],row['variant']])),
                 supermarche=row['store'], prix=row['price'], unite=f"{row['quantity']:g} {row['unit']}",
-                lieu=row['location'], date_releve=row['observed_at'], source='Contribution validée',
+                lieu=row['location'], ville=row['city'], quartier=row['district'], boutique=row['shop'], date_releve=row['observed_at'], source='Contribution validée',
                 prix_unitaire=round(row['price'] / (row['quantity'] * factor), 2), unite_reference=base)
         return list(latest.values())
 
@@ -124,6 +128,12 @@ def register_collaboration(app, is_admin):
         session.setdefault('csrf', secrets.token_hex(32))
         current = user()
         return jsonify(user=dict(current) if current else None, csrf=session['csrf'])
+
+    @app.get('/api/locations')
+    def locations():
+        with db() as conn:
+            rows = conn.execute("SELECT DISTINCT city,district,shop,store FROM contributions WHERE status='approved' AND city<>'' AND district<>'' AND shop<>'' ORDER BY city,district,shop").fetchall()
+        return jsonify(cities=['Abidjan'], locations=[dict(row) for row in rows])
 
     @app.post('/api/account/<action>')
     def account_action(action):
@@ -195,11 +205,12 @@ def register_collaboration(app, is_admin):
             return error('Session expirée. Actualisez la page.', 403)
         data = request.form
         values = {}
-        for field, limit, required in [('article',200,True),('brand',100,False),('variant',100,False),('store',120,True),('location',200,True)]:
+        for field, limit, required in [('article',200,True),('brand',100,False),('variant',100,False),('store',120,True),('city',50,True),('district',60,True),('shop',80,True)]:
             value = data.get(field, '').strip()
             if len(value)>limit or (required and not value):
                 return error('Vérifiez le produit, le magasin et sa localisation.')
             values[field] = value
+        values['location'] = ' · '.join(values[field] for field in ('city','district','shop'))
         try:
             price = int(data.get('price',''))
             quantity = float(data.get('quantity',''))
@@ -239,8 +250,8 @@ def register_collaboration(app, is_admin):
             (folder / proof_path).write_bytes(clean)
         try:
             with db() as conn:
-                cursor = conn.execute('''INSERT INTO contributions(user_id,article,brand,variant,quantity,unit,price,store,location,observed_at,created_at,proof,proof_hash,fingerprint)
-                  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', (current['id'],values['article'],values['brand'],values['variant'],quantity,unit,price,values['store'],values['location'],observed.isoformat(),now(),proof_path,proof_hash,fingerprint))
+                cursor = conn.execute('''INSERT INTO contributions(user_id,article,brand,variant,quantity,unit,price,store,location,observed_at,created_at,proof,proof_hash,fingerprint,city,district,shop)
+                  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', (current['id'],values['article'],values['brand'],values['variant'],quantity,unit,price,values['store'],values['location'],observed.isoformat(),now(),proof_path,proof_hash,fingerprint,values['city'],values['district'],values['shop']))
                 cid = cursor.lastrowid
         except sqlite3.IntegrityError:
             if proof_path:
