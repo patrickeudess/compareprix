@@ -1,7 +1,7 @@
 'use strict';
 let csrf='',currentUser=null,registering=false,online=false;
 const byId=id=>document.getElementById(id),form=byId('contributionForm'),message=byId('message');
-const fields=['article','brand','variant','quantity','unit','price','store','location','observed_at'];
+const fields=['article','brand','variant','quantity','unit','price','store','location','city','district','shop','observed_at'];
 const draftKey='compareprix-contribution-draft-v1';
 function tell(text){message.textContent=text;}
 async function api(url,options={}){
@@ -71,3 +71,23 @@ if(new URLSearchParams(location.search).get('intent')==='update'){
 byId('switchAuth').click();
 }
 document.querySelector('.account-layout').classList.toggle('account-first',!currentUser);
+
+let locationCatalog={cities:['Abidjan'],locations:[]};
+const normalizePlace=value=>String(value||'').trim().toLocaleLowerCase('fr');
+function options(id,values){byId(id).replaceChildren(...[...new Set(values.filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr')).map(value=>new Option(value,value)));}
+function updatePlaceSuggestions(){
+const city=normalizePlace(byId('city').value),district=normalizePlace(byId('district').value),store=normalizePlace(byId('store').value);
+options('cityOptions',[...(locationCatalog.cities||[]),...locationCatalog.locations.map(row=>row.city)]);
+options('districtOptions',locationCatalog.locations.filter(row=>normalizePlace(row.city)===city).map(row=>row.district));
+options('shopOptions',locationCatalog.locations.filter(row=>normalizePlace(row.city)===city&&normalizePlace(row.district)===district&&(!store||normalizePlace(row.store)===store)).map(row=>row.shop));
+byId('district').disabled=!city;byId('shop').disabled=!city||!district;
+byId('location').value=['city','district','shop'].map(key=>byId(key).value.trim()).filter(Boolean).join(' · ');
+}
+byId('city').addEventListener('input',()=>{byId('district').value='';byId('shop').value='';updatePlaceSuggestions();saveDraft();});
+byId('district').addEventListener('input',()=>{byId('shop').value='';updatePlaceSuggestions();saveDraft();});
+byId('store').addEventListener('input',()=>{byId('shop').value='';updatePlaceSuggestions();saveDraft();});
+byId('shop').addEventListener('input',()=>{updatePlaceSuggestions();saveDraft();});
+form.addEventListener('reset',()=>setTimeout(updatePlaceSuggestions,0));
+['city','district','shop'].forEach(key=>{if(incoming.get(key))byId(key).value=incoming.get(key).slice(0,key==='city'?50:key==='district'?60:80);});
+updatePlaceSuggestions();
+fetch(document.body.dataset.preview==='true'?'./static/locations.json':'/api/locations').then(response=>{if(!response.ok)throw new Error();return response.json();}).then(data=>{if(Array.isArray(data.locations)){locationCatalog=data;updatePlaceSuggestions();}}).catch(()=>{byId('locationHelp').textContent='Les suggestions ne sont pas disponibles pour le moment. Saisissez la ville, le quartier et la boutique dans leurs champs séparés.';});
