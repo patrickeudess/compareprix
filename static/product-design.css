@@ -38,3 +38,6 @@ body[data-page="account"] .account-layout{display:block;max-width:620px;margin:2
 .suggestions{gap:10px}
 .basket-line button,.basket-line input{padding-block:10px}
 select{min-height:44px}
+/* Icônes SVG : alignées sur le texte (remplacent les emoji de navigation) */
+.basket-dock svg{vertical-align:-3px;margin-right:4px}
+.page-nav svg{display:block}
