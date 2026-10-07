@@ -158,5 +158,62 @@
     "unite_reference": "L",
     "lieu": "En ligne · livraison en supplément",
     "source_catalogue": "https://www.jumia.ci/epicerie/"
+  },
+  {
+    "source": "prix_internet",
+    "statut": "prix_internet",
+    "date_consultation": "2026-10-07",
+    "date_releve": null,
+    "disponibilite": "unknown",
+    "type_offre": "online",
+    "actualisation": "manual",
+    "lieu": "En ligne · adresse de retrait à confirmer",
+    "article": "Mayonnaise Aromate",
+    "supermarche": "Coco Market · OpenMoise",
+    "prix": 1300,
+    "unite": "450 ml",
+    "prix_unitaire": 2888.89,
+    "unite_reference": "L",
+    "url": "https://openmoise.ci/shop/mayo-pot-aromate-450ml-91525",
+    "source_catalogue": "https://openmoise.ci/seller/shop/coco-market/category/1528"
+  },
+  {
+    "source": "prix_internet",
+    "statut": "prix_internet",
+    "date_consultation": "2026-10-07",
+    "date_releve": null,
+    "disponibilite": "unknown",
+    "type_offre": "online",
+    "actualisation": "manual",
+    "lieu": "En ligne · adresse de retrait à confirmer",
+    "article": "Huile végétale Dinor",
+    "supermarche": "Coco Market · OpenMoise",
+    "prix": 1770,
+    "unite": "1,5 L",
+    "prix_unitaire": 1180,
+    "unite_reference": "L",
+    "url": "https://openmoise.ci/shop/huile-dinor-1-5l-91523",
+    "source_catalogue": "https://openmoise.ci/seller/shop/coco-market/category/1528"
+  },
+  {
+    "source": "prix_internet",
+    "statut": "prix_internet",
+    "date_consultation": "2026-10-07",
+    "date_releve": null,
+    "disponibilite": "unknown",
+    "type_offre": "online",
+    "actualisation": "manual",
+    "lieu": "En ligne · adresse de retrait à confirmer",
+    "article": "Huile végétale Dinor",
+    "supermarche": "Ivoire Center (en ligne)",
+    "prix": 1775,
+    "unite": "1,5 L",
+    "prix_unitaire": 1183.33,
+    "unite_reference": "L",
+    "zones_livraison": [
+      "Abidjan"
+    ],
+    "url": "https://ivoirecenter.achetermoi.com/product/426",
+    "source_catalogue": "https://ivoirecenter.achetermoi.com/"
   }
 ]
