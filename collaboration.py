@@ -118,7 +118,12 @@ def register_collaboration(app, is_admin):
     @app.get('/contribuer')
     @app.get('/contribuer.html')
     def account_page():
-        return render_template('community.html')
+        return render_template('community.html', page='contribution' if 'contribuer' in request.path else 'account')
+
+    @app.get('/panier')
+    @app.get('/panier.html')
+    def basket_page():
+        return render_template('basket.html')
 
     @app.get('/admin/contributions')
     def moderation_page():
