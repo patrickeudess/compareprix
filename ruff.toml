@@ -1,0 +1,6 @@
+# Lint minimal : erreurs de syntaxe (E9) et pyflakes (F : imports inutiles, noms indéfinis...).
+target-version = "py310"
+line-length = 120
+
+[lint]
+select = ["E9", "F"]

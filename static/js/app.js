@@ -31,7 +31,7 @@ function showToast(message, type = 'info') {
     toast.innerHTML = `
         <div style="display: flex; align-items: center; gap: 10px;">
             <span>${getToastIcon(type)}</span>
-            <span>${message}</span>
+            <span>${String(message).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</span>
         </div>
     `;
     
@@ -97,7 +97,7 @@ function exportResults(format = 'json') {
 }
 
 function convertToCSV(data) {
-    const headers = ['Article', 'Supermarché', 'Prix (FCFA)', 'Unité', 'URL'];
+    const headers = ['Article', 'Supermarché', 'Prix (FCFA)', 'Unité', 'Prix unitaire', 'Unité de base', 'Date relevé', 'Source', 'URL'];
     const csvRows = [headers.join(',')];
     
     data.forEach(item => {
@@ -106,6 +106,10 @@ function convertToCSV(data) {
             `"${item.supermarche}"`,
             item.prix,
             `"${item.unite}"`,
+            item.prix_unitaire ?? '',
+            `"${item.unite_base || ''}"`,
+            `"${item.date_releve || ''}"`,
+            `"${item.source || ''}"`,
             `"${item.url || ''}"`
         ];
         csvRows.push(row.join(','));

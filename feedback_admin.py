@@ -5,9 +5,10 @@ Interface pour l'équipe ComparePrix
 """
 
 import json
-import os
 from datetime import datetime
 from typing import List, Dict
+
+import db
 
 class FeedbackAdmin:
     def __init__(self):
@@ -15,17 +16,9 @@ class FeedbackAdmin:
         self.photos_dir = 'data/user_photos'
         
     def load_feedback(self) -> List[Dict]:
-        """Charge tous les signalements"""
-        if os.path.exists(self.feedback_file):
-            with open(self.feedback_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        return []
-    
-    def save_feedback(self, feedback_list: List[Dict]):
-        """Sauvegarde les signalements"""
-        os.makedirs(os.path.dirname(self.feedback_file), exist_ok=True)
-        with open(self.feedback_file, 'w', encoding='utf-8') as f:
-            json.dump(feedback_list, f, ensure_ascii=False, indent=2)
+        """Charge tous les signalements (base SQLite)"""
+        db.init_db()
+        return db.list_feedback()
     
     def get_feedback_by_status(self, status: str = None) -> List[Dict]:
         """Récupère les signalements par statut"""
@@ -35,21 +28,11 @@ class FeedbackAdmin:
         return feedback_list
     
     def update_feedback_status(self, feedback_id: str, new_status: str, 
-                              reviewer: str, review_notes: str = "") -> bool:
-        """Met à jour le statut d'un signalement"""
-        feedback_list = self.load_feedback()
-        
-        for feedback in feedback_list:
-            if feedback['id'] == feedback_id:
-                feedback['status'] = new_status
-                feedback['reviewed_by'] = reviewer
-                feedback['review_date'] = datetime.now().isoformat()
-                feedback['review_notes'] = review_notes
-                
-                self.save_feedback(feedback_list)
-                return True
-        
-        return False
+                              reviewer: str, review_notes: str = ""):
+        """Met à jour le statut. Retourne None si introuvable, sinon le résultat
+        {'applied', 'observation_id', 'reason'} (approuvé => nouveau relevé de prix)."""
+        db.init_db()
+        return db.set_feedback_status(feedback_id, new_status, review_notes, reviewer)
     
     def get_feedback_stats(self) -> Dict:
         """Génère des statistiques sur les signalements"""
@@ -196,7 +179,7 @@ def main():
         
         elif choice == '3':
             stats = admin.get_feedback_stats()
-            print(f"\n📊 Statistiques des signalements:")
+            print("\n📊 Statistiques des signalements:")
             print(f"   - Total: {stats['total']}")
             print(f"   - En attente: {stats['pending']}")
             print(f"   - Approuvés: {stats['approved']}")
@@ -205,12 +188,12 @@ def main():
             print(f"   - Récents (7 jours): {len(stats['recent'])}")
             
             if stats['by_type']:
-                print(f"\n📈 Par type:")
+                print("\n📈 Par type:")
                 for feedback_type, count in stats['by_type'].items():
                     print(f"   - {feedback_type}: {count}")
             
             if stats['by_supermarket']:
-                print(f"\n🏪 Par supermarché:")
+                print("\n🏪 Par supermarché:")
                 for supermarket, count in stats['by_supermarket'].items():
                     print(f"   - {supermarket}: {count}")
         
@@ -220,7 +203,7 @@ def main():
                 print("Aucun signalement en attente.")
                 continue
             
-            print(f"\n📋 Signalements en attente:")
+            print("\n📋 Signalements en attente:")
             display_feedback_table(pending_feedback)
             
             feedback_id = input("\nEntrez l'ID du signalement à traiter: ").strip()
@@ -242,7 +225,7 @@ def main():
             display_feedback_details(target_feedback)
             
             # Traitement
-            print(f"\n🔄 Traitement du signalement:")
+            print("\n🔄 Traitement du signalement:")
             print("1. Approuver et mettre à jour le prix")
             print("2. Rejeter")
             print("3. Marquer comme en cours d'investigation")
@@ -262,16 +245,16 @@ def main():
                 
                 new_status = status_map[action]
                 
-                if admin.update_feedback_status(target_feedback['id'], new_status, reviewer, review_notes):
+                outcome = admin.update_feedback_status(target_feedback['id'], new_status, reviewer, review_notes)
+                if outcome is not None:
                     print(f"✅ Signalement {new_status} avec succès!")
                     
-                    # Si approuvé, proposer de mettre à jour le prix
+                    # Approuvé => le prix est appliqué automatiquement (nouveau relevé)
                     if action == '1':
-                        update_price = input("Mettre à jour le prix dans la base de données ? (o/n): ").strip().lower()
-                        if update_price == 'o':
-                            # Ici, on pourrait mettre à jour le prix dans articles.json
-                            print("🔄 Mise à jour du prix...")
-                            print("✅ Prix mis à jour dans la base de données!")
+                        if outcome['applied']:
+                            print(f"💰 Prix mis à jour (relevé n°{outcome['observation_id']}).")
+                        else:
+                            print(f"⚠️ Prix NON mis à jour : {outcome['reason']}")
                 else:
                     print("❌ Erreur lors de la mise à jour.")
         

@@ -7,11 +7,9 @@ Contrôle qualité : Validation multi-sources, détection d'incohérences
 
 import json
 import os
-import csv
-from datetime import datetime, timedelta
+from datetime import datetime
 import hashlib
-from typing import List, Dict, Optional, Tuple
-import re
+from typing import List, Dict
 
 class DataCollector:
     def __init__(self):
