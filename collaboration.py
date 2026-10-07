@@ -68,6 +68,9 @@ def register_collaboration(app, is_admin):
         conn.execute('CREATE UNIQUE INDEX IF NOT EXISTS users_phone_unique ON users(phone)')
         if 'availability' not in {row['name'] for row in conn.execute('PRAGMA table_info(contributions)')}:
             conn.execute("ALTER TABLE contributions ADD COLUMN availability TEXT NOT NULL DEFAULT 'unknown'")
+        conn.execute('CREATE TABLE IF NOT EXISTS merchant_profiles (user_id INTEGER PRIMARY KEY REFERENCES users(id), store TEXT NOT NULL, city TEXT NOT NULL, district TEXT NOT NULL, shop TEXT NOT NULL, updated_at TEXT NOT NULL)')
+        if 'submitted_by' not in {row['name'] for row in conn.execute('PRAGMA table_info(contributions)')}:
+            conn.execute("ALTER TABLE contributions ADD COLUMN submitted_by TEXT NOT NULL DEFAULT 'customer'")
         columns = {row['name'] for row in conn.execute('PRAGMA table_info(contributions)')}
         for field in ('city', 'district', 'shop'):
             if field not in columns:
@@ -111,9 +114,38 @@ def register_collaboration(app, is_admin):
             base = {'g': 'kg', 'ml': 'L'}.get(row['unit'], row['unit'])
             latest[key] = dict(article=' · '.join(filter(None, [row['article'],row['brand'],row['variant']])),
                 supermarche=row['store'], prix=row['price'], unite=f"{row['quantity']:g} {row['unit']}",
-                lieu=row['location'], ville=row['city'], quartier=row['district'], boutique=row['shop'], disponibilite=row['availability'], date_disponibilite=row['observed_at'] if row['availability']!='unknown' else None, date_releve=row['observed_at'], source='Contribution validée',
+                lieu=row['location'], ville=row['city'], quartier=row['district'], boutique=row['shop'], disponibilite=row['availability'], date_disponibilite=row['observed_at'] if row['availability']!='unknown' else None, date_releve=row['observed_at'], source='Relevé commerçant validé' if row['submitted_by']=='merchant' else 'Contribution validée',
                 prix_unitaire=round(row['price'] / (row['quantity'] * factor), 2), unite_reference=base)
         return list(latest.values())
+
+    @app.get('/commercant.html')
+    @app.get('/commercant')
+    def merchant_page():
+        return render_template('community.html', page='contribution', merchant=True)
+
+    @app.route('/api/merchant/profile', methods=['GET','PUT'])
+    def merchant_profile():
+        current = user()
+        if not current:
+            return error('Connectez-vous pour gérer votre boutique.',401)
+        if request.method == 'GET':
+            with db() as conn:
+                row=conn.execute('SELECT store,city,district,shop FROM merchant_profiles WHERE user_id=?',(current['id'],)).fetchone()
+            return jsonify(profile=dict(row) if row else None)
+        if not csrf_ok():
+            return error('Session expirée. Actualisez la page.',403)
+        data=request.get_json(silent=True)
+        if not isinstance(data,dict):
+            return error('Informations de boutique invalides.')
+        values=[]
+        for field,limit in [('store',120),('city',50),('district',60),('shop',80)]:
+            value=data.get(field,'')
+            if not isinstance(value,str) or not value.strip() or len(value.strip())>limit:
+                return error('Renseignez le magasin, la ville, la commune et la boutique précise.')
+            values.append(value.strip())
+        with db() as conn:
+            conn.execute('INSERT INTO merchant_profiles VALUES (?,?,?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET store=excluded.store,city=excluded.city,district=excluded.district,shop=excluded.shop,updated_at=excluded.updated_at',(current['id'],*values,now()))
+        return jsonify(message='Boutique enregistrée. Les prix seront soumis à validation.')
 
     @app.get('/compte')
     @app.get('/compte.html')
@@ -220,6 +252,9 @@ def register_collaboration(app, is_admin):
             if len(value)>limit or (required and not value):
                 return error('Vérifiez le produit, le magasin et sa localisation.')
             values[field] = value
+        submitted_by = data.get('submitted_by','customer')
+        if submitted_by not in ('customer','merchant'):
+            return error('Type de contribution invalide.')
         availability = data.get('availability','unknown')
         if availability not in ('available','out_of_stock','unknown'):
             return error('Choisissez un statut de disponibilité valide.')
@@ -264,7 +299,7 @@ def register_collaboration(app, is_admin):
         try:
             with db() as conn:
                 cursor = conn.execute('''INSERT INTO contributions(user_id,article,brand,variant,quantity,unit,price,store,location,observed_at,created_at,proof,proof_hash,fingerprint,city,district,shop,availability)
-                  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', (current['id'],values['article'],values['brand'],values['variant'],quantity,unit,price,values['store'],values['location'],observed.isoformat(),now(),proof_path,proof_hash,fingerprint,values['city'],values['district'],values['shop'],availability))
+                  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', (current['id'],values['article'],values['brand'],values['variant'],quantity,unit,price,values['store'],values['location'],observed.isoformat(),now(),proof_path,proof_hash,fingerprint,values['city'],values['district'],values['shop'],availability,submitted_by))
                 cid = cursor.lastrowid
         except sqlite3.IntegrityError:
             if proof_path:
