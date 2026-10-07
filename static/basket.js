@@ -39,7 +39,7 @@ for(const item of basket){const subtotal=item.price*item.quantity;total+=subtota
 if(document.getElementById('basketEmpty'))document.getElementById('basketEmpty').hidden=!!basket.length;
 if(document.getElementById('basketTotal'))document.getElementById('basketTotal').textContent=basketMoney.format(total)+' FCFA';
 if(document.getElementById('basketCount'))document.getElementById('basketCount').textContent=count+' article'+(count>1?'s':'');
-document.getElementById('basketNavCount').textContent=count;const dockCount=document.getElementById('basketDockCount'),dockTotal=document.getElementById('basketDockTotal');if(dockCount)dockCount.textContent=count;if(dockTotal)dockTotal.textContent=basketMoney.format(total)+' FCFA';
+document.getElementById('basketNavCount').textContent=count;const dockCount=document.getElementById('basketDockCount'),dockTotal=document.getElementById('basketDockTotal');if(dockCount)dockCount.textContent=count;const dock=document.querySelector('.basket-dock');if(dock)dock.hidden=count===0;if(dockTotal)dockTotal.textContent=basketMoney.format(total)+' FCFA';
 if(document.getElementById('clearBasket'))document.getElementById('clearBasket').disabled=!basket.length;
 const breakdown=document.getElementById('basketStores');if(!breakdown)return;breakdown.replaceChildren();
 if(stores.size>1){for(const [store,amount] of stores){const row=document.createElement('p');row.textContent=store+' : '+basketMoney.format(amount)+' FCFA';breakdown.append(row);}}

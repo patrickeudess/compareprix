@@ -41,3 +41,6 @@ select{min-height:44px}
 /* Icônes SVG : alignées sur le texte (remplacent les emoji de navigation) */
 .basket-dock svg{vertical-align:-3px;margin-right:4px}
 .page-nav svg{display:block}
+/* Barre du panier : visible seulement quand le panier contient un article */
+.basket-dock[hidden]{display:none}
+body:has(.basket-dock[hidden]){padding-bottom:105px}
