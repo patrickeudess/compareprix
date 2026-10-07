@@ -12,7 +12,7 @@
 <body data-prices="/api/articles">
 <main>
 <header><img src="./static/compareprix-mark.svg" alt=""><h1>ComparePrix</h1></header>
-<nav class="app-nav" aria-label="Navigation principale"><a href="#searchForm">Comparer les prix</a><a href="./contribuer.html" class="nav-action">Partager un prix</a><a href="./compte.html">Mon compte</a></nav>
+<nav class="app-nav" aria-label="Navigation principale"><a href="#searchForm">Comparer les prix</a><a href="#basket">Mon panier (<span id="basketNavCount">0</span>)</a><a href="./contribuer.html" class="nav-action">Partager un prix</a><a href="./compte.html">Mon compte</a></nav>
 <div class="welcome"><p class="eyebrow">Vos courses, mieux informées</p><h2>Comparez les prix.<br>Choisissez où acheter.</h2><p>Retrouvez les prix relevés dans les magasins et marchés. Consultez le format, le lieu et la date avant de faire vos courses. La recherche est libre, sans compte.</p></div>
 <section class="search-panel" aria-label="Recherche de prix">
 <form id="searchForm"><label for="searchInput">Quel produit cherchez-vous ?</label><div class="search-form"><input id="searchInput" type="search" maxlength="200" placeholder="Ex. riz, huile, lait" required><button class="search-btn" type="submit">Comparer</button></div></form>
@@ -25,12 +25,17 @@
 <div id="resultsContent" class="results"></div>
 </section>
 
+<section id="basket" class="basket-panel" aria-labelledby="basketHeading">
+<div class="basket-heading"><div><p class="eyebrow">Préparez vos courses</p><h2 id="basketHeading">Mon panier virtuel</h2><p id="basketCount">0 article</p></div><button id="clearBasket" type="button">Vider le panier</button></div>
+<p>Ajoutez les offres de votre choix, puis indiquez combien de paquets, bouteilles ou pièces vous souhaitez acheter.</p>
+<p id="basketEmpty" class="basket-empty">Votre panier est vide. Recherchez un produit et cliquez sur « Ajouter au panier ».</p>
+<div id="basketItems"></div><div id="basketStores" class="basket-stores"></div>
+<div class="basket-total"><span>Total estimé</span><strong id="basketTotal">0 FCFA</strong></div>
+<p class="unit">Estimation basée sur les prix sélectionnés, hors livraison. Le prix et la disponibilité sont à confirmer en magasin. Ce panier ne passe aucune commande.</p>
+<p class="unit">Sans compte. Votre panier est conservé sur cet appareil.</p><p id="basketNotice" role="status" aria-live="polite"></p>
+</section>
 <aside class="share-callout"><div><h2>Vous avez vu un prix en magasin ?</h2><p>Partagez le produit, son prix et le lieu où vous l’avez vu. Après vérification, votre relevé aide les autres à comparer.</p></div><a class="cta-link" href="./contribuer.html">Partager un prix</a></aside>
 <section class="how-it-works" aria-label="Comment fonctionne ComparePrix"><h2>Comment ça marche ?</h2><ol class="steps"><li><span class="step-number">01</span><strong>Recherchez un produit</strong><span>Entrez son nom, sans créer de compte.</span></li><li><span class="step-number">02</span><strong>Comparez les mêmes formats</strong><span>Consultez les prix, le magasin et la date du relevé.</span></li><li><span class="step-number">03</span><strong>Aidez à actualiser les prix</strong><span>Un compte permet de partager vos observations et de suivre leur validation.</span></li></ol></section>
 </main>
-<script src="./static/compareprix.js"></script>
+<script src="./static/basket.js"></script><script src="./static/compareprix.js"></script>
 </body></html>
-
-
-
-
