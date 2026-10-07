@@ -16,3 +16,4 @@ requirements-dev.txt
 *.md
 start.bat
 start.sh
+.claude

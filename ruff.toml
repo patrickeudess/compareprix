@@ -1,6 +1,8 @@
 # Lint minimal : erreurs de syntaxe (E9) et pyflakes (F : imports inutiles, noms indéfinis...).
 target-version = "py310"
 line-length = 120
+# Code tiers installé tel quel (skills Claude) : non analysé par le lint du projet
+extend-exclude = [".claude"]
 
 [lint]
 select = ["E9", "F"]

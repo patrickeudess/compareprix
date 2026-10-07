@@ -1,0 +1,20 @@
+Skill tiers installé tel quel (sauf indication ci-dessous).
+
+Origine   : https://github.com/nextlevelbuilder/ui-ux-pro-max-skill
+Version   : 2.13.0
+Commit    : 477bcb2 (fix: stop Cursor skill pointing at empty Quick Reference (#509))
+Licence   : MIT (voir LICENSE)
+Dossier   : .claude/skills/ui-ux-pro-max/ de l'origine
+
+Modifications par rapport à l'origine :
+  - SKILL.md : le préfixe ${CLAUDE_PLUGIN_ROOT}/ des commandes du script de recherche est remplacé par un chemin
+    relatif à la racine du projet (.claude/skills/ui-ux-pro-max/scripts/search.py), comme le fait l'installateur officiel
+    pour une installation locale.
+  - scripts/tests/ non copié (tests de maintenance de l'auteur ; ils lancent des sous-processus).
+
+Non installés (revue faite, effets de bord) : les 6 skills compagnons design, design-system, brand, ui-styling, slides,
+banner-design (appels à des API d'images externes, lecture de fichiers .env, npx, sous-processus).
+
+Revue de sécurité : imports et motifs sensibles vérifiés (aucun appel réseau, aucun eval/exec, aucune lecture de secrets dans
+les scripts installés) ; lecture ciblée des parties qui écrivent des fichiers. Revue non exhaustive ligne à ligne.
+Mettre à jour : recloner le dépôt d'origine, relire le diff, recopier.
