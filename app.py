@@ -75,7 +75,13 @@ def load_manual_articles():
     return []
 
 def present(articles):
-    return articles
+    normalized = [dict(a, statut=a.get('statut', 'a_verifier'), date_releve=a.get('date_releve')) for a in articles]
+    enriched = enrich_results(normalized)
+    for raw, item in zip(normalized, enriched):
+        if raw.get('prix_unitaire') is not None and raw.get('unite_base'):
+            item['prix_unitaire'] = raw['prix_unitaire']
+            item['unite_base'] = raw['unite_base']
+    return enriched
 
 
 def load_articles():
