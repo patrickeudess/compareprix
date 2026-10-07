@@ -25,10 +25,16 @@ const price=document.createElement('p');price.className='unit';price.textContent
 const controls=document.createElement('div');controls.className='basket-controls';
 const label=document.createElement('label');label.textContent='Quantité';
 const quantity=document.createElement('input');quantity.type='number';quantity.min='1';quantity.max='99';quantity.step='1';quantity.value=item.quantity;quantity.setAttribute('aria-label','Quantité de '+item.article+' chez '+item.store);
-quantity.addEventListener('change',()=>{const value=Number(quantity.value);if(!Number.isInteger(value)||value<1||value>99){quantity.value=item.quantity;return;}item.quantity=value;persistBasket();renderBasket();});label.append(quantity);
+quantity.addEventListener('input',()=>{const value=Number(quantity.value);if(!Number.isInteger(value)||value<1||value>99){if(quantity.value!=='')quantity.value=item.quantity;return;}item.quantity=value;persistBasket();sum.textContent=basketMoney.format(item.price*value)+' FCFA';renderBasketTotals();});
+quantity.addEventListener('change',()=>{quantity.value=item.quantity;});quantity.addEventListener('blur',()=>{quantity.value=item.quantity;});label.append(quantity);
 const sum=document.createElement('strong');sum.textContent=basketMoney.format(subtotal)+' FCFA';
 const remove=document.createElement('button');remove.type='button';remove.textContent='Retirer';remove.setAttribute('aria-label','Retirer '+item.article+' chez '+item.store);remove.addEventListener('click',()=>{basket=basket.filter(entry=>entry.id!==item.id);persistBasket();renderBasket();basketNotice.textContent=item.article+' retiré du panier.';});controls.append(label,sum,remove);line.append(details,controls);basketList.append(line);
 }
+renderBasketTotals();
+}
+function renderBasketTotals(){
+let total=0,count=0;const stores=new Map();
+for(const item of basket){const subtotal=item.price*item.quantity;total+=subtotal;count+=item.quantity;stores.set(item.store,(stores.get(item.store)||0)+subtotal);}
 document.getElementById('basketEmpty').hidden=!!basket.length;
 document.getElementById('basketTotal').textContent=basketMoney.format(total)+' FCFA';
 document.getElementById('basketCount').textContent=count+' article'+(count>1?'s':'');
