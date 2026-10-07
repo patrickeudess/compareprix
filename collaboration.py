@@ -66,6 +66,8 @@ def register_collaboration(app, is_admin):
         if 'phone' not in {row['name'] for row in conn.execute('PRAGMA table_info(users)')}:
             conn.execute('ALTER TABLE users ADD COLUMN phone TEXT')
         conn.execute('CREATE UNIQUE INDEX IF NOT EXISTS users_phone_unique ON users(phone)')
+        if 'availability' not in {row['name'] for row in conn.execute('PRAGMA table_info(contributions)')}:
+            conn.execute("ALTER TABLE contributions ADD COLUMN availability TEXT NOT NULL DEFAULT 'unknown'")
         columns = {row['name'] for row in conn.execute('PRAGMA table_info(contributions)')}
         for field in ('city', 'district', 'shop'):
             if field not in columns:
@@ -109,7 +111,7 @@ def register_collaboration(app, is_admin):
             base = {'g': 'kg', 'ml': 'L'}.get(row['unit'], row['unit'])
             latest[key] = dict(article=' · '.join(filter(None, [row['article'],row['brand'],row['variant']])),
                 supermarche=row['store'], prix=row['price'], unite=f"{row['quantity']:g} {row['unit']}",
-                lieu=row['location'], ville=row['city'], quartier=row['district'], boutique=row['shop'], date_releve=row['observed_at'], source='Contribution validée',
+                lieu=row['location'], ville=row['city'], quartier=row['district'], boutique=row['shop'], disponibilite=row['availability'], date_disponibilite=row['observed_at'] if row['availability']!='unknown' else None, date_releve=row['observed_at'], source='Contribution validée',
                 prix_unitaire=round(row['price'] / (row['quantity'] * factor), 2), unite_reference=base)
         return list(latest.values())
 
@@ -218,6 +220,9 @@ def register_collaboration(app, is_admin):
             if len(value)>limit or (required and not value):
                 return error('Vérifiez le produit, le magasin et sa localisation.')
             values[field] = value
+        availability = data.get('availability','unknown')
+        if availability not in ('available','out_of_stock','unknown'):
+            return error('Choisissez un statut de disponibilité valide.')
         values['location'] = ' · '.join(values[field] for field in ('city','district','shop'))
         try:
             price = int(data.get('price',''))
@@ -230,7 +235,7 @@ def register_collaboration(app, is_admin):
             return error('Le prix et la quantité doivent être positifs ; choisissez une unité.')
         if observed>date.today() or observed<date.today()-timedelta(days=30):
             return error('Le relevé doit dater des 30 derniers jours et ne peut pas être dans le futur.')
-        fingerprint = hashlib.sha256(repr(tuple(values.values())+(quantity,unit,price,observed.isoformat())).casefold().encode()).hexdigest()
+        fingerprint = hashlib.sha256(repr(tuple(values.values())+(quantity,unit,price,observed.isoformat(),availability)).casefold().encode()).hexdigest()
         proof_path = proof_hash = None
         upload = request.files.get('photo')
         if upload and upload.filename:
@@ -258,8 +263,8 @@ def register_collaboration(app, is_admin):
             (folder / proof_path).write_bytes(clean)
         try:
             with db() as conn:
-                cursor = conn.execute('''INSERT INTO contributions(user_id,article,brand,variant,quantity,unit,price,store,location,observed_at,created_at,proof,proof_hash,fingerprint,city,district,shop)
-                  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', (current['id'],values['article'],values['brand'],values['variant'],quantity,unit,price,values['store'],values['location'],observed.isoformat(),now(),proof_path,proof_hash,fingerprint,values['city'],values['district'],values['shop']))
+                cursor = conn.execute('''INSERT INTO contributions(user_id,article,brand,variant,quantity,unit,price,store,location,observed_at,created_at,proof,proof_hash,fingerprint,city,district,shop,availability)
+                  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', (current['id'],values['article'],values['brand'],values['variant'],quantity,unit,price,values['store'],values['location'],observed.isoformat(),now(),proof_path,proof_hash,fingerprint,values['city'],values['district'],values['shop'],availability))
                 cid = cursor.lastrowid
         except sqlite3.IntegrityError:
             if proof_path:
