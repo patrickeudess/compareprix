@@ -71,6 +71,8 @@ def register_collaboration(app, is_admin):
         conn.execute('CREATE TABLE IF NOT EXISTS merchant_profiles (user_id INTEGER PRIMARY KEY REFERENCES users(id), store TEXT NOT NULL, city TEXT NOT NULL, district TEXT NOT NULL, shop TEXT NOT NULL, updated_at TEXT NOT NULL)')
         if 'submitted_by' not in {row['name'] for row in conn.execute('PRAGMA table_info(contributions)')}:
             conn.execute("ALTER TABLE contributions ADD COLUMN submitted_by TEXT NOT NULL DEFAULT 'customer'")
+        if 'share_phone' not in {row['name'] for row in conn.execute('PRAGMA table_info(contributions)')}:
+            conn.execute("ALTER TABLE contributions ADD COLUMN share_phone INTEGER NOT NULL DEFAULT 0")
         columns = {row['name'] for row in conn.execute('PRAGMA table_info(contributions)')}
         for field in ('city', 'district', 'shop'):
             if field not in columns:
@@ -81,7 +83,7 @@ def register_collaboration(app, is_admin):
 
     @app.after_request
     def private_response_headers(response):
-        if request.path.startswith(('/api/account/', '/api/session', '/api/contributions', '/api/reports', '/api/admin/')):
+        if request.path.startswith(('/api/account/', '/api/merchant/', '/api/session', '/api/contributions', '/api/reports', '/api/admin/')):
             response.headers['Cache-Control'] = 'private, no-store'
         return response
 
@@ -301,6 +303,7 @@ def register_collaboration(app, is_admin):
                 cursor = conn.execute('''INSERT INTO contributions(user_id,article,brand,variant,quantity,unit,price,store,location,observed_at,created_at,proof,proof_hash,fingerprint,city,district,shop,availability,submitted_by)
                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', (current['id'],values['article'],values['brand'],values['variant'],quantity,unit,price,values['store'],values['location'],observed.isoformat(),now(),proof_path,proof_hash,fingerprint,values['city'],values['district'],values['shop'],availability,submitted_by))
                 cid = cursor.lastrowid
+                conn.execute('UPDATE contributions SET share_phone=? WHERE id=?', (1 if data.get('share_phone') == 'on' else 0, cid))
         except sqlite3.IntegrityError:
             if proof_path:
                 (root / 'proofs' / proof_path).unlink(missing_ok=True)
@@ -323,7 +326,7 @@ def register_collaboration(app, is_admin):
         if not is_admin():
             return error('Accès administrateur requis.',401)
         with db() as conn:
-            rows = conn.execute('SELECT * FROM contributions ORDER BY id DESC LIMIT 1000').fetchall()
+            rows = conn.execute('SELECT c.*, u.name AS contributor_name, CASE WHEN c.share_phone=1 THEN u.phone ELSE NULL END AS contributor_phone FROM contributions c JOIN users u ON u.id=c.user_id ORDER BY c.id DESC LIMIT 1000').fetchall()
         return jsonify(contributions=[{k:r[k] for k in r.keys() if k not in ('proof_hash','fingerprint')} for r in rows])
 
     @app.post('/api/reports')
