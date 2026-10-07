@@ -5,7 +5,22 @@ const logos = Object.freeze({
 'casino':'https://groupeprosuma.com/wp-content/uploads/2020/12/logo-casno-supermarche-mini.png'
 });
 const form=document.getElementById('searchForm'),input=document.getElementById('searchInput'),filter=document.getElementById('storeFilter'),status=document.getElementById('status'),section=document.getElementById('resultsSection'),content=document.getElementById('resultsContent');
-let results=[],searchSequence=0;
+let results=[],searchSequence=0,cataloguePromise,searchTimer;
+function normalizeSearch(value){return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('fr').replace(/[^a-z0-9]+/g,' ').trim();}
+const searchAliases={pate:'spaghetti',pates:'spaghetti',tomates:'tomate',sardine:'sardines',cafe:'cafe',nescafe:'cafe',the:'the'};
+function matchesProduct(row,term){
+const haystack=normalizeSearch([row.article,row.marque,row.brand,row.unite].filter(Boolean).join(' '));
+return normalizeSearch(term).split(' ').filter(Boolean).every(word=>haystack.includes(word)||haystack.includes(searchAliases[word]||word));
+}
+async function loadCatalogue(){
+if(!cataloguePromise)cataloguePromise=fetch(document.body.dataset.prices||'./data/articles.json').then(response=>{if(!response.ok)throw new Error();return response.json();}).then(articles=>{
+if(!Array.isArray(articles))throw new Error();syncBasketAvailability(articles);
+const names=[...new Set(articles.map(row=>row.article).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr'));
+const list=document.getElementById('productSuggestions');if(list)list.replaceChildren(...names.map(name=>new Option(name,name)));
+return articles;
+}).catch(error=>{cataloguePromise=null;throw error;});
+return cataloguePromise;
+}
 const money=new Intl.NumberFormat('fr-CI');
 function render(){
 const rows=results.filter(row=>!filter.value||row.supermarche===filter.value).sort((a,b)=>a.prix-b.prix);
@@ -38,17 +53,19 @@ async function search(){
 const term=input.value.trim();
 const sequence=++searchSequence;status.textContent='Recherche en cours…';section.hidden=true;
 try{
-const response=await fetch(document.body.dataset.prices || './data/articles.json');if(!response.ok)throw new Error();
-const articles=await response.json();syncBasketAvailability(articles);if(sequence!==searchSequence)return;
-results=articles.filter(row=>String(row.article||'').toLocaleLowerCase('fr').includes(term.toLocaleLowerCase('fr'))&&Number.isFinite(row.prix)&&row.prix>0);
-filter.replaceChildren(new Option('Tous les magasins',''));
+const articles=await loadCatalogue();if(sequence!==searchSequence)return;
+results=articles.filter(row=>matchesProduct(row,term)&&Number.isFinite(row.prix)&&row.prix>0);
+const selectedStore=filter.value;filter.replaceChildren(new Option('Tous les magasins',''));
 [...new Set(results.map(row=>row.supermarche))].sort((a,b)=>a.localeCompare(b,'fr')).forEach(name=>filter.append(new Option(name,name)));
+if([...filter.options].some(option=>option.value===selectedStore))filter.value=selectedStore;
 status.textContent=results.length?'':'Aucun prix trouvé pour « '+term+' ». Essayez un autre nom de produit.';
 section.hidden=!results.length;render();
 }catch{if(sequence===searchSequence)status.textContent='Impossible de charger les prix. Réessayez dans un instant.';}
 }
-form.addEventListener('submit',event=>{event.preventDefault();search();});
-document.querySelectorAll('[data-search]').forEach(button=>button.addEventListener('click',()=>{input.value=button.dataset.search;search();}));
+form.addEventListener('submit',event=>{event.preventDefault();clearTimeout(searchTimer);search();});
+input.addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(search,180);});
+document.getElementById('showAllProducts')?.addEventListener('click',()=>{clearTimeout(searchTimer);input.value='';filter.value='';search();input.focus();});
+document.querySelectorAll('[data-search]').forEach(button=>button.addEventListener('click',()=>{clearTimeout(searchTimer);input.value=button.dataset.search;filter.value='';search();}));
 filter.addEventListener('change',render);
 
 
