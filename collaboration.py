@@ -56,6 +56,10 @@ def register_collaboration(app, is_admin):
           decision TEXT NOT NULL, note TEXT NOT NULL, created_at TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS login_attempts (
           identity TEXT PRIMARY KEY, count INTEGER NOT NULL, until_at REAL NOT NULL);
+        CREATE TABLE IF NOT EXISTS reports (
+          id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id),
+          article TEXT NOT NULL, store TEXT NOT NULL, reason TEXT NOT NULL,
+          comment TEXT NOT NULL, created_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending');
         ''')
         # Migration additive : conserver les comptes existants et leur historique.
         if 'phone' not in {row['name'] for row in conn.execute('PRAGMA table_info(users)')}:
@@ -67,7 +71,7 @@ def register_collaboration(app, is_admin):
 
     @app.after_request
     def private_response_headers(response):
-        if request.path.startswith(('/api/account/', '/api/session', '/api/contributions', '/api/admin/')):
+        if request.path.startswith(('/api/account/', '/api/session', '/api/contributions', '/api/reports', '/api/admin/')):
             response.headers['Cache-Control'] = 'private, no-store'
         return response
 
@@ -262,6 +266,46 @@ def register_collaboration(app, is_admin):
         with db() as conn:
             rows = conn.execute('SELECT * FROM contributions ORDER BY id DESC LIMIT 1000').fetchall()
         return jsonify(contributions=[{k:r[k] for k in r.keys() if k not in ('proof_hash','fingerprint')} for r in rows])
+
+    @app.post('/api/reports')
+    def report_price():
+        current = user()
+        if not current:
+            return error('Connectez-vous pour envoyer un signalement.', 401)
+        if not csrf_ok():
+            return error('Session expirée. Actualisez la page.', 403)
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            return error('Signalement invalide.')
+        article, store, reason, comment = (data.get(key, '') for key in ('article','store','reason','comment'))
+        if not all(isinstance(value,str) for value in (article,store,reason,comment)):
+            return error('Signalement invalide.')
+        if not article.strip() or len(article)>200 or not store.strip() or len(store)>120 or len(comment)>2000 or reason not in ('wrong_price','unavailable','wrong_format','other'):
+            return error('Vérifiez les informations du signalement.')
+        with db() as conn:
+            duplicate = conn.execute("SELECT id FROM reports WHERE user_id=? AND article=? AND store=? AND reason=? AND status='pending'",(current['id'],article.strip(),store.strip(),reason)).fetchone()
+            if duplicate:
+                return error('Vous avez déjà signalé cette erreur. Elle est en attente de vérification.',409)
+            conn.execute('INSERT INTO reports(user_id,article,store,reason,comment,created_at) VALUES(?,?,?,?,?,?)',(current['id'],article.strip(),store.strip(),reason,comment.strip(),now()))
+        return jsonify(message='Signalement envoyé à l’administration. Merci !'),201
+
+    @app.get('/api/admin/reports')
+    def report_list():
+        if not is_admin():
+            return error('Accès administrateur requis.',401)
+        with db() as conn:
+            rows=conn.execute('SELECT id,article,store,reason,comment,created_at,status FROM reports ORDER BY id DESC LIMIT 1000').fetchall()
+        return jsonify(reports=[dict(row) for row in rows])
+
+    @app.post('/api/admin/reports/<int:rid>/resolve')
+    def resolve_report(rid):
+        if not is_admin():
+            return error('Accès administrateur requis.',401)
+        with db() as conn:
+            result=conn.execute("UPDATE reports SET status='resolved' WHERE id=?",(rid,))
+            if not result.rowcount:
+                return error('Signalement introuvable.',404)
+        return jsonify(message='Signalement traité. Corrigez le prix dans la gestion des prix si nécessaire.')
 
     @app.post('/api/admin/contributions/<int:cid>/decision')
     def decide(cid):
