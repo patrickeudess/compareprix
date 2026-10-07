@@ -31,7 +31,9 @@ if _TRUSTED_PROXIES > 0:
 
 # Chemin vers le fichier JSON des données
 # Base SQLite : voir db.py (chemin via COMPAREPRIX_DB, défaut data/compareprix.db)
-db.init_db()
+DATA_FILE = 'data/articles.json'
+# Le catalogue en ligne conserve ses métadonnées dans le JSON ; les relevés admin utilisent SQLite.
+db.init_db(seed=False)
 
 # Limite des signalements publics par adresse IP (par processus, cf. ratelimit.py)
 FEEDBACK_LIMITER = SlidingWindowLimiter(
@@ -72,9 +74,13 @@ def load_manual_articles():
             return json.load(f)
     return []
 
+def present(articles):
+    return articles
+
+
 def load_articles():
     articles = [dict(value, source=value.get('source', 'Prix sans date'), date_releve=value.get('date_releve')) for value in load_manual_articles()]
-    return apply_updates(articles) + load_community_prices()
+    return apply_updates(articles) + db.list_current() + load_community_prices()
 
 def save_articles(articles):
     """Sauvegarde les données de manière atomique pour préserver le fichier en cas d'erreur."""
@@ -181,7 +187,7 @@ def search_articles():
     if not search_term:
         return jsonify({'error': 'Veuillez entrer un terme de recherche'})
     
-    return jsonify({'results': present(db.list_current(search_term))})
+    return jsonify({'results': present([a for a in load_articles() if db.normalize_text(search_term) in db.normalize_text(a.get('article', ''))])})
 
 @app.route('/api/articles')
 def get_all_articles():
@@ -192,7 +198,7 @@ def get_all_articles():
 @app.route('/api/articles/<article_name>')
 def get_article(article_name):
     """API pour récupérer un article spécifique"""
-    return jsonify(present(db.list_current(article_name)))
+    return jsonify(present([a for a in load_articles() if db.normalize_text(article_name) in db.normalize_text(a.get('article', ''))]))
 
 @app.route('/api/history/<path:article_name>')
 def get_price_history(article_name):
