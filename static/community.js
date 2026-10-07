@@ -2,7 +2,7 @@
 const pageMode=document.body.dataset.page||'account';
 function contributionDestination(){const target=new URL('./contribuer.html',location.href);target.search=location.search;target.hash='contribution';return target.href;}
 function accountDestination(){const target=new URL('./compte.html',location.href);target.search=location.search;if(!target.searchParams.has('intent'))target.searchParams.set('intent','contribute');return target.href;}
-let csrf='',currentUser=null,registering=false,online=false;
+let csrf='',currentUser=null,registering=true,online=false;
 const byId=id=>document.getElementById(id),form=byId('contributionForm'),message=byId('message');
 const fields=['article','brand','variant','quantity','unit','price','store','location','city','district','shop','observed_at','availability'];
 const draftKey='compareprix-contribution-draft-v1';
@@ -29,7 +29,10 @@ byId('historyRows').append(card);
 });
 }catch(error){tell(error.message);}
 }
-byId('switchAuth').addEventListener('click',()=>{registering=!registering;byId('registration').hidden=!registering;byId('name').required=registering;byId('password').minLength=registering?12:1;byId('password').autocomplete=registering?'new-password':'current-password';byId('authSubmit').textContent=registering?'Créer mon compte':'Se connecter';byId('switchAuth').textContent=registering?'J’ai déjà un compte':'Créer un compte';});
+function showAuthMode(){byId('registration').hidden=!registering;byId('name').required=false;byId('password').minLength=registering?12:1;byId('password').autocomplete=registering?'new-password':'current-password';byId('authSubmit').textContent=registering?'Créer mon compte':'Se connecter';byId('switchAuth').textContent=registering?'J’ai déjà un compte':'Créer un compte';}
+byId('switchAuth').addEventListener('click',()=>{registering=!registering;showAuthMode();});
+byId('showPassword')?.addEventListener('click',()=>{const password=byId('password'),visible=password.type==='password';password.type=visible?'text':'password';byId('showPassword').textContent=visible?'Masquer le mot de passe':'Afficher le mot de passe';byId('showPassword').setAttribute('aria-pressed',String(visible));});
+showAuthMode();
 byId('authForm').addEventListener('submit',async event=>{
 event.preventDefault();const button=byId('authSubmit');button.disabled=true;
 try{displayAccount(await api('/api/account/'+(registering?'register':'login'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:byId('phone').value,password:byId('password').value,name:byId('name').value})}));tell('Vous êtes connecté. Vous pouvez envoyer votre relevé.');if(['update','contribute'].includes(new URLSearchParams(location.search).get('intent')))location.assign(contributionDestination());else byId('account').scrollIntoView({behavior:'smooth'});}catch(error){tell(error.message);}finally{button.disabled=false;}
