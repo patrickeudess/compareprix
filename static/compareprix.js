@@ -31,12 +31,12 @@ cityFilter.append(new Option('Toutes les villes',''));communeFilter.append(new O
 [['Prix du format','price'],['Prix par kg / litre','unit']].forEach(([text,value])=>orderFilter.append(new Option(text,value)));
 form.after(geo);
 const comparisonHint=document.createElement('p');comparisonHint.className='hint';comparisonHint.textContent='Comparez la même marque et le même format. En ligne : livraison et frais à confirmer auprès du vendeur.';geo.after(comparisonHint);
-let geoCities=[];
-fetch('./static/locations.json').then(r=>r.json()).then(data=>{geoCities=data.cities||[];syncCities();}).catch(()=>{});
+let geoCities=[],geoCommunes={};
+fetch('./static/locations.json').then(r=>r.json()).then(data=>{geoCities=data.cities||[];geoCommunes=data.communesByCity||{};syncCities();syncCommunes();}).catch(()=>{});
 function onlineOffer(row){return row.source==='prix_internet'||row.type_offre==='online';}
 function commune(row){return row.commune||row.quartier||'';}
 function syncCities(){const selected=cityFilter.value;cityFilter.replaceChildren(new Option('Toutes les villes',''));[...new Set([...geoCities,...results.map(r=>r.ville).filter(Boolean)])].sort((a,b)=>a.localeCompare(b,'fr')).forEach(name=>cityFilter.append(new Option(name,name)));cityFilter.value=selected;}
-function syncCommunes(){const selected=communeFilter.value;communeFilter.replaceChildren(new Option('Toutes les communes',''));[...new Set(results.filter(r=>!cityFilter.value||r.ville===cityFilter.value).map(commune).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr')).forEach(name=>communeFilter.append(new Option(name,name)));communeFilter.value=[...communeFilter.options].some(o=>o.value===selected)?selected:'';}
+function syncCommunes(){const selected=communeFilter.value;communeFilter.replaceChildren(new Option('Toutes les communes',''));[...new Set([...(geoCommunes[cityFilter.value]||[]),...results.filter(r=>!cityFilter.value||r.ville===cityFilter.value).map(commune).filter(Boolean)])].sort((a,b)=>a.localeCompare(b,'fr')).forEach(name=>communeFilter.append(new Option(name,name)));communeFilter.value=[...communeFilter.options].some(o=>o.value===selected)?selected:'';}
 [communeFilter,channelFilter,orderFilter].forEach(select=>select.addEventListener('change',render));
 cityFilter.addEventListener('change',()=>{communeFilter.value='';syncCommunes();render();});
 
@@ -63,6 +63,7 @@ const locationInfo=document.createElement('p');locationInfo.className='offer-pla
 if(!onlineOffer(row)&&row.ville&&commune(row)&&row.boutique){const map=document.createElement('a');map.href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent([row.boutique,commune(row),row.ville,'Côte d’Ivoire'].join(', '));map.target='_blank';map.rel='noopener noreferrer';map.textContent='📍 Rechercher sur la carte';identity.append(map);}
 if(row.lieu){const place=document.createElement('p');place.className='offer-place';place.textContent='📍 '+row.lieu;identity.append(place);} 
 if(Number.isFinite(row.prix_unitaire)){const normalized=document.createElement('span');normalized.className='unit';normalized.textContent=money.format(row.prix_unitaire)+' FCFA / '+row.unite_reference;price.append(normalized);}
+if(row.source_catalogue){try{const sourceUrl=new URL(row.source_catalogue);if(sourceUrl.protocol==='https:'){const sourceLink=document.createElement('a');sourceLink.href=sourceUrl.href;sourceLink.target='_blank';sourceLink.rel='noopener noreferrer';sourceLink.textContent='Consulter la source du prix';card.append(sourceLink);}}catch{}}
 try{const url=new URL(row.url);if(['https:','http:'].includes(url.protocol)&&!url.pathname.includes('example')){const link=document.createElement('a');link.href=url.href;link.target='_blank';link.rel='noopener noreferrer';link.className='product-link';link.textContent='Voir le produit';card.append(link);}}catch{}
 const actions=document.createElement('div');actions.className='offer-actions';
 const add=document.createElement('button');add.type='button';add.className='basket-add';add.textContent='＋ Ajouter';add.addEventListener('click',()=>{addToBasket(row);add.textContent='✓ Ajouté';});if(row.disponibilite==='out_of_stock'){add.disabled=true;add.textContent='Indisponible';}actions.append(add);
