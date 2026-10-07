@@ -1,6 +1,6 @@
 'use strict';
 const basketKey='compareprix-basket-v1',basketMoney=new Intl.NumberFormat('fr-CI');
-let basket=[];
+let basket=[],basketToastTimer;
 try{const saved=JSON.parse(localStorage.getItem(basketKey)||'[]');if(Array.isArray(saved))basket=saved.filter(item=>item&&typeof item.id==='string'&&typeof item.article==='string'&&typeof item.store==='string'&&typeof item.format==='string'&&Number.isSafeInteger(item.price)&&item.price>0&&item.price<=100000000&&Number.isInteger(item.quantity)&&item.quantity>=1&&item.quantity<=99).slice(0,100);}catch{}
 const basketList=document.getElementById('basketItems'),basketNotice=document.getElementById('basketNotice');
 function persistBasket(){try{localStorage.setItem(basketKey,JSON.stringify(basket));}catch{basketNotice.textContent='Le panier reste disponible ici, mais ne peut pas être conservé sur cet appareil.';}}
@@ -11,7 +11,7 @@ item.id=JSON.stringify([item.article,item.store,item.format,item.place,item.pric
 const existing=basket.find(entry=>entry.id===item.id);
 if(existing){if(existing.quantity>=99){basketNotice.textContent='La quantité maximale est de 99 pour cet article.';return;}existing.quantity++;}
 else{if(basket.length>=100){basketNotice.textContent='Le panier peut contenir jusqu’à 100 offres différentes.';return;}basket.push(item);}
-basketNotice.textContent=item.article+' ajouté au panier.';persistBasket();renderBasket();
+basketNotice.textContent=item.article+' ajouté au panier.';const toast=document.getElementById('basketToast');if(toast){toast.textContent='✓ '+item.article+' ajouté';clearTimeout(basketToastTimer);basketToastTimer=setTimeout(()=>toast.textContent='',2600);}persistBasket();renderBasket();
 }
 function renderBasket(){
 basketList.replaceChildren();let total=0,count=0;
@@ -38,7 +38,7 @@ for(const item of basket){const subtotal=item.price*item.quantity;total+=subtota
 document.getElementById('basketEmpty').hidden=!!basket.length;
 document.getElementById('basketTotal').textContent=basketMoney.format(total)+' FCFA';
 document.getElementById('basketCount').textContent=count+' article'+(count>1?'s':'');
-document.getElementById('basketNavCount').textContent=count;
+document.getElementById('basketNavCount').textContent=count;const dockCount=document.getElementById('basketDockCount'),dockTotal=document.getElementById('basketDockTotal');if(dockCount)dockCount.textContent=count;if(dockTotal)dockTotal.textContent=basketMoney.format(total)+' FCFA';
 document.getElementById('clearBasket').disabled=!basket.length;
 const breakdown=document.getElementById('basketStores');breakdown.replaceChildren();
 if(stores.size>1){for(const [store,amount] of stores){const row=document.createElement('p');row.textContent=store+' : '+basketMoney.format(amount)+' FCFA';breakdown.append(row);}}
