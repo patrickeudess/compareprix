@@ -24,8 +24,8 @@ return cataloguePromise;
 
 const cityFilter=document.createElement('select'),communeFilter=document.createElement('select'),channelFilter=document.createElement('select'),orderFilter=document.createElement('select');
 cityFilter.id='cityFilter';communeFilter.id='communeFilter';channelFilter.id='channelFilter';orderFilter.id='orderFilter';
-const geo=document.createElement('div');geo.className='grid';geo.style.cssText='display:flex;flex-wrap:wrap;gap:12px;margin:16px 0';
-[['Ville',cityFilter],['Commune',communeFilter],['Type d’offre',channelFilter],['Comparer par',orderFilter]].forEach(([text,select])=>{const label=document.createElement('label');label.htmlFor=select.id;label.textContent=text;select.style.cssText='display:block;max-width:100%;padding:10px;border-radius:10px';label.append(select);geo.append(label);});
+const geo=document.createElement('div');geo.className='search-filters';geo.setAttribute('aria-label','Affiner la comparaison');
+[['Ville',cityFilter],['Commune',communeFilter],['Type d’offre',channelFilter],['Comparer par',orderFilter]].forEach(([text,select])=>{const label=document.createElement('label');label.htmlFor=select.id;label.className='search-filter';const caption=document.createElement('span');caption.className='filter-caption';caption.textContent=({cityFilter:'📍 ',communeFilter:'🏘️ ',channelFilter:'🏪 ',orderFilter:'↕ '})[select.id]+text;label.append(caption);label.append(select);geo.append(label);});
 cityFilter.append(new Option('Toutes les villes',''));communeFilter.append(new Option('Toutes les communes',''));
 [['Tous',''],['En magasin','store'],['En ligne','online']].forEach(([text,value])=>channelFilter.append(new Option(text,value)));
 [['Prix du format','price'],['Prix par kg / litre','unit']].forEach(([text,value])=>orderFilter.append(new Option(text,value)));
