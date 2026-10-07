@@ -33,6 +33,8 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - name: Lint (erreurs et pyflakes)
         run: ruff check .
+      - name: Accessibilité du site statique (CSS et HTML, sans navigateur)
+        run: python -W error::ResourceWarning -m unittest test_site_a11y -v
       - name: Tests unitaires
         run: python -W error::ResourceWarning -m unittest test_pricing test_db test_unit_price test_security test_backup test_admin test_demo -v
 
