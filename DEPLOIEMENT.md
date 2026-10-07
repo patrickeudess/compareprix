@@ -42,9 +42,12 @@ puis ajoutez `COMPAREPRIX_TRUSTED_PROXIES=1` et `COMPAREPRIX_HSTS=1` (voir READM
    import os, sys
    sys.path.insert(0, '/home/VOTRE_NOM/compareprix')
    os.environ['COMPAREPRIX_ADMIN_TOKEN'] = 'UN_JETON_LONG_ET_SECRET'
+   os.environ['COMPAREPRIX_TRUSTED_PROXIES'] = '1'   # PythonAnywhere place un proxy devant l'application
    from wsgi import application
    ```
 5. **Reload**. L'adresse est `VOTRE_NOM.pythonanywhere.com` (HTTPS fourni). Le disque est persistant, donc la base SQLite est conservée.
+
+`COMPAREPRIX_TRUSTED_PROXIES=1` est nécessaire derrière le proxy de PythonAnywhere : sans lui, le limiteur de débit voit l'adresse du proxy et non celle du visiteur, donc tous les visiteurs partagent la même limite. Vérifiez ensuite le déploiement avec `python tools/smoke_test.py https://VOTRE_NOM.pythonanywhere.com` (lecture seule ; ajoutez `COMPAREPRIX_ADMIN_TOKEN=...` en variable d'environnement pour tester aussi l'accès admin).
 
 Le fichier `wsgi.py` du dépôt se place dans le dossier du projet avant de charger l'application, ce qui est nécessaire car elle utilise
 des chemins relatifs (testé : il fonctionne même lancé depuis un autre dossier). À vérifier chez l'hébergeur : quota de disque et
