@@ -13,7 +13,7 @@ const response=await fetch(url,{...options,headers:{'X-CSRF-Token':csrf,...optio
 let data;try{data=await response.json();}catch{throw new Error('Les comptes et contributions nécessitent la version serveur de ComparePrix.');}
 if(!response.ok)throw new Error(data.message||'La demande a échoué.');return data;
 }
-function displayAccount(data){csrf=data.csrf;currentUser=data.user;byId('signedIn').hidden=!currentUser;byId('signedOut').hidden=!!currentUser;byId('contribution').hidden=!currentUser||pageMode!=='contribution';if(pageMode==='contribution'&&!currentUser){location.replace(accountDestination());return;}byId('contributeFromAccount').href=contributionDestination();document.querySelector('.account-layout').classList.toggle('account-first',!currentUser);if(currentUser){byId('greeting').textContent='Bonjour '+currentUser.name;byId('password').value='';}loadHistory();}
+function displayAccount(data){csrf=data.csrf;currentUser=data.user;byId('signedIn').hidden=!currentUser;byId('signedOut').hidden=!!currentUser;byId('contribution').hidden=!currentUser||pageMode!=='contribution';if(pageMode==='contribution'&&!currentUser){location.replace(accountDestination());return;}byId('contributeFromAccount').href=contributionDestination();document.querySelector('.account-layout').classList.toggle('account-first',!currentUser);if(currentUser){byId('greeting').textContent='Bonjour '+currentUser.name;byId('password').value='';}loadHistory();if(currentUser&&merchantMode)loadMerchantProfile();}
 async function loadHistory(){
 if(!currentUser){byId('historyRows').textContent='Connectez-vous pour suivre vos relevés.';byId('points').textContent='';return;}
 try{
@@ -76,7 +76,7 @@ byId('price').value='';byId('photo').value='';saveDraft();
 
 document.querySelectorAll('a[href="#contribution"]').forEach(link=>link.addEventListener('click',event=>{if(!currentUser){event.preventDefault();byId('account').scrollIntoView({behavior:'smooth'});tell('Créez votre compte ou connectez-vous avant de renseigner le prix.');}}));
 if(new URLSearchParams(location.search).get('intent')==='update'||new URLSearchParams(location.search).get('intent')==='contribute'){
-byId('switchAuth').click();
+registering=true;showAuthMode();
 }
 document.querySelector('.account-layout').classList.toggle('account-first',!currentUser);
 
@@ -109,5 +109,7 @@ const button=byId('saveMerchantProfile');button.disabled=true;
 try{const result=await api('/api/merchant/profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(['store','city','district','shop'].map(key=>[key,byId(key).value])))});tell(result.message);}
 catch(error){tell(error.message);}finally{button.disabled=false;}
 });
-api('/api/merchant/profile').then(data=>{if(data.profile){['store','city','district','shop'].forEach(key=>{if(!byId(key).value)byId(key).value=data.profile[key]||'';});updatePlaceSuggestions();}}).catch(()=>{});
+
 }
+
+function loadMerchantProfile(){api('/api/merchant/profile').then(data=>{if(data.profile){['store','city','district','shop'].forEach(key=>{if(!byId(key).value)byId(key).value=data.profile[key]||'';});updatePlaceSuggestions();}}).catch(error=>tell(error.message));}
