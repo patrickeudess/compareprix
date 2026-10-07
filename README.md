@@ -1,278 +1,66 @@
-# 🛒 ComparePrix
+# ComparePrix
 
-Une application web simple pour comparer les prix d'articles dans différents supermarchés.
+ComparePrix permet de consulter des prix sans compte et de proposer des relevés avec un compte contributeur.
 
-## 🚀 Fonctionnalités
+## Parcours disponibles
 
-- **Recherche d'articles** : Tapez le nom d'un article pour voir ses prix
-- **Comparaison de prix** : Visualisez les prix dans différents supermarchés
-- **Interface moderne** : Design responsive et intuitif
-- **Statistiques** : Prix minimum, maximum et moyen
-- **Mise en évidence** : Le meilleur prix est automatiquement mis en évidence
-- **Scraping automatique** : Récupération des données depuis Jumia Côte d'Ivoire
-- **Images des produits** : Affichage des images des articles
-- **Liens directs** : Accès direct aux pages produits
+- `/` : recherche publique, filtre par magasin, prix du format et prix par unité de référence pour les contributions.
+- `/compte` ou `/compte.html` : création de compte, connexion, suivi des contributions et points.
+- `/contribuer` ou `/contribuer.html` : formulaire produit, marque, variante, quantité, unité, prix FCFA, magasin, ville/quartier/boutique, date, photo facultative.
+- `/admin` : gestion des prix manuels ; lien vers la modération.
+- `/admin/contributions` : contrôle de la preuve privée, acceptation, refus motivé ou retrait de validation.
 
-## 📋 Prérequis
+Un utilisateur peut préparer son brouillon avant de se connecter. Seul l’envoi exige un compte. Le brouillon est enregistré localement sur son navigateur, sans photo ; un bouton permet de l’effacer.
 
-- Python 3.10 ou supérieur
-- pip (gestionnaire de paquets Python)
+## Installation serveur
 
-## 🛠️ Installation
+Python 3.10 ou supérieur :
 
-### Option 1 : Démarrage rapide (recommandé)
-```bash
-python run_complete.py
-```
-
-### Option 2 : Installation manuelle
-
-1. **Cloner ou télécharger le projet**
-   ```bash
-   git clone <url-du-repo>
-   cd ComparePrix
-   ```
-
-2. **Installer les dépendances**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Scraper les données Jumia (optionnel)**
-   ```bash
-   python scraper_jumia.py
-   ```
-
-4. **Fusionner les données**
-   ```bash
-   python merge_data.py
-   ```
-
-5. **Lancer l'application**
-   ```bash
-   python app.py
-   ```
-
-6. **Ouvrir dans le navigateur**
-   ```
-   http://localhost:5000
-   ```
-
-## 📊 Structure des données
-
-Les prix sont stockés dans une base **SQLite** (`data/compareprix.db`, créée automatiquement ; chemin modifiable via `COMPAREPRIX_DB`). `data/articles.json` n'est plus qu'une source d'amorçage. Format des articles renvoyés par l'API :
-
-```json
-[
-  {
-    "article": "Nom de l'article",
-    "supermarche": "Nom du supermarché",
-    "prix": 500,
-    "unite": "kg",
-    "url": "https://www.jumia.ci/produit/...",
-    "image_url": "https://www.jumia.ci/images/..."
-  }
-]
-```
-
-### Sources de données :
-- **Données manuelles** : Articles saisis manuellement
-- **Jumia Côte d'Ivoire** : Scraping automatique des produits alimentaires
-
-## 🔧 Configuration
-
-### Ajouter de nouveaux articles
-
-Vous pouvez modifier le fichier `data/articles.json` ou ajouter des données directement dans `app.py` dans la section `sample_data`.
-
-### Modifier les supermarchés
-
-Les supermarchés sont définis dans les données JSON. Vous pouvez ajouter ou modifier les supermarchés selon vos besoins.
-
-### Scraping Jumia
-
-Le script `scraper_jumia.py` récupère automatiquement :
-- **Nom du produit** (product_name)
-- **Prix en FCFA** (price)
-- **Source** (store = "Jumia")
-- **URL du produit** (url)
-- **Image du produit** (image_url)
-
-**Catégories scrapées :**
-- Supermarché
-- Alimentation
-- Boissons
-- Fruits & Légumes
-- Viandes & Poissons
-- Produits laitiers
-- Épicerie
-
-**Configuration du scraping :**
-- Limite : 10 produits par page
-- Pause entre requêtes : 1-3 secondes
-- Pause entre pages : 2-5 secondes
-
-## 📱 Utilisation
-
-1. **Recherche** : Entrez le nom d'un article dans le champ de recherche
-2. **Comparaison** : Cliquez sur "Comparer" ou appuyez sur Entrée
-3. **Résultats** : Consultez le tableau avec les prix par supermarché
-4. **Statistiques** : Regardez les statistiques en haut du tableau
-
-## 🎨 Fonctionnalités de l'interface
-
-- **Design responsive** : Fonctionne sur desktop et mobile
-- **Recherche en temps réel** : Résultats instantanés
-- **Mise en évidence** : Le meilleur prix est surligné en vert
-- **Statistiques** : Prix min/max/moyen affichés
-- **Gestion d'erreurs** : Messages d'erreur clairs
-
-## 🔍 Exemples de recherche
-
-- "Riz" → Trouve tous les types de riz
-- "Huile" → Trouve tous les types d'huile
-- "Pain" → Trouve tous les types de pain
-- "Lait" → Trouve tous les types de lait
-
-## 🚀 Déploiement
-
-### Local
-```bash
-python app.py
-```
-
-### Production
-Voir la section **🚀 Mise en production** ci-dessous (Docker ou Gunicorn). Ne pas utiliser `python app.py` en production : c'est le serveur de développement, et il n'écoute que sur `127.0.0.1` par défaut (`COMPAREPRIX_HOST` pour changer).
-
-## 📝 API Endpoints
-
-- `GET /` : Page d'accueil
-- `POST /search` : Recherche d'articles
-- `GET /api/articles` : Liste de tous les articles
-- `GET /api/articles/<nom>` : Articles par nom
-
-## 🤝 Contribution
-
-Les contributions sont les bienvenues ! N'hésitez pas à :
-- Signaler des bugs
-- Proposer des améliorations
-- Ajouter de nouvelles fonctionnalités
-
-## 📄 Licence
-
-Ce projet est sous licence MIT.
-
----
-
-**ComparePrix** - Comparez intelligemment, économisez intelligemment ! 🛒💰
-
-
-## 🔐 Administration des signalements
-
-Les routes de consultation et de modération des signalements sont protégées par un jeton Bearer. Définissez `COMPAREPRIX_ADMIN_TOKEN` dans l'environnement du serveur avec une valeur secrète suffisamment longue avant le démarrage de l'application.
-
-Exemple PowerShell :
-```powershell
-$env:COMPAREPRIX_ADMIN_TOKEN = "<votre-jeton-secret>"
-python app.py
-```
-
-Exemple Linux/macOS :
-```bash
-export COMPAREPRIX_ADMIN_TOKEN="<votre-jeton-secret>"
-python app.py
-```
-
-Envoyez le jeton dans l'en-tête `Authorization: Bearer <votre-jeton-secret>` pour utiliser `GET /api/feedback` et `PUT /api/feedback/<id>`. Le formulaire public `POST /submit_feedback` reste accessible sans jeton. Ne stockez pas le jeton dans le dépôt.
-
-
-## 📥 Importer de vrais relevés de prix
-
-Chaque prix porte `date_releve`, `source` (`manuel`, `ticket`, `jumia`, `signalement`) et `statut` (`valide`, `a_verifier`). Les anciennes données sans date sont affichées comme **Exemple** ; un relevé de plus de 7 jours est signalé ⚠️.
-
-1. Remplir une copie de `data/releve_modele.csv` (unités : `kg, g, L, cl, ml, unité, lot` ; date `AAAA-MM-JJ`).
-2. Simuler : `python import_prices.py releve.csv`
-3. Écrire (sauvegarde automatique de la base) : `python import_prices.py releve.csv --apply --replace-examples`
-
-L'import est « tout ou rien » : une ligne invalide annule tout et son numéro est affiché. Les relevés s'ajoutent à l'**historique** (jamais écrasé) ; le prix affiché est le plus récent. Rejouer un import ne crée pas de doublon.
-
-## 🗄️ Base de données et signalements
-
-- Schéma : `store`, `product`, `price_observation` (historique), vue `current_price`, `feedback` (voir `db.py`). Aucune dépendance supplémentaire (SQLite est inclus dans Python).
-- Historique d'un article : `GET /api/history/<article>?supermarche=<nom>`.
-- Un signalement **approuvé** (`PUT /api/feedback/<id>`, jeton admin) crée automatiquement un relevé (`source=signalement`, `statut=valide`, date du jour), une seule fois. La réponse indique `price_applied`. Sans relevé de référence (produit/supermarché inconnus) le prix n'est pas appliqué et la raison est renvoyée.
-- Limitation de débit de `POST /submit_feedback` : 10 par heure et par IP (`COMPAREPRIX_FEEDBACK_LIMIT`, `COMPAREPRIX_FEEDBACK_WINDOW`). Elle est **par processus** : avec 4 workers Gunicorn la limite effective est 4×. Derrière un proxy, configurez `ProxyFix` pour que `remote_addr` soit l'IP du client.
-- Les anciens outils (`data_collection.py`, `validation_tool.py`) écrivent encore dans les JSON : lancez ensuite `python migrate_to_sqlite.py` (idempotent) pour synchroniser la base.
-- Scraping puis import : `python scraper_jumia_v2.py && python merge_data.py`.
-- Tests : `python -m unittest test_pricing test_db -v`.
-
-## ⚖️ Prix unitaire et prix aberrants
-
-- **Prix unitaire** (FCFA/kg, FCFA/L ou FCFA/unité) pour comparer des conditionnements différents. Règles, dans l'ordre :
-  1. le nom contient une quantité (`Riz 5kg`, `Lait 750ml`, `Eau 6x1,5L`, `Coca 33cl x6`) → le prix est celui du **conditionnement** : prix ÷ quantité ;
-  2. sinon, l'`unite` `kg/g/L/cl/ml` signifie que le prix est **déjà** rapporté à cette unité (anciennes données) ;
-  3. les produits `jumia` sans quantité dans le nom n'ont **pas** de prix unitaire (l'unité y est devinée par mots-clés, donc non fiable) ; `lot` n'est pas comparable.
-  Le 🏆 « meilleur prix » désigne le prix unitaire le plus bas par unité de base (kg et L sont comparés séparément).
-- **Prix aberrant** ⚠️ : prix unitaire éloigné de plus de `max_deviation_percent` (20 % dans `config/collection_config.json`) de la **médiane** des magasins pour le même nom d'article, avec au moins **3 magasins** (une médiane sur 2 points ne désigne aucun « mauvais » prix). Un signal à vérifier, pas un rejet.
-- **Photos de signalement** : le type est vérifié sur le **contenu** (PNG, JPEG, GIF), pas sur le nom ; l'extension enregistrée vient du contenu ; max 5 Mo ; un fichier invalide est refusé (400).
-- Tests : `python -m unittest test_unit_price test_pricing test_db -v`.
-
-## 🚀 Mise en production
-
-### Avec Docker (recommandé)
-```bash
-export COMPAREPRIX_ADMIN_TOKEN="$(python3 -c 'import secrets;print(secrets.token_urlsafe(32))')"   # à conserver dans un gestionnaire de secrets
-docker compose up -d --build
-curl http://127.0.0.1:8000/healthz      # {"status":"ok"}
-```
-L'image tourne sous un utilisateur non-root, système de fichiers en lecture seule, capacités Linux retirées. La base, les photos et les sauvegardes sont dans le volume `compareprix-data` (`/app/data`). **La base démarre vide : aucune donnée d'exemple en production**, importez vos relevés avec `docker compose exec web python import_prices.py ...` (le fichier CSV doit être dans le conteneur, p. ex. `docker compose cp releve.csv web:/app/data/`).
-
-Le port n'est publié que sur `127.0.0.1` : placez devant un reverse-proxy **HTTPS** (Caddy, Nginx, Traefik...). Une fois derrière **un** proxy de confiance : `COMPAREPRIX_TRUSTED_PROXIES=1` (sinon la limitation de débit voit l'IP du proxy) et `COMPAREPRIX_HSTS=1` (uniquement si le site est servi en HTTPS).
-
-### Sans Docker
 ```bash
 pip install -r requirements.txt
-COMPAREPRIX_ADMIN_TOKEN=... gunicorn -c gunicorn.conf.py app:app    # PORT (8000) et WEB_CONCURRENCY (2) modifiables
+python app.py
 ```
 
-### Variables d'environnement
-| Variable | Défaut | Rôle |
-|---|---|---|
-| `COMPAREPRIX_ADMIN_TOKEN` | *(vide)* | Jeton Bearer des routes d'administration ; vide = routes fermées (401) |
-| `COMPAREPRIX_DB` | `data/compareprix.db` | Chemin de la base SQLite |
-| `COMPAREPRIX_TRUSTED_PROXIES` | `0` | Nombre de proxys de confiance (`X-Forwarded-For` n'est lu que si > 0) |
-| `COMPAREPRIX_HSTS` | `0` | `1` active `Strict-Transport-Security` (HTTPS uniquement) |
-| `COMPAREPRIX_FEEDBACK_LIMIT` / `_WINDOW` | `10` / `3600` | Signalements autorisés par IP et fenêtre en secondes |
-| `PORT`, `WEB_CONCURRENCY`, `GUNICORN_THREADS` | `8000`, `2`, `2` | Réglages Gunicorn |
+Ouvrir http://localhost:5000. Pour un hébergement public, utiliser un serveur WSGI avec HTTPS et un disque persistant ; le serveur de développement Flask sert à l’aperçu local.
 
-### Sécurité en place
-- **CSP à nonce** : aucun script inline sans nonce, aucun `onclick=` dans la page ; une injection HTML ne peut plus exécuter de JavaScript. Autres en-têtes : `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`.
-- Dépendances à jour, **0 vulnérabilité connue** (`pip-audit`), vérifié chaque semaine par la CI ; `lxml` (inutilisé) retiré.
-- `GET /healthz` : sonde de santé (Docker `HEALTHCHECK`, supervision).
+Configurer :
+- `COMPAREPRIX_ADMIN_TOKEN` : secret administrateur, demandé dans l’interface ; jamais dans le dépôt.
+- `COMPAREPRIX_SECRET_KEY` : clé stable de session en production. En local, une clé est créée dans `data/.session-secret`.
+- `COMPAREPRIX_COOKIE_SECURE=true` : sur un serveur HTTPS.
+- `COMPAREPRIX_DATA_DIR` : dossier persistant pour la base collaborative et les photos ; par défaut `data`.
 
-### Sauvegardes
-```bash
-python backup_db.py                 # data/backups/, 14 dernières conservées, copie vérifiée (integrity_check)
-docker compose exec web python backup_db.py
-```
-Planifiez-la (cron : `30 2 * * * cd /chemin && python backup_db.py >> data/backup.log 2>&1`) et **copiez les fichiers hors du serveur**. Restauration : arrêter l'application, remplacer `data/compareprix.db` par la sauvegarde, supprimer `data/compareprix.db-wal` et `-shm`, redémarrer.
+Les prix manuels utilisent encore `data/articles.json`. Les comptes, observations, décisions et mouvements de points sont dans `community.sqlite3`. Les fichiers de preuve sont dans `proofs/`. Sauvegarder ces données privées avec la clé de session et ne pas les servir comme fichiers publics. La base et les preuves ne doivent jamais être publiées sur GitHub.
 
-### Intégration continue
-`.github/workflows/ci.yml` : lint (`ruff`), tests sur Python 3.10/3.12/3.13, `pip-audit`, construction de l'image Docker et test de démarrage. `dependabot.yml` propose les mises à jour chaque semaine.
+## Validation
 
-## 🧑‍💼 Administration et collecte des premiers prix
+- Prix entier positif en FCFA, quantité positive, unité explicite.
+- Date dans les 30 derniers jours, aucune date future.
+- Détection du même relevé et de la réutilisation exacte d’une photo réencodée.
+- Photos JPG/PNG de 5 Mo maximum et 25 mégapixels maximum, réencodées pour retirer EXIF et géolocalisation.
+- Relevés en attente invisibles dans la recherche ; validation humaine obligatoire.
+- Historique conservé ; le relevé accepté le plus récent pour chaque produit/marque/variante/format/magasin/lieu est publié.
+- Relevés publics retirés des résultats après 30 jours depuis leur observation ; ils restent dans l’historique.
+- 10 points par acceptation, crédités une seule fois ; retrait de validation : mouvement de -10 points une seule fois. Aucune valeur monétaire.
+- Auteur et photo accessibles uniquement à l’auteur et à l’administration ; aucun email, pseudo ou photo dans le flux public.
+- Les prix manuels sans date sont signalés comme tels.
 
-**Page `/admin`** (jeton `COMPAREPRIX_ADMIN_TOKEN`, saisi dans le navigateur et conservé le temps de l'onglet) :
-- **Saisie de relevés** adaptée au téléphone : prix, magasin, date, source. L'application affiche immédiatement le prix au kg/L et **avertit si le prix s'écarte de plus de 20 % de la médiane** des autres magasins (faute de frappe probable). Valider ou supprimer un relevé erroné depuis la liste.
-- **Import CSV** (simulation puis écriture, sauvegarde automatique avant écriture). Accepte les fichiers enregistrés par **Excel en français** (séparateur `;`, encodage Windows-1252) et UTF-8.
-- **Signalements** des utilisateurs avec photo ; « Approuver » met à jour le prix affiché et indique si le prix n'a pas pu être appliqué.
-- Les essais de jeton erronés sont limités (20 par 10 minutes et par IP).
+Les mots de passe sont hachés. Les opérations de compte et de contribution utilisent une session et un jeton CSRF ; les endpoints administrateur utilisent le jeton Bearer. Les réponses privées ne sont pas mises en cache. L’ancien endpoint anonyme `/submit_feedback` est retiré (HTTP 410) au profit du parcours connecté.
 
-**Fiche de collecte** : `data/fiche_collecte.csv` = 30 produits de base × 3 magasins (Carrefour, Cap Sud, Casino), **prix et dates vides**. À imprimer ou à remplir sur tableur ; ajoutez la **marque** dans le nom (identique dans tous les magasins), remplissez `prix` et `date_releve` (AAAA-MM-JJ), puis importez. Les lignes sans prix sont ignorées : une fiche partiellement remplie est acceptée.
+## GitHub Pages
 
-**Statistiques au prix unitaire** : les cartes de la page publique et `GET /api/stats` (`prix_unitaires`, `indice_prix_magasin`) comparent en FCFA/kg ou FCFA/L. L'indice de prix d'un magasin vaut 100 à la médiane des magasins (moins de 100 = moins cher) ; il est peu fiable sous ~5 produits comparés.
+GitHub Pages ne peut pas exécuter Flask ni stocker des comptes. Le site statique reste une démonstration avec des pages de compte et de saisie qui signalent l’absence du serveur. Le parcours complet fonctionne sur la version Flask. Ne pas annoncer les inscriptions comme disponibles sur GitHub Pages seul.
 
-## 🌐 Mettre en ligne
+## Limites de cette première version
+
+Pas encore d’email de vérification ou de récupération de mot de passe, d’OCR, de publication automatique, de panier comparatif ou de conversion monétaire des points. La modération doit vérifier la preuve et l’équivalence des produits. Les prix ne garantissent pas la disponibilité en magasin. Les limites d’authentification utilisent l’adresse IP vue par Flask ; configurer le proxy explicitement lors de l’hébergement.
+
+## Logos
+
+Chargement depuis les sites officiels avec `referrerpolicy="no-referrer"` ; le nom du magasin reste affiché si le logo est inaccessible.
+
+- Carrefour : https://carrefour.ci/wp-content/uploads/2023/08/carrefour-ci-logo.svg
+- Cap Sud : https://groupeprosuma.com/wp-content/uploads/2022/10/logo-cap-sud-mini.png
+- Casino : https://groupeprosuma.com/wp-content/uploads/2020/12/logo-casno-supermarche-mini.png
 
 - **GitHub Pages** n'héberge que des fichiers statiques : `index.html` à la racine est la page publique, maintenue à part. Il ne peut pas exécuter l'application Flask. `python tools/build_demo.py` génère en plus une démonstration interactive complète (prix fictifs) dans `build/demo.html`.
 - Pour l'application complète (recherche, administration, base de données) : voir **[DEPLOIEMENT.md](DEPLOIEMENT.md)** (VPS + Docker, PythonAnywhere).

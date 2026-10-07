@@ -12,25 +12,21 @@
 <body>
 <main>
 <header><img src="./static/compareprix-mark.svg" alt=""><h1>ComparePrix</h1></header>
-<nav class="app-nav" aria-label="Navigation principale"><a href="#searchForm">Comparer les prix</a><a href="./contribuer.html" class="nav-action">Partager un prix</a><a href="./compte.html">Mon compte</a></nav>
-<div class="welcome"><p class="eyebrow">Vos courses, mieux informées</p><h2>Comparez les prix.<br>Choisissez où acheter.</h2><p>Retrouvez les prix relevés dans les magasins et marchés. Consultez le format, le lieu et la date avant de faire vos courses. La recherche est libre, sans compte.</p></div>
+<nav class="page-nav" aria-label="Navigation principale"><a href="./" aria-current="page"><span aria-hidden="true">🔎</span><span>Comparer</span></a><a href="./panier.html"><span aria-hidden="true">🛍️</span><span>Panier <b id="basketNavCount">0</b></span></a><a href="./contribuer.html"><span aria-hidden="true">📸</span><span>Ajouter un prix</span></a><a href="./compte.html"><span aria-hidden="true">👤</span><span>Compte</span></a></nav>
+<div class="welcome"><p class="eyebrow">Vos courses, mieux informées</p><h2>Comparez les prix.<br>Choisissez où acheter.</h2><p>Trouvez votre prix. Préparez votre panier. Sans compte.</p></div>
 <section class="search-panel" aria-label="Recherche de prix">
-<form id="searchForm"><label for="searchInput">Quel produit cherchez-vous ?</label><div class="search-form"><input id="searchInput" type="search" maxlength="200" placeholder="Ex. riz, huile, lait" required><button class="search-btn" type="submit">Comparer</button></div></form>
-<div class="suggestions" aria-label="Exemples de recherche"><button type="button" data-search="Riz">Riz</button><button type="button" data-search="Huile">Huile</button><button type="button" data-search="Lait">Lait</button><button type="button" data-search="Pain">Pain</button></div>
+<form id="searchForm"><label for="searchInput">Quel produit cherchez-vous ?</label><div class="search-form"><input id="searchInput" type="search" maxlength="200" placeholder="Produit ou marque : riz, Dinor…" list="productSuggestions" autocomplete="off"><button class="search-btn" type="submit">Comparer</button></div><datalist id="productSuggestions"></datalist><p class="hint">Les prix s’affichent pendant la saisie.</p></form>
+<div class="suggestions" aria-label="Produits courants"><button id="showAllProducts" type="button">Tous les produits</button><button type="button" data-search="Riz">🌾 Riz</button><button type="button" data-search="Huile">🫒 Huile</button><button type="button" data-search="Sucre">🧊 Sucre</button><button type="button" data-search="Lait">🥛 Lait</button><button type="button" data-search="Pâtes">🍝 Pâtes</button><button type="button" data-search="Tomate">🍅 Tomate</button><button type="button" data-search="Sardines">🐟 Sardines</button><button type="button" data-search="Café">☕ Café</button><button type="button" data-search="Thé">🍵 Thé</button><button type="button" data-search="Mayonnaise">🥣 Mayonnaise</button></div>
 </section>
-<p class="notice">Version de démonstration : les prix affichés ne sont pas vérifiés. Confirmez le prix en magasin et comparez le même produit dans le même format.</p>
-<div id="status" class="status" role="status" aria-live="polite">Saisissez un produit pour voir les prix. Aucun compte nécessaire.</div>
+<details class="quick-help"><summary>ⓘ Bien comparer</summary><p>Comparez le même format. Vérifiez la date et le magasin : les prix sans date sont à confirmer.</p></details>
+<div id="status" class="status" role="status" aria-live="polite">Recherchez un produit pour commencer.</div>
 <section id="resultsSection" hidden aria-label="Résultats">
 <div class="results-bar"><h2 id="resultCount"></h2><div class="store-filter"><label for="storeFilter">Magasin</label><select id="storeFilter"><option value="">Tous les magasins</option></select></div></div>
 <div id="resultsContent" class="results"></div>
 </section>
 
-<aside class="share-callout"><div><h2>Vous avez vu un prix en magasin ?</h2><p>Partagez le produit, son prix et le lieu où vous l’avez vu. Après vérification, votre relevé aide les autres à comparer.</p></div><a class="cta-link" href="./contribuer.html">Partager un prix</a></aside>
-<section class="how-it-works" aria-label="Comment fonctionne ComparePrix"><h2>Comment ça marche ?</h2><ol class="steps"><li><span class="step-number">01</span><strong>Recherchez un produit</strong><span>Entrez son nom, sans créer de compte.</span></li><li><span class="step-number">02</span><strong>Comparez les mêmes formats</strong><span>Consultez les prix, le magasin et la date du relevé.</span></li><li><span class="step-number">03</span><strong>Aidez à actualiser les prix</strong><span>Un compte permet de partager vos observations et de suivre leur validation.</span></li></ol></section>
-</main>
-<script src="./static/compareprix.js"></script>
+
+
+</main><a class="basket-dock" href="./panier.html" aria-label="Voir mon panier"><span>🛍️ Panier <span id="basketDockCount">0</span></span><strong id="basketDockTotal">0 FCFA</strong><span aria-hidden="true">→</span></a><div id="basketToast" class="basket-toast" role="status" aria-live="polite"></div>
+<script src="./static/basket.js?v=20261007"></script><script src="./static/compareprix.js?v=20261007-search"></script>
 </body></html>
-
-
-
-
