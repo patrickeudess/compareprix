@@ -1,5 +1,6 @@
 """Comptes contributeurs, relevés datés et validation privée."""
 import os
+import json
 import secrets
 import sqlite3
 import hashlib
@@ -133,7 +134,9 @@ def register_collaboration(app, is_admin):
     def locations():
         with db() as conn:
             rows = conn.execute("SELECT DISTINCT city,district,shop,store FROM contributions WHERE status='approved' AND city<>'' AND district<>'' AND shop<>'' ORDER BY city,district,shop").fetchall()
-        return jsonify(cities=['Abidjan'], locations=[dict(row) for row in rows])
+        catalog = json.loads((Path(__file__).resolve().parent / 'static' / 'locations.json').read_text(encoding='utf-8'))
+        catalog['locations'] = [dict(row) for row in rows]
+        return jsonify(catalog)
 
     @app.post('/api/account/<action>')
     def account_action(action):
@@ -350,4 +353,3 @@ def register_collaboration(app, is_admin):
         return jsonify(message='Décision enregistrée. La recherche publique est actualisée.')
 
     return public_prices
-
