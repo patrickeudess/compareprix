@@ -78,6 +78,14 @@ def register_collaboration(app, is_admin):
             if field not in columns:
                 conn.execute(f"ALTER TABLE contributions ADD COLUMN {field} TEXT NOT NULL DEFAULT ''")
 
+    with db() as conn:
+        columns = {r['name'] for r in conn.execute('PRAGMA table_info(contributions)')}
+        for field in ('business_phone','delivery_zones','delivery_fee'):
+            if field not in columns:
+                conn.execute(f"ALTER TABLE contributions ADD COLUMN {field} TEXT NOT NULL DEFAULT ''")
+        if 'delivery_enabled' not in columns:
+            conn.execute("ALTER TABLE contributions ADD COLUMN delivery_enabled INTEGER NOT NULL DEFAULT 0")
+
     def now():
         return datetime.now(timezone.utc).isoformat()
 
@@ -117,6 +125,7 @@ def register_collaboration(app, is_admin):
             latest[key] = dict(article=' · '.join(filter(None, [row['article'],row['brand'],row['variant']])),
                 supermarche=row['store'], prix=row['price'], unite=f"{row['quantity']:g} {row['unit']}",
                 lieu=row['location'], ville=row['city'], quartier=row['district'], boutique=row['shop'], disponibilite=row['availability'], date_disponibilite=row['observed_at'] if row['availability']!='unknown' else None, date_releve=row['observed_at'], source='Relevé commerçant validé' if row['submitted_by']=='merchant' else 'Contribution validée',
+                contact_professionnel=row['business_phone'] if row['submitted_by']=='merchant' else '', livraison_possible=bool(row['delivery_enabled']) if row['submitted_by']=='merchant' else False, zones_livraison_commercant=row['delivery_zones'], frais_livraison=row['delivery_fee'],
                 prix_unitaire=round(row['price'] / (row['quantity'] * factor), 2), unite_reference=base)
         return list(latest.values())
 
@@ -260,6 +269,22 @@ def register_collaboration(app, is_admin):
         availability = data.get('availability','unknown')
         if availability not in ('available','out_of_stock','unknown'):
             return error('Choisissez un statut de disponibilité valide.')
+        business_phone = ''
+        delivery_zones = delivery_fee = ''
+        delivery_enabled = 0
+        if submitted_by == 'merchant':
+            if data.get('publish_contact') == 'on':
+                business_phone = re.sub(r'[\s().-]', '', data.get('business_phone',''))
+                if re.fullmatch(r'[0-9]{10}', business_phone):
+                    business_phone = '+225' + business_phone
+                if not re.fullmatch(r'\+[1-9][0-9]{7,14}', business_phone):
+                    return error('Renseignez un contact professionnel valide ou décochez sa publication.')
+            delivery_enabled = 1 if data.get('delivery_enabled') == 'on' else 0
+            if delivery_enabled:
+                delivery_zones = data.get('delivery_zones','').strip()
+                delivery_fee = data.get('delivery_fee','').strip()
+                if not delivery_zones or len(delivery_zones)>300 or not delivery_fee or len(delivery_fee)>100:
+                    return error('Précisez les zones et les frais de livraison (ou « À convenir »).')
         values['location'] = ' · '.join(values[field] for field in ('city','district','shop'))
         try:
             price = int(data.get('price',''))
@@ -303,6 +328,7 @@ def register_collaboration(app, is_admin):
                 cursor = conn.execute('''INSERT INTO contributions(user_id,article,brand,variant,quantity,unit,price,store,location,observed_at,created_at,proof,proof_hash,fingerprint,city,district,shop,availability,submitted_by)
                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', (current['id'],values['article'],values['brand'],values['variant'],quantity,unit,price,values['store'],values['location'],observed.isoformat(),now(),proof_path,proof_hash,fingerprint,values['city'],values['district'],values['shop'],availability,submitted_by))
                 cid = cursor.lastrowid
+                conn.execute('UPDATE contributions SET business_phone=?,delivery_enabled=?,delivery_zones=?,delivery_fee=? WHERE id=?',(business_phone,delivery_enabled,delivery_zones,delivery_fee,cid))
                 conn.execute('UPDATE contributions SET share_phone=? WHERE id=?', (1 if data.get('share_phone') == 'on' else 0, cid))
         except sqlite3.IntegrityError:
             if proof_path:
