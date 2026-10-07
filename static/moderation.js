@@ -10,8 +10,18 @@ function clearPhotos(){proofUrls.forEach(url=>URL.revokeObjectURL(url));proofUrl
 async function load(){
 const sequence=++loadSequence,expectedToken=token;
 try{
-const data=await api('/api/admin/contributions');if(sequence!==loadSequence||expectedToken!==token)return;clearPhotos();el('rows').replaceChildren();el('login').hidden=true;el('toolbar').hidden=false;tell('Contributions chargées.');
+const data=await api('/api/admin/contributions');const reportData=await api('/api/admin/reports');if(sequence!==loadSequence||expectedToken!==token)return;clearPhotos();el('rows').replaceChildren();el('login').hidden=true;el('toolbar').hidden=false;tell('Contributions chargées.');
 if(!data.contributions.length)el('rows').textContent='Aucune contribution reçue.';
+const reportHeading=document.createElement('h2');reportHeading.textContent='Signalements des utilisateurs';el('rows').append(reportHeading);
+const reasons={wrong_price:'Prix incorrect',unavailable:'Produit indisponible',wrong_format:'Format incorrect',other:'Autre erreur'};
+if(!reportData.reports.length){const empty=document.createElement('p');empty.textContent='Aucun signalement reçu.';el('rows').append(empty);}
+reportData.reports.forEach(row=>{
+const card=document.createElement('article'),heading=document.createElement('h3');heading.textContent=row.article+' · '+row.store;card.append(heading);
+const details=document.createElement('p');details.textContent=reasons[row.reason]+' · '+(row.status==='resolved'?'Traité':'À vérifier');card.append(details);
+const note=document.createElement('p');note.textContent=row.comment;card.append(note);
+if(row.status==='pending'){const button=document.createElement('button');button.textContent='Marquer comme traité';button.addEventListener('click',async()=>{if(busy)return;busy=true;button.disabled=true;try{const result=await api('/api/admin/reports/'+row.id+'/resolve',{method:'POST'});tell(result.message);await load();}catch(error){tell(error.message);}finally{busy=false;button.disabled=false;}});card.append(button);}
+el('rows').append(card);
+});
 const labels={pending:'En attente',approved:'Accepté',rejected:'Refusé'};
 data.contributions.forEach(row=>{
 const card=document.createElement('article'),title=document.createElement('h2');title.textContent='#'+row.id+' · '+row.article+' · '+labels[row.status];card.append(title);
