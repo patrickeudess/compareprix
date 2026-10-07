@@ -13,7 +13,7 @@ const response=await fetch(url,{...options,headers:{'X-CSRF-Token':csrf,...optio
 let data;try{data=await response.json();}catch{throw new Error('Les comptes et contributions nécessitent la version serveur de ComparePrix.');}
 if(!response.ok)throw new Error(data.message||'La demande a échoué.');return data;
 }
-function displayAccount(data){csrf=data.csrf;currentUser=data.user;byId('signedIn').hidden=!currentUser;byId('signedOut').hidden=!!currentUser;byId('contribution').hidden=!currentUser||pageMode!=='contribution';if(pageMode==='contribution'&&!currentUser){location.replace(accountDestination());return;}byId('contributeFromAccount').href=contributionDestination();document.querySelector('.account-layout').classList.toggle('account-first',!currentUser);if(currentUser){byId('greeting').textContent='Bonjour '+currentUser.name;byId('password').value='';}loadHistory();if(currentUser&&merchantMode)loadMerchantProfile();}
+function displayAccount(data){byId('history').hidden=!data.user;csrf=data.csrf;currentUser=data.user;byId('signedIn').hidden=!currentUser;byId('signedOut').hidden=!!currentUser;byId('contribution').hidden=!currentUser||pageMode!=='contribution';if(pageMode==='contribution'&&!currentUser){location.replace(accountDestination());return;}byId('contributeFromAccount').href=contributionDestination();document.querySelector('.account-layout').classList.toggle('account-first',!currentUser);if(currentUser){byId('greeting').textContent='Bonjour '+currentUser.name;byId('password').value='';}loadHistory();if(currentUser&&merchantMode)loadMerchantProfile();}
 async function loadHistory(){
 if(!currentUser){byId('historyRows').textContent='Connectez-vous pour suivre vos relevés.';byId('points').textContent='';return;}
 try{
@@ -113,3 +113,27 @@ catch(error){tell(error.message);}finally{button.disabled=false;}
 }
 
 function loadMerchantProfile(){api('/api/merchant/profile').then(data=>{if(data.profile){['store','city','district','shop'].forEach(key=>{if(!byId(key).value)byId(key).value=data.profile[key]||'';});updatePlaceSuggestions();}}).catch(error=>tell(error.message));}
+
+const merchantIntent=merchantMode||new URLSearchParams(location.search).get('intent')==='merchant';
+if(pageMode==='account'&&merchantIntent){
+ document.querySelector('.page-title h1').textContent='🏪 Votre boutique sur ComparePrix';
+ document.querySelector('.page-title p').textContent='Créez votre compte pour proposer vos produits.';
+ document.querySelector('#account h2').textContent='📱 Commençons par votre compte';
+ document.querySelector('.visual-help h2').textContent='Vos produits, près des clients';
+ document.querySelector('.visual-help > p').textContent='🏪 Boutique → 📦 Produits → ✅ Validation';
+}
+if(pageMode==='contribution'){
+ const steps=[...form.querySelectorAll('fieldset.form-group-step')];
+ let step=0;
+ const progress=document.createElement('div');progress.className='form-progress';progress.setAttribute('aria-label','Étapes du formulaire');
+ steps.forEach((fieldset,i)=>{const badge=document.createElement('span');badge.textContent=(i+1)+' · '+fieldset.querySelector('legend').textContent.replace(/^[^·]*·\s*/,'');progress.append(badge);});
+ form.prepend(progress);
+ const controls=document.createElement('div');controls.className='wizard-actions';
+ const previous=document.createElement('button');previous.type='button';previous.className='secondary';previous.textContent='← Retour';
+ const next=document.createElement('button');next.type='button';next.textContent='Continuer →';controls.append(previous,next);form.append(controls);
+ function showStep(){steps.forEach((fieldset,i)=>fieldset.hidden=i!==step);[...progress.children].forEach((badge,i)=>{badge.classList.toggle('active',i===step);if(i===step)badge.setAttribute('aria-current','step');else badge.removeAttribute('aria-current');});previous.hidden=step===0;next.hidden=step===steps.length-1;byId('send').hidden=step!==steps.length-1;}
+ previous.addEventListener('click',()=>{step--;showStep();progress.scrollIntoView({block:'center'});});
+ next.addEventListener('click',()=>{for(const input of steps[step].querySelectorAll('input,select,textarea')){if(!input.checkValidity()){input.reportValidity();return;}}step++;showStep();progress.scrollIntoView({block:'center'});});
+ form.addEventListener('invalid',event=>{const fieldset=event.target.closest('fieldset');if(fieldset){step=steps.indexOf(fieldset);showStep();}},true);
+ showStep();
+}
