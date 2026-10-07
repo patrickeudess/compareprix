@@ -13,20 +13,24 @@ document.getElementById('resultCount').textContent=rows.length+' offre'+(rows.le
 content.replaceChildren();
 rows.forEach(row=>{
 const card=document.createElement('article');card.className='offer';
-const details=document.createElement('div'),title=document.createElement('h3');title.textContent=row.article;details.append(title);
+const details=document.createElement('div');details.className='offer-details';
+const visual=document.createElement('div');visual.className='product-visual';visual.setAttribute('aria-hidden','true');
+const product=String(row.article).toLocaleLowerCase('fr');visual.textContent=product.includes('riz')?'🌾':product.includes('huile')?'🫒':product.includes('lait')?'🥛':product.includes('pain')?'🥖':product.includes('sucre')?'🧊':product.includes('café')||product.includes('cafe')?'☕':product.includes('eau')?'💧':'🛍️';
+const identity=document.createElement('div'),title=document.createElement('h3');title.textContent=row.article;identity.append(title);details.append(visual,identity);
 const store=document.createElement('div');store.className='store';
 const logo=logos[String(row.supermarche).trim().toLowerCase()];
 if(logo){const image=document.createElement('img');image.src=logo;image.alt='';image.className='store-logo';image.loading='lazy';image.referrerPolicy='no-referrer';image.addEventListener('error',()=>image.remove());store.append(image);}
-const name=document.createElement('span');name.textContent=row.supermarche;store.append(name);details.append(store);
+const name=document.createElement('span');name.textContent=row.supermarche;store.append(name);identity.append(store);
 const price=document.createElement('div');price.className='price';price.textContent=money.format(row.prix)+' FCFA';
 const unit=document.createElement('span');unit.className='unit';unit.textContent='Format : '+(row.unite||'unité');price.append(unit);card.append(details,price);
-const source=document.createElement('p');source.className='unit';source.textContent=row.date_releve?row.source+' · Relevé le '+row.date_releve+' · '+row.lieu:(row.source||'Prix de démonstration')+' · À confirmer';details.append(source);
+const source=document.createElement('span');source.className='price-badge'+(row.date_releve?' dated':'');source.textContent=row.date_releve?'✓ Validé · '+row.date_releve:'◷ À confirmer';identity.append(source);
+if(row.lieu){const place=document.createElement('p');place.className='offer-place';place.textContent='📍 '+row.lieu;identity.append(place);} 
 if(Number.isFinite(row.prix_unitaire)){const normalized=document.createElement('span');normalized.className='unit';normalized.textContent=money.format(row.prix_unitaire)+' FCFA / '+row.unite_reference;price.append(normalized);}
 try{const url=new URL(row.url);if(['https:','http:'].includes(url.protocol)&&!url.pathname.includes('example')){const link=document.createElement('a');link.href=url.href;link.target='_blank';link.rel='noopener noreferrer';link.className='product-link';link.textContent='Voir le produit';card.append(link);}}catch{}
 const actions=document.createElement('div');actions.className='offer-actions';
-const add=document.createElement('button');add.type='button';add.className='basket-add';add.textContent='Ajouter au panier';add.addEventListener('click',()=>addToBasket(row));actions.append(add);
-const report=document.createElement('button');report.type='button';report.textContent='Signaler une erreur';report.addEventListener('click',()=>openReport(row));actions.append(report);
-const update=document.createElement('a');const target=new URL('./compte.html',location.href);target.searchParams.set('article',row.article);target.searchParams.set('store',row.supermarche);target.searchParams.set('format',row.unite||'');target.searchParams.set('location',row.lieu||'');target.searchParams.set('city',row.ville||'');target.searchParams.set('district',row.quartier||'');target.searchParams.set('shop',row.boutique||'');target.searchParams.set('intent','update');target.hash='account';update.href=target.href;update.textContent='Partager un prix actualisé';actions.append(update);card.append(actions);
+const add=document.createElement('button');add.type='button';add.className='basket-add';add.textContent='＋ Ajouter';add.addEventListener('click',()=>{addToBasket(row);add.textContent='✓ Ajouté';});actions.append(add);
+const report=document.createElement('button');report.type='button';report.textContent='⚑ Signaler';report.setAttribute('aria-label','Signaler une erreur sur '+row.article);report.addEventListener('click',()=>openReport(row));actions.append(report);
+const update=document.createElement('a');const target=new URL('./compte.html',location.href);target.searchParams.set('article',row.article);target.searchParams.set('store',row.supermarche);target.searchParams.set('format',row.unite||'');target.searchParams.set('location',row.lieu||'');target.searchParams.set('city',row.ville||'');target.searchParams.set('district',row.quartier||'');target.searchParams.set('shop',row.boutique||'');target.searchParams.set('intent','update');target.hash='account';update.href=target.href;update.textContent='↻ Actualiser';update.setAttribute('aria-label','Partager un prix actualisé pour '+row.article);actions.append(update);card.append(actions);
 content.append(card);
 });
 }
