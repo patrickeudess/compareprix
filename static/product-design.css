@@ -28,3 +28,13 @@ body[data-page="account"] .account-layout{display:block;max-width:620px;margin:2
 .search-filters select:focus-visible{outline:3px solid #bddbca;outline-offset:2px;border-color:#176b45}
 @media(max-width:700px){.search-filters{grid-template-columns:repeat(2,minmax(0,1fr));padding:12px;gap:12px;border-radius:14px}.search-filters select{font-size:12px;padding-left:10px;height:44px}.search-filters .filter-caption{font-size:11px}}
 @media(max-width:320px){.search-filters{grid-template-columns:minmax(0,1fr)}}
+
+/* === Accessibilité : cibles tactiles (guide UX « Touch Target Size » et « Touch Spacing », WCAG 2.2 AA 2.5.8) ===
+   44 px minimum de hauteur et 8 px minimum d'écart entre cibles voisines. Ne pas réduire ces valeurs. */
+.offer a,.offer-actions a,.offer-actions button,.product-link,.suggestions button,.basket-line button,.basket-line input,.quick-help summary,.page-nav a{min-height:44px}
+.offer a,.offer-actions a,.product-link{display:inline-flex;align-items:center}
+.offer-actions a,.offer-actions button{min-width:44px;padding-inline:12px;justify-content:center}
+.offer-actions{gap:12px}
+.suggestions{gap:10px}
+.basket-line button,.basket-line input{padding-block:10px}
+select{min-height:44px}
