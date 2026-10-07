@@ -48,10 +48,17 @@ class TestDemoPage(unittest.TestCase):
         self.assertIn('"ecart_pct": 68.1', self.html)      # prix aberrant calculé par pricing.py
         self.assertIn('"prix_unitaire": 900.0', self.html)  # 4 500 FCFA / 5 kg
 
-    def test_committed_index_html_is_up_to_date(self):
-        # Le fichier publié par GitHub Pages doit correspondre à la page actuelle ; sinon : python tools/build_demo.py
-        with open(os.path.join(ROOT, 'index.html'), encoding='utf-8') as f:
-            self.assertEqual(f.read(), self.html, 'index.html est périmé : relancez python tools/build_demo.py')
+    def test_default_output_never_overwrites_the_public_index_page(self):
+        # index.html (page publique de GitHub Pages) est maintenue à part : l'exécution par défaut écrit dans build/
+        with open(os.path.join(ROOT, 'index.html'), 'rb') as f:
+            before = f.read()
+        proc = run(os.path.join(ROOT, 'tools', 'build_demo.py'))
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.addCleanup(lambda: os.path.exists(os.path.join(ROOT, 'build', 'demo.html')) and
+                        os.remove(os.path.join(ROOT, 'build', 'demo.html')))
+        with open(os.path.join(ROOT, 'index.html'), 'rb') as f:
+            self.assertEqual(f.read(), before)
+        self.assertTrue(os.path.exists(os.path.join(ROOT, 'build', 'demo.html')))
 
     def test_nojekyll_present(self):
         self.assertTrue(os.path.exists(os.path.join(ROOT, '.nojekyll')))

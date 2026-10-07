@@ -1,6 +1,6 @@
 """Génère la page de DÉMONSTRATION statique (GitHub Pages) : la vraie interface, un serveur simulé dans la page.
 
-    python tools/build_demo.py                 # écrit index.html à la racine (servi par GitHub Pages)
+    python tools/build_demo.py                 # écrit build/demo.html (ne touche JAMAIS index.html, la page publique)
     python tools/build_demo.py --out demo.html
     python tools/build_demo.py --fragment --out demo_fragment.html     # sans <html>/<head> (hébergeurs qui l'ajoutent)
 
@@ -8,6 +8,8 @@
 - Le prix unitaire et la détection des prix aberrants viennent du VRAI code Python (pricing.py), exécuté ici
   sur des données FICTIVES, puis figés dans la page. Seuls les calculs liés à la date du jour sont refaits côté navigateur.
 - Les 26 relevés ci-dessous sont inventés pour la démonstration ; un bandeau l'indique et la page est « noindex ».
+- Ce n'est PAS la page publique de GitHub Pages : `index.html` à la racine est une page distincte, maintenue à part.
+  Cette démonstration complète (recherche, prix unitaires, prix aberrants) sert à prévisualiser l'application ou à l'héberger ailleurs.
 - À relancer après toute modification de templates/index.html, pricing.py ou de ces données.
 """
 import argparse
@@ -123,7 +125,7 @@ ICON = ('<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('--out', default=os.path.join(ROOT, 'index.html'))
+    ap.add_argument('--out', default=os.path.join(ROOT, 'build', 'demo.html'))
     ap.add_argument('--fragment', action='store_true', help='sans <!doctype>, <html>, <head>')
     args = ap.parse_args()
     data, style, body = build()
@@ -138,6 +140,7 @@ def main():
                 '<meta name="robots" content="noindex, nofollow">\n'  # prix fictifs : ne pas les faire indexer
                 '<title>ComparePrix – Démonstration</title>\n' + ICON + '\n<style>' + CSS_EXTRA + style +
                 '</style>\n</head>\n<body>\n' + body + '\n</body>\n</html>\n')
+    os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     with open(args.out, 'w', encoding='utf-8', newline='\n') as f:
         f.write(page)
     print(f'✅ {args.out} ({len(page) // 1024} Ko, {len(data)} relevés fictifs)')

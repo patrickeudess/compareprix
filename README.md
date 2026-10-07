@@ -274,5 +274,5 @@ Planifiez-la (cron : `30 2 * * * cd /chemin && python backup_db.py >> data/backu
 
 ## 🌐 Mettre en ligne
 
-- **GitHub Pages** n'héberge que la **démonstration statique** (`index.html`, prix fictifs, générée par `python tools/build_demo.py`). Il ne peut pas exécuter l'application Flask.
+- **GitHub Pages** n'héberge que des fichiers statiques : `index.html` à la racine est la page publique, maintenue à part. Il ne peut pas exécuter l'application Flask. `python tools/build_demo.py` génère en plus une démonstration interactive complète (prix fictifs) dans `build/demo.html`.
 - Pour l'application complète (recherche, administration, base de données) : voir **[DEPLOIEMENT.md](DEPLOIEMENT.md)** (VPS + Docker, PythonAnywhere).
