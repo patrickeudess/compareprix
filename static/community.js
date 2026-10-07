@@ -1,7 +1,8 @@
 'use strict';
+const merchantMode=document.body.dataset.merchant==='true';
 const pageMode=document.body.dataset.page||'account';
-function contributionDestination(){const target=new URL('./contribuer.html',location.href);target.search=location.search;target.hash='contribution';return target.href;}
-function accountDestination(){const target=new URL('./compte.html',location.href);target.search=location.search;if(!target.searchParams.has('intent'))target.searchParams.set('intent','contribute');return target.href;}
+function contributionDestination(){const target=new URL(merchantMode||new URLSearchParams(location.search).get('intent')==='merchant'?'./commercant.html':'./contribuer.html',location.href);target.search=location.search;target.hash='contribution';return target.href;}
+function accountDestination(){const target=new URL('./compte.html',location.href);target.search=location.search;if(merchantMode)target.searchParams.set('intent','merchant');else if(!target.searchParams.has('intent'))target.searchParams.set('intent','contribute');return target.href;}
 let csrf='',currentUser=null,registering=true,online=false;
 const byId=id=>document.getElementById(id),form=byId('contributionForm'),message=byId('message');
 const fields=['article','brand','variant','quantity','unit','price','store','location','city','district','shop','observed_at','availability'];
@@ -35,7 +36,7 @@ byId('showPassword')?.addEventListener('click',()=>{const password=byId('passwor
 showAuthMode();
 byId('authForm').addEventListener('submit',async event=>{
 event.preventDefault();const button=byId('authSubmit');button.disabled=true;
-try{displayAccount(await api('/api/account/'+(registering?'register':'login'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:byId('phone').value,password:byId('password').value,name:byId('name').value})}));tell('Vous êtes connecté. Vous pouvez envoyer votre relevé.');if(['update','contribute'].includes(new URLSearchParams(location.search).get('intent')))location.assign(contributionDestination());else byId('account').scrollIntoView({behavior:'smooth'});}catch(error){tell(error.message);}finally{button.disabled=false;}
+try{displayAccount(await api('/api/account/'+(registering?'register':'login'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:byId('phone').value,password:byId('password').value,name:byId('name').value})}));tell('Vous êtes connecté. Vous pouvez envoyer votre relevé.');if(['update','contribute','merchant'].includes(new URLSearchParams(location.search).get('intent')))location.assign(contributionDestination());else byId('account').scrollIntoView({behavior:'smooth'});}catch(error){tell(error.message);}finally{button.disabled=false;}
 });
 byId('logout').addEventListener('click',async()=>{try{displayAccount(await api('/api/account/logout',{method:'POST'}));tell('Vous êtes déconnecté.');}catch(error){tell(error.message);}});
 function saveDraft(){try{localStorage.setItem(draftKey,JSON.stringify(Object.fromEntries(fields.map(key=>[key,byId(key).value]))));}catch{byId('draftNote').textContent='Le navigateur ne peut pas conserver ce brouillon.';}}
@@ -99,3 +100,14 @@ form.addEventListener('reset',()=>setTimeout(updatePlaceSuggestions,0));
 ['city','district','shop'].forEach(key=>{if(incoming.get(key))byId(key).value=incoming.get(key).slice(0,key==='city'?50:key==='district'?60:80);});
 updatePlaceSuggestions();
 fetch(document.body.dataset.preview==='true'?'./static/locations.json':'/api/locations').then(response=>{if(!response.ok)throw new Error();return response.json();}).then(data=>{if(Array.isArray(data.locations)){locationCatalog=data;updatePlaceSuggestions();}}).catch(()=>{byId('locationHelp').textContent='Les suggestions ne sont pas disponibles pour le moment. Saisissez la ville, la commune et la boutique dans leurs champs séparés.';});
+if(merchantMode){
+document.querySelector('.page-title h1').textContent='🏪 Mon espace commerçant';
+document.querySelector('.page-title p').textContent='Votre boutique, vos prix et vos disponibilités.';
+document.querySelector('#contribution > h2').textContent='Ajouter un prix de ma boutique';
+byId('saveMerchantProfile').addEventListener('click',async()=>{
+const button=byId('saveMerchantProfile');button.disabled=true;
+try{const result=await api('/api/merchant/profile',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(['store','city','district','shop'].map(key=>[key,byId(key).value])))});tell(result.message);}
+catch(error){tell(error.message);}finally{button.disabled=false;}
+});
+api('/api/merchant/profile').then(data=>{if(data.profile){['store','city','district','shop'].forEach(key=>{if(!byId(key).value)byId(key).value=data.profile[key]||'';});updatePlaceSuggestions();}}).catch(()=>{});
+}
