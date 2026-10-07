@@ -1,10 +1,6 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<!-- GitHub Pages entry point for the hosted application. -->
-<script>location.replace("https://patrickeudess.pythonanywhere.com/" + location.search + location.hash);</script>
-<noscript><meta http-equiv="refresh" content="0;url=https://patrickeudess.pythonanywhere.com/"></noscript>
-
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ComparePrix · Comparer les prix</title>
 <link rel="icon" href="./static/compareprix-mark.svg" type="image/svg+xml">
@@ -13,14 +9,14 @@
 @media(max-width:600px){main{padding:18px 14px}.search-panel{padding:18px}.search-form{flex-direction:column}.search-btn{width:100%}.results-bar{align-items:flex-start;flex-direction:column}.store-filter{width:100%}.store-filter select{flex:1;max-width:none}.offer{padding:15px}.price{font-size:1.05rem}header{margin-bottom:20px}}
 </style>
 <link rel="stylesheet" href="./static/product-design.css"></head>
-<body><noscript><p><a href="https://patrickeudess.pythonanywhere.com/">Ouvrir ComparePrix</a></p></noscript>
+<body>
 <main>
 <header><img src="./static/compareprix-mark.svg" alt=""><h1>ComparePrix</h1></header>
 <nav class="page-nav" aria-label="Navigation principale"><a href="./" aria-current="page"><span aria-hidden="true">🔎</span><span>Comparer</span></a><a href="./panier.html"><span aria-hidden="true">🛍️</span><span>Panier <b id="basketNavCount">0</b></span></a><a href="./contribuer.html"><span aria-hidden="true">📸</span><span>Ajouter un prix</span></a><a href="./compte.html"><span aria-hidden="true">👤</span><span>Compte</span></a></nav>
 <div class="welcome"><p class="eyebrow">Vos courses, mieux informées</p><h2>Comparez les prix.<br>Choisissez où acheter.</h2><p>Trouvez votre prix. Préparez votre panier. Sans compte.</p></div>
 <section class="search-panel" aria-label="Recherche de prix">
-<form id="searchForm"><label for="searchInput">Quel produit cherchez-vous ?</label><div class="search-form"><input id="searchInput" type="search" maxlength="200" placeholder="Ex. riz, huile, lait" required><button class="search-btn" type="submit">Comparer</button></div></form>
-<div class="suggestions" aria-label="Exemples de recherche"><button type="button" data-search="Riz">🌾 Riz</button><button type="button" data-search="Huile">🫒 Huile</button><button type="button" data-search="Lait">🥛 Lait</button><button type="button" data-search="Pain">🥖 Pain</button></div>
+<form id="searchForm"><label for="searchInput">Quel produit cherchez-vous ?</label><div class="search-form"><input id="searchInput" type="search" maxlength="200" placeholder="Produit ou marque : riz, Dinor…" list="productSuggestions" autocomplete="off"><button class="search-btn" type="submit">Comparer</button></div><datalist id="productSuggestions"></datalist><p class="hint">Les prix s’affichent pendant la saisie.</p></form>
+<div class="suggestions" aria-label="Produits courants"><button id="showAllProducts" type="button">Tous les produits</button><button type="button" data-search="Riz">🌾 Riz</button><button type="button" data-search="Huile">🫒 Huile</button><button type="button" data-search="Sucre">🧊 Sucre</button><button type="button" data-search="Lait">🥛 Lait</button><button type="button" data-search="Pâtes">🍝 Pâtes</button><button type="button" data-search="Tomate">🍅 Tomate</button><button type="button" data-search="Sardines">🐟 Sardines</button><button type="button" data-search="Café">☕ Café</button><button type="button" data-search="Thé">🍵 Thé</button><button type="button" data-search="Mayonnaise">🥣 Mayonnaise</button></div>
 </section>
 <details class="quick-help"><summary>ⓘ Bien comparer</summary><p>Comparez le même format. Vérifiez la date et le magasin : les prix sans date sont à confirmer.</p></details>
 <div id="status" class="status" role="status" aria-live="polite">Recherchez un produit pour commencer.</div>
@@ -32,5 +28,5 @@
 
 
 </main><a class="basket-dock" href="./panier.html" aria-label="Voir mon panier"><span>🛍️ Panier <span id="basketDockCount">0</span></span><strong id="basketDockTotal">0 FCFA</strong><span aria-hidden="true">→</span></a><div id="basketToast" class="basket-toast" role="status" aria-live="polite"></div>
-<script src="./static/basket.js?v=20261007"></script><script src="./static/compareprix.js?v=20261007"></script>
+<script src="./static/basket.js?v=20261007"></script><script src="./static/compareprix.js?v=20261007-search"></script>
 </body></html>
