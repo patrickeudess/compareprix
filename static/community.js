@@ -4,7 +4,7 @@ function contributionDestination(){const target=new URL('./contribuer.html',loca
 function accountDestination(){const target=new URL('./compte.html',location.href);target.search=location.search;if(!target.searchParams.has('intent'))target.searchParams.set('intent','contribute');return target.href;}
 let csrf='',currentUser=null,registering=false,online=false;
 const byId=id=>document.getElementById(id),form=byId('contributionForm'),message=byId('message');
-const fields=['article','brand','variant','quantity','unit','price','store','location','city','district','shop','observed_at'];
+const fields=['article','brand','variant','quantity','unit','price','store','location','city','district','shop','observed_at','availability'];
 const draftKey='compareprix-contribution-draft-v1';
 function tell(text){message.textContent=text;}
 async function api(url,options={}){
@@ -22,7 +22,7 @@ const labels={pending:'En attente de validation',approved:'Accepté',rejected:'R
 data.contributions.forEach(row=>{
 const card=document.createElement('article'),title=document.createElement('h3');title.textContent=row.article;card.append(title);
 const detail=document.createElement('p');detail.textContent=row.price+' FCFA · '+row.quantity+' '+row.unit+' · '+row.store+' · '+row.location+' · '+row.observed_at;card.append(detail);
-const status=document.createElement('p');status.className='badge';status.textContent=labels[row.status];card.append(status);
+const stock=document.createElement('p');stock.textContent=({available:'🟢 Disponible',out_of_stock:'🔴 Rupture de stock',unknown:'⚪ Disponibilité inconnue'})[row.availability]||'⚪ Disponibilité inconnue';card.append(stock);const status=document.createElement('p');status.className='badge';status.textContent=labels[row.status];card.append(status);
 if(row.review_note){const note=document.createElement('p');note.textContent='Avis : '+row.review_note;card.append(note);}
 if(row.proof){const a=document.createElement('a');a.href='/api/contributions/'+row.id+'/photo';a.textContent='Voir ma photo';a.target='_blank';a.rel='noopener';card.append(a);}
 byId('historyRows').append(card);
