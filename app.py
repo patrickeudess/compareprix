@@ -38,7 +38,7 @@ def load_manual_articles():
     return []
 
 def load_articles():
-    articles = [dict(value, source='Prix sans date', date_releve=None) for value in load_manual_articles()]
+    articles = [dict(value, source=value.get('source', 'Prix sans date'), date_releve=value.get('date_releve')) for value in load_manual_articles()]
     return articles + load_community_prices()
 
 def save_articles(articles):
