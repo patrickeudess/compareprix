@@ -1,144 +1,162 @@
 [
   {
-    "article": "Riz Basmati",
-    "supermarche": "Carrefour",
-    "prix": 500,
-    "unite": "kg"
+    "article": "Riz Maman",
+    "supermarche": "Jumia CI (en ligne)",
+    "prix": 2820,
+    "unite": "5 kg",
+    "url": "https://www.jumia.ci/maman-riz-maman-5-kg-3315611.html",
+    "source": "prix_internet",
+    "date_consultation": "2026-10-07",
+    "date_releve": null,
+    "statut": "prix_internet",
+    "disponibilite": "unknown",
+    "prix_unitaire": 564,
+    "unite_reference": "kg",
+    "lieu": "En ligne · livraison en supplément",
+    "source_catalogue": "https://www.jumia.ci/epicerie/"
   },
   {
-    "article": "Riz Basmati",
-    "supermarche": "Cap Sud",
-    "prix": 520,
-    "unite": "kg"
-  },
-  {
-    "article": "Riz Basmati",
-    "supermarche": "Casino",
-    "prix": 480,
-    "unite": "kg"
-  },
-  {
-    "article": "Huile d'Olive",
-    "supermarche": "Carrefour",
+    "article": "Huile végétale Dinor",
+    "supermarche": "Jumia CI (en ligne)",
     "prix": 1200,
-    "unite": "L"
+    "unite": "90 cl",
+    "url": "https://www.jumia.ci/dinor-huile-vegetale-dinor-90cl-19745376.html",
+    "source": "prix_internet",
+    "date_consultation": "2026-10-07",
+    "date_releve": null,
+    "statut": "prix_internet",
+    "disponibilite": "unknown",
+    "prix_unitaire": 1333.33,
+    "unite_reference": "L",
+    "lieu": "En ligne · livraison en supplément",
+    "source_catalogue": "https://www.jumia.ci/epicerie/"
   },
   {
-    "article": "Huile d'Olive",
-    "supermarche": "Cap Sud",
-    "prix": 1150,
-    "unite": "L"
+    "article": "Sucre blanc Princesse Tatie",
+    "supermarche": "Jumia CI (en ligne)",
+    "prix": 875,
+    "unite": "1 kg",
+    "url": "https://www.jumia.ci/sucre-en-poudre-blanc-1kg-princesse-tatie-mpg661346.html",
+    "source": "prix_internet",
+    "date_consultation": "2026-10-07",
+    "date_releve": null,
+    "statut": "prix_internet",
+    "disponibilite": "unknown",
+    "prix_unitaire": 875,
+    "unite_reference": "kg",
+    "lieu": "En ligne · livraison en supplément",
+    "source_catalogue": "https://www.jumia.ci/epicerie/"
   },
   {
-    "article": "Huile d'Olive",
-    "supermarche": "Casino",
+    "article": "Lait en poudre Laity",
+    "supermarche": "Jumia CI (en ligne)",
+    "prix": 2200,
+    "unite": "400 g",
+    "url": "https://www.jumia.ci/laity-lait-instantane-en-boite-400g-3211789.html",
+    "source": "prix_internet",
+    "date_consultation": "2026-10-07",
+    "date_releve": null,
+    "statut": "prix_internet",
+    "disponibilite": "unknown",
+    "prix_unitaire": 5500,
+    "unite_reference": "kg",
+    "lieu": "En ligne · livraison en supplément",
+    "source_catalogue": "https://www.jumia.ci/epicerie/"
+  },
+  {
+    "article": "Spaghetti Maman",
+    "supermarche": "Jumia CI (en ligne)",
+    "prix": 8375,
+    "unite": "40 × 200 g (lot de 8 kg)",
+    "url": "https://www.jumia.ci/maman-sachets-de-spaghetti-maman-11-200g-x-40-21106235.html",
+    "source": "prix_internet",
+    "date_consultation": "2026-10-07",
+    "date_releve": null,
+    "statut": "prix_internet",
+    "disponibilite": "unknown",
+    "prix_unitaire": 1046.88,
+    "unite_reference": "kg",
+    "lieu": "En ligne · livraison en supplément",
+    "source_catalogue": "https://www.jumia.ci/epicerie/"
+  },
+  {
+    "article": "Concentré de tomate Alyssa",
+    "supermarche": "Jumia CI (en ligne)",
+    "prix": 400,
+    "unite": "370 g",
+    "url": "https://www.jumia.ci/alyssa-double-concentre-de-tomates-370g-28832264.html",
+    "source": "prix_internet",
+    "date_consultation": "2026-10-07",
+    "date_releve": null,
+    "statut": "prix_internet",
+    "disponibilite": "unknown",
+    "prix_unitaire": 1081.08,
+    "unite_reference": "kg",
+    "lieu": "En ligne · livraison en supplément",
+    "source_catalogue": "https://www.jumia.ci/epicerie/"
+  },
+  {
+    "article": "Sardines Roch à l’huile végétale",
+    "supermarche": "Jumia CI (en ligne)",
+    "prix": 375,
+    "unite": "125 g",
+    "url": "https://www.jumia.ci/roch-sardines-a-lhuile-vegetale-125g-32402488.html",
+    "source": "prix_internet",
+    "date_consultation": "2026-10-07",
+    "date_releve": null,
+    "statut": "prix_internet",
+    "disponibilite": "unknown",
+    "prix_unitaire": 3000,
+    "unite_reference": "kg",
+    "lieu": "En ligne · livraison en supplément",
+    "source_catalogue": "https://www.jumia.ci/epicerie/"
+  },
+  {
+    "article": "Café Nescafé 3 en 1",
+    "supermarche": "Jumia CI (en ligne)",
     "prix": 1250,
-    "unite": "L"
+    "unite": "11 × 32 g (lot de 352 g)",
+    "url": "https://www.jumia.ci/nescafe-original-3-in-1-lot-de-101-32-g-export-32524988.html",
+    "source": "prix_internet",
+    "date_consultation": "2026-10-07",
+    "date_releve": null,
+    "statut": "prix_internet",
+    "disponibilite": "unknown",
+    "prix_unitaire": 3551.14,
+    "unite_reference": "kg",
+    "lieu": "En ligne · livraison en supplément",
+    "source_catalogue": "https://www.jumia.ci/epicerie/"
   },
   {
-    "article": "Pâtes Spaghetti",
-    "supermarche": "Carrefour",
-    "prix": 180,
-    "unite": "kg"
+    "article": "Thé Lipton",
+    "supermarche": "Jumia CI (en ligne)",
+    "prix": 810,
+    "unite": "25 sachets",
+    "url": "https://www.jumia.ci/lipton-the-lipton-s25-x-25-sach-29626574.html",
+    "source": "prix_internet",
+    "date_consultation": "2026-10-07",
+    "date_releve": null,
+    "statut": "prix_internet",
+    "disponibilite": "unknown",
+    "prix_unitaire": 32.4,
+    "unite_reference": "sachet",
+    "lieu": "En ligne · livraison en supplément",
+    "source_catalogue": "https://www.jumia.ci/epicerie/"
   },
   {
-    "article": "Pâtes Spaghetti",
-    "supermarche": "Cap Sud",
-    "prix": 175,
-    "unite": "kg"
-  },
-  {
-    "article": "Pâtes Spaghetti",
-    "supermarche": "Casino",
-    "prix": 190,
-    "unite": "kg"
-  },
-  {
-    "article": "Lait",
-    "supermarche": "Carrefour",
-    "prix": 120,
-    "unite": "L"
-  },
-  {
-    "article": "Lait",
-    "supermarche": "Cap Sud",
-    "prix": 125,
-    "unite": "L"
-  },
-  {
-    "article": "Lait",
-    "supermarche": "Casino",
-    "prix": 118,
-    "unite": "L"
-  },
-  {
-    "article": "Pain",
-    "supermarche": "Carrefour",
-    "prix": 85,
-    "unite": "unité"
-  },
-  {
-    "article": "Pain",
-    "supermarche": "Cap Sud",
-    "prix": 90,
-    "unite": "unité"
-  },
-  {
-    "article": "Pain",
-    "supermarche": "Casino",
-    "prix": 82,
-    "unite": "unité"
-  },
-  {
-    "article": "Tomates",
-    "supermarche": "Carrefour",
-    "prix": 300,
-    "unite": "kg"
-  },
-  {
-    "article": "Tomates",
-    "supermarche": "Cap Sud",
-    "prix": 280,
-    "unite": "kg"
-  },
-  {
-    "article": "Tomates",
-    "supermarche": "Casino",
-    "prix": 320,
-    "unite": "kg"
-  },
-  {
-    "article": "Pommes",
-    "supermarche": "Carrefour",
-    "prix": 450,
-    "unite": "kg"
-  },
-  {
-    "article": "Pommes",
-    "supermarche": "Cap Sud",
-    "prix": 420,
-    "unite": "kg"
-  },
-  {
-    "article": "Pommes",
-    "supermarche": "Casino",
-    "prix": 480,
-    "unite": "kg"
-  },
-  {
-    "article": "Riz Basmati Jumia",
-    "supermarche": "Jumia",
-    "prix": 550,
-    "unite": "kg",
-    "url": "https://www.jumia.ci/example",
-    "image_url": ""
-  },
-  {
-    "article": "Huile d'Olive Jumia",
-    "supermarche": "Jumia",
-    "prix": 1300,
-    "unite": "L",
-    "url": "https://www.jumia.ci/example",
-    "image_url": ""
+    "article": "Mayonnaise Aromate",
+    "supermarche": "Jumia CI (en ligne)",
+    "prix": 1375,
+    "unite": "450 ml",
+    "url": "https://www.jumia.ci/epicerie/",
+    "source": "prix_internet",
+    "date_consultation": "2026-10-07",
+    "date_releve": null,
+    "statut": "prix_internet",
+    "disponibilite": "unknown",
+    "prix_unitaire": 3055.56,
+    "unite_reference": "L",
+    "lieu": "En ligne · livraison en supplément",
+    "source_catalogue": "https://www.jumia.ci/epicerie/"
   }
 ]
