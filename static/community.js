@@ -46,6 +46,12 @@ const photo=byId('photo').files[0];if(photo&&photo.size>5*1024*1024){tell('La ph
 byId('send').disabled=true;
 try{const data=await api('/api/contributions',{method:'POST',body:new FormData(form)});tell(data.message);form.reset();try{localStorage.removeItem(draftKey);}catch{}await loadHistory();byId('history').scrollIntoView({behavior:'smooth'});}catch(error){tell(error.message);}finally{byId('send').disabled=false;}
 });
+if(document.body.dataset.preview==='true'){
+tell('Cette version permet de découvrir ComparePrix et de préparer un relevé. La création de compte et l’envoi de prix ne sont pas encore disponibles en ligne.');
+byId('authForm').querySelectorAll('input,button').forEach(field=>field.disabled=true);
+byId('send').disabled=true;
+}else{
 api('/api/session').then(data=>{online=true;displayAccount(data);}).catch(error=>{tell(error.message);byId('authSubmit').disabled=true;byId('send').disabled=true;});
+}
 
 
