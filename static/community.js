@@ -1,4 +1,7 @@
 'use strict';
+const pageMode=document.body.dataset.page||'account';
+function contributionDestination(){const target=new URL('./contribuer.html',location.href);target.search=location.search;target.hash='contribution';return target.href;}
+function accountDestination(){const target=new URL('./compte.html',location.href);target.search=location.search;if(!target.searchParams.has('intent'))target.searchParams.set('intent','contribute');return target.href;}
 let csrf='',currentUser=null,registering=false,online=false;
 const byId=id=>document.getElementById(id),form=byId('contributionForm'),message=byId('message');
 const fields=['article','brand','variant','quantity','unit','price','store','location','city','district','shop','observed_at'];
@@ -9,7 +12,7 @@ const response=await fetch(url,{...options,headers:{'X-CSRF-Token':csrf,...optio
 let data;try{data=await response.json();}catch{throw new Error('Les comptes et contributions nécessitent la version serveur de ComparePrix.');}
 if(!response.ok)throw new Error(data.message||'La demande a échoué.');return data;
 }
-function displayAccount(data){csrf=data.csrf;currentUser=data.user;byId('signedIn').hidden=!currentUser;byId('signedOut').hidden=!!currentUser;byId('contribution').hidden=!currentUser;document.querySelector('.account-layout').classList.toggle('account-first',!currentUser);if(currentUser){byId('greeting').textContent='Bonjour '+currentUser.name;byId('password').value='';}loadHistory();}
+function displayAccount(data){csrf=data.csrf;currentUser=data.user;byId('signedIn').hidden=!currentUser;byId('signedOut').hidden=!!currentUser;byId('contribution').hidden=!currentUser||pageMode!=='contribution';if(pageMode==='contribution'&&!currentUser){location.replace(accountDestination());return;}byId('contributeFromAccount').href=contributionDestination();document.querySelector('.account-layout').classList.toggle('account-first',!currentUser);if(currentUser){byId('greeting').textContent='Bonjour '+currentUser.name;byId('password').value='';}loadHistory();}
 async function loadHistory(){
 if(!currentUser){byId('historyRows').textContent='Connectez-vous pour suivre vos relevés.';byId('points').textContent='';return;}
 try{
@@ -29,7 +32,7 @@ byId('historyRows').append(card);
 byId('switchAuth').addEventListener('click',()=>{registering=!registering;byId('registration').hidden=!registering;byId('name').required=registering;byId('password').minLength=registering?12:1;byId('password').autocomplete=registering?'new-password':'current-password';byId('authSubmit').textContent=registering?'Créer mon compte':'Se connecter';byId('switchAuth').textContent=registering?'J’ai déjà un compte':'Créer un compte';});
 byId('authForm').addEventListener('submit',async event=>{
 event.preventDefault();const button=byId('authSubmit');button.disabled=true;
-try{displayAccount(await api('/api/account/'+(registering?'register':'login'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:byId('phone').value,password:byId('password').value,name:byId('name').value})}));tell('Vous êtes connecté. Vous pouvez envoyer votre relevé.');byId('contribution').scrollIntoView({behavior:'smooth'});}catch(error){tell(error.message);}finally{button.disabled=false;}
+try{displayAccount(await api('/api/account/'+(registering?'register':'login'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:byId('phone').value,password:byId('password').value,name:byId('name').value})}));tell('Vous êtes connecté. Vous pouvez envoyer votre relevé.');if(['update','contribute'].includes(new URLSearchParams(location.search).get('intent')))location.assign(contributionDestination());else byId('account').scrollIntoView({behavior:'smooth'});}catch(error){tell(error.message);}finally{button.disabled=false;}
 });
 byId('logout').addEventListener('click',async()=>{try{displayAccount(await api('/api/account/logout',{method:'POST'}));tell('Vous êtes déconnecté.');}catch(error){tell(error.message);}});
 function saveDraft(){try{localStorage.setItem(draftKey,JSON.stringify(Object.fromEntries(fields.map(key=>[key,byId(key).value]))));}catch{byId('draftNote').textContent='Le navigateur ne peut pas conserver ce brouillon.';}}
@@ -44,14 +47,15 @@ if(!online){tell('Cette page nécessite un serveur ComparePrix pour envoyer des 
 if(!currentUser){tell('Connectez-vous ou créez un compte pour envoyer ce relevé. Votre brouillon est conservé.');byId('account').scrollIntoView({behavior:'smooth'});return;}
 const photo=byId('photo').files[0];if(photo&&photo.size>5*1024*1024){tell('La photo dépasse 5 Mo.');return;}
 byId('send').disabled=true;
-try{const data=await api('/api/contributions',{method:'POST',body:new FormData(form)});tell(data.message);form.reset();try{localStorage.removeItem(draftKey);}catch{}await loadHistory();byId('history').scrollIntoView({behavior:'smooth'});}catch(error){tell(error.message);}finally{byId('send').disabled=false;}
+try{const data=await api('/api/contributions',{method:'POST',body:new FormData(form)});tell(data.message);form.reset();try{localStorage.removeItem(draftKey);}catch{}await loadHistory();location.assign('./compte.html#history');}catch(error){tell(error.message);}finally{byId('send').disabled=false;}
 });
 if(document.body.dataset.preview==='true'){
+if(pageMode==='contribution'){location.replace(accountDestination());}
 tell('La création de compte et l’envoi de prix ne sont pas encore disponibles sur cette démonstration en ligne.');
 byId('authForm').querySelectorAll('input,button').forEach(field=>field.disabled=true);
 byId('send').disabled=true;
 }else{
-api('/api/session').then(data=>{online=true;displayAccount(data);}).catch(error=>{tell(error.message);byId('authSubmit').disabled=true;byId('send').disabled=true;});
+api('/api/session').then(data=>{online=true;displayAccount(data);if(pageMode==='account'&&data.user&&['update','contribute'].includes(new URLSearchParams(location.search).get('intent')))location.assign(contributionDestination());}).catch(error=>{tell(error.message);byId('authSubmit').disabled=true;byId('send').disabled=true;});
 }
 
 
@@ -67,7 +71,7 @@ byId('price').value='';byId('photo').value='';saveDraft();
 }
 
 document.querySelectorAll('a[href="#contribution"]').forEach(link=>link.addEventListener('click',event=>{if(!currentUser){event.preventDefault();byId('account').scrollIntoView({behavior:'smooth'});tell('Créez votre compte ou connectez-vous avant de renseigner le prix.');}}));
-if(new URLSearchParams(location.search).get('intent')==='update'){
+if(new URLSearchParams(location.search).get('intent')==='update'||new URLSearchParams(location.search).get('intent')==='contribute'){
 byId('switchAuth').click();
 }
 document.querySelector('.account-layout').classList.toggle('account-first',!currentUser);
