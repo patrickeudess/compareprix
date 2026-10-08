@@ -2,6 +2,7 @@
 Lancer : python -m unittest test_db -v"""
 import atexit
 import os
+import sqlite3
 import tempfile
 import threading
 import unittest
@@ -205,6 +206,65 @@ class TestHttp(DbCase):
     def test_unknown_feedback_404(self):
         r = self.client.put('/api/feedback/nope', json={'status': 'approved'}, headers=ADMIN)
         self.assertEqual(r.status_code, 404)
+
+
+OLD_SCHEMA_OBSERVATION = """
+CREATE TABLE price_observation (
+    id INTEGER PRIMARY KEY, product_id INTEGER NOT NULL REFERENCES product(id),
+    store_id INTEGER NOT NULL REFERENCES store(id), prix INTEGER NOT NULL CHECK (prix > 0),
+    unite TEXT NOT NULL, date_releve TEXT,
+    source TEXT NOT NULL CHECK (source IN ('manuel','ticket','jumia','signalement','exemple')),
+    statut TEXT NOT NULL CHECK (statut IN ('valide','a_verifier','donnee_exemple')),
+    url TEXT, image_url TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')));
+"""
+
+
+class TestMigrationPrixInternet(unittest.TestCase):
+    """Une base créée avant 'prix_internet' est migrée sans perte (CHECK reconstruit, ids et références gardés)."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.path = os.path.join(tmp.name, 'old.db')
+        os.environ['COMPAREPRIX_DB'] = self.path
+        self.addCleanup(os.environ.__setitem__, 'COMPAREPRIX_DB', os.path.join(_TMP.name, 'boot.db'))
+        # Ancien schéma : tables product/store/feedback inchangées, price_observation sans 'prix_internet'
+        legacy = db.SCHEMA.split('CREATE TABLE IF NOT EXISTS price_observation')[0]
+        rest = db.SCHEMA.split('CREATE INDEX IF NOT EXISTS idx_obs_pair')[1]  # index, vue, feedback
+        conn = sqlite3.connect(self.path)
+        try:
+            conn.executescript(legacy + OLD_SCHEMA_OBSERVATION + 'CREATE INDEX IF NOT EXISTS idx_obs_pair' + rest)
+            conn.execute("INSERT INTO product(id, name, name_norm) VALUES (1, 'Riz 5kg', 'riz 5kg')")
+            conn.execute("INSERT INTO store(id, name) VALUES (1, 'Carrefour')")
+            conn.execute("INSERT INTO price_observation(id, product_id, store_id, prix, unite, date_releve, source, statut) "
+                         "VALUES (7, 1, 1, 4500, 'kg', '2025-06-10', 'manuel', 'valide')")
+            conn.execute("INSERT INTO feedback(id, timestamp, date, product_name, supermarket, current_price, new_price, "
+                         "price_difference, feedback_type, status, applied_observation_id) "
+                         "VALUES ('f1', 't', 'd', 'Riz 5kg', 'Carrefour', 1, 2, 1, 'x', 'approved', 7)")
+            conn.commit()
+        finally:
+            conn.close()
+
+    def test_old_database_is_migrated_once_and_keeps_its_data(self):
+        with self.assertRaises(sqlite3.IntegrityError):  # avant : la source est refusée par le CHECK
+            c = sqlite3.connect(self.path)
+            try:
+                c.execute("INSERT INTO price_observation(product_id, store_id, prix, unite, source, statut) "
+                          "VALUES (1, 1, 10, 'kg', 'prix_internet', 'a_verifier')")
+            finally:
+                c.close()
+        db.init_db(seed=False)
+        db.init_db(seed=False)  # idempotent
+        with db.transaction() as conn:
+            row = conn.execute('SELECT id, prix, source FROM price_observation').fetchone()
+            self.assertEqual((row['id'], row['prix'], row['source']), (7, 4500, 'manuel'))
+            self.assertEqual(conn.execute('SELECT applied_observation_id FROM feedback').fetchone()[0], 7)
+            self.assertEqual(conn.execute('PRAGMA foreign_key_check').fetchall(), [])
+            self.assertIsNotNone(conn.execute("SELECT 1 FROM sqlite_master WHERE name='current_price'").fetchone())
+            oid, created = db.add_observation(conn, {'article': 'Riz 5kg', 'supermarche': 'Jumia', 'prix': 4000,
+                                                     'unite': 'kg', 'source': 'prix_internet', 'statut': 'a_verifier'})
+            self.assertTrue(created)
+        self.assertEqual({a['source'] for a in db.list_current()}, {'manuel', 'prix_internet'})
 
 
 if __name__ == '__main__':

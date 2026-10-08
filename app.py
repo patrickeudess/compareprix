@@ -7,12 +7,10 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 import json
 import os
 from datetime import datetime
-from online_prices import apply_updates
 import secrets
-import tempfile
-from urllib.parse import urlsplit
 
 import db
+from online_prices import apply_updates
 from pricing import freshness, enrich_results, unit_stats, store_price_index, validate_article, normalize_key
 from backup_db import create_backup
 import import_prices
@@ -65,108 +63,63 @@ def admin_auth_error():
         return response
     return jsonify({'status': 'error', 'message': 'Authentification administrateur requise'}), 401
 
-def load_manual_articles():
-    """Charge les données des articles depuis le fichier JSON"""
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return []
-
 def load_articles():
-    articles = [dict(value, source=value.get('source', 'Prix sans date'), date_releve=value.get('date_releve')) for value in load_manual_articles()]
-    return apply_updates(articles) + load_community_prices()
+    """Prix courants (dernier relevé par produit et supermarché), avec le cache des prix en ligne
+    (online_prices) et les contributions validées de la communauté (collaboration)."""
+    return apply_updates(db.list_current()) + load_community_prices()
 
-def save_articles(articles):
-    """Sauvegarde les données de manière atomique pour préserver le fichier en cas d'erreur."""
-    data_path = os.path.abspath(DATA_FILE)
-    data_dir = os.path.dirname(data_path)
-    os.makedirs(data_dir, exist_ok=True)
-    descriptor, temporary_path = tempfile.mkstemp(prefix='.articles-', suffix='.tmp', dir=data_dir)
+def with_freshness(article):
+    """Ajoute la fraîcheur du relevé (recente / perimee / inconnue / exemple)."""
+    level, age = freshness(article)
+    return {**article, 'fraicheur': level, 'age_jours': age}
+
+def present(articles):
+    """Prépare des articles pour l'API : fraîcheur, prix unitaire, meilleur prix, prix aberrants."""
+    return enrich_results([with_freshness(a) for a in articles])
+
+@app.before_request
+def _new_csp_nonce():
+    g.csp_nonce = secrets.token_urlsafe(16)
+
+@app.context_processor
+def _inject_csp_nonce():
+    return {'csp_nonce': g.get('csp_nonce', '')}
+
+@app.after_request
+def add_security_headers(response):
+    """En-têtes de sécurité. La CSP interdit les scripts inline sans nonce : une injection HTML
+    (XSS) ne peut plus exécuter de JavaScript même si un échappement venait à manquer."""
+    nonce = g.get('csp_nonce', '')
+    response.headers.setdefault('Content-Security-Policy', "; ".join([
+        "default-src 'self'",
+        f"script-src 'self' 'nonce-{nonce}'",
+        "style-src 'self' 'unsafe-inline'",        # la page contient un gros bloc <style> inline
+        "img-src 'self' data: blob: https:",   # blob: = photos de signalements chargées par l'admin avec le jeton              # images produits hébergées par les enseignes (https)
+        "connect-src 'self'",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "frame-ancestors 'none'",
+    ]))
+    response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    response.headers.setdefault('X-Frame-Options', 'DENY')
+    response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+    response.headers.setdefault('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+    # HSTS uniquement si le site est réellement servi en HTTPS (sinon il bloquerait l'accès en HTTP)
+    if os.environ.get('COMPAREPRIX_HSTS', '').lower() in ('1', 'true'):
+        response.headers.setdefault('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+    return response
+
+@app.route('/healthz')
+def healthz():
+    """Sonde de santé (Docker/orchestrateur/CI) : vérifie que la base répond. Aucune donnée sensible."""
     try:
-        with os.fdopen(descriptor, 'w', encoding='utf-8') as f:
-            json.dump(articles, f, ensure_ascii=False, indent=2)
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(temporary_path, data_path)
-    finally:
-        if os.path.exists(temporary_path):
-            os.unlink(temporary_path)
-
-
-def validate_admin_article(value):
-    """Valide et normalise un prix saisi depuis l'espace administrateur."""
-    if not isinstance(value, dict):
-        return None, 'Chaque prix doit être un objet JSON'
-    article = value.get('article')
-    supermarket = value.get('supermarche')
-    unit = value.get('unite', 'unité')
-    if not isinstance(article, str) or not article.strip() or len(article.strip()) > 200:
-        return None, 'Le nom de l’article est obligatoire (200 caractères maximum)'
-    if not isinstance(supermarket, str) or not supermarket.strip() or len(supermarket.strip()) > 120:
-        return None, 'Le magasin est obligatoire (120 caractères maximum)'
-    if isinstance(value.get('prix'), bool) or not isinstance(value.get('prix'), int) or value['prix'] < 1 or value['prix'] > 100000000:
-        return None, 'Le prix doit être un entier entre 1 et 100 000 000 FCFA'
-    if not isinstance(unit, str) or len(unit.strip()) > 40:
-        return None, 'Le format doit contenir au plus 40 caractères'
-
-    normalized = {
-        'article': article.strip(),
-        'supermarche': supermarket.strip(),
-        'prix': value['prix'],
-        'unite': unit.strip() or 'unité'
-    }
-    for field in ('url', 'image_url'):
-        url = value.get(field, '')
-        if not isinstance(url, str) or len(url) > 2048:
-            return None, 'Les liens doivent contenir au plus 2 048 caractères'
-        url = url.strip()
-        if url:
-            try:
-                parsed = urlsplit(url)
-                if parsed.scheme not in {'http', 'https'} or not parsed.netloc:
-                    return None, 'Les liens doivent commencer par http:// ou https://'
-            except ValueError:
-                return None, 'Un lien est invalide'
-        normalized[field] = url
-    return normalized, None
-
-@app.route('/admin')
-def admin_dashboard():
-    """Page de gestion des produits; les données restent protégées par les API Bearer."""
-    return render_template('admin.html')
-
-
-@app.route('/api/admin/articles', methods=['GET', 'PUT'])
-def manage_articles():
-    """Liste et remplace les prix depuis le tableau administrateur authentifié."""
-    if not is_feedback_admin():
-        return admin_auth_error()
-    if request.method == 'GET':
-        try:
-            return jsonify({'status': 'success', 'articles': load_manual_articles()})
-        except Exception:
-            app.logger.exception('Erreur lors de la lecture des articles')
-            return jsonify({'status': 'error', 'message': 'Erreur lors de la lecture des prix'}), 500
-
-    data = request.get_json(silent=True)
-    if not isinstance(data, dict) or not isinstance(data.get('articles'), list):
-        return jsonify({'status': 'error', 'message': 'La liste des prix est invalide'}), 400
-    if len(data['articles']) > 5000:
-        return jsonify({'status': 'error', 'message': 'La liste dépasse la limite de 5 000 prix'}), 400
-
-    normalized = []
-    for index, value in enumerate(data['articles']):
-        article, error = validate_admin_article(value)
-        if error:
-            return jsonify({'status': 'error', 'message': f'Prix {index + 1} : {error}'}), 400
-        normalized.append(article)
-    try:
-        save_articles(normalized)
-        return jsonify({'status': 'success', 'articles': normalized})
+        with db.transaction(write=False) as conn:
+            conn.execute('SELECT 1').fetchone()
+        return jsonify({'status': 'ok'})
     except Exception:
-        app.logger.exception('Erreur lors de l’enregistrement des prix')
-        return jsonify({'status': 'error', 'message': 'Erreur lors de l’enregistrement des prix'}), 500
-
+        app.logger.exception('Healthcheck en échec')
+        return jsonify({'status': 'error'}), 503
 
 @app.route('/')
 def index():
@@ -181,7 +134,7 @@ def search_articles():
     if not search_term:
         return jsonify({'error': 'Veuillez entrer un terme de recherche'})
     
-    return jsonify({'results': present(db.list_current(search_term))})
+    return jsonify({'results': present(apply_updates(db.list_current(search_term)))})
 
 @app.route('/api/articles')
 def get_all_articles():
@@ -192,7 +145,7 @@ def get_all_articles():
 @app.route('/api/articles/<article_name>')
 def get_article(article_name):
     """API pour récupérer un article spécifique"""
-    return jsonify(present(db.list_current(article_name)))
+    return jsonify(present(apply_updates(db.list_current(article_name))))
 
 @app.route('/api/history/<path:article_name>')
 def get_price_history(article_name):
@@ -290,7 +243,99 @@ def static_files(filename):
 
 @app.route('/submit_feedback', methods=['POST'])
 def submit_feedback():
-    return jsonify({'message': 'Utilisez la page Proposer un prix avec votre compte contributeur.'}), 410
+    """Traite les signalements d'utilisateurs"""
+    allowed, retry_after = FEEDBACK_LIMITER.check(request.remote_addr or 'inconnu')
+    if not allowed:
+        response = jsonify({'status': 'error', 'message': 'Trop de signalements, réessayez plus tard'})
+        response.status_code = 429
+        response.headers['Retry-After'] = str(retry_after)
+        return response
+    try:
+        # Récupérer les données du formulaire
+        product_name = request.form.get('product_name', '').strip()
+        supermarket = request.form.get('supermarket', '').strip()
+        current_price = request.form.get('current_price', '').strip()
+        new_price = request.form.get('new_price', '').strip()
+        feedback_type = request.form.get('feedback_type', '').strip()
+        user_comment = request.form.get('user_comment', '').strip()
+        user_name = request.form.get('user_name', '').strip()
+        user_email = request.form.get('user_email', '').strip()
+        
+        # Valider les champs et les tailles avant de traiter le signalement.
+        if not all([product_name, supermarket, current_price, new_price, feedback_type]):
+            return jsonify({
+                'status': 'error',
+                'message': 'Tous les champs obligatoires doivent être remplis'
+            }), 400
+        if len(product_name) > 200 or len(supermarket) > 120 or len(feedback_type) > 40 or len(user_comment) > 2000 or len(user_name) > 120 or len(user_email) > 254:
+            return jsonify({'status': 'error', 'message': 'Un ou plusieurs champs dépassent la longueur autorisée'}), 400
+        try:
+            current_price_value = int(current_price)
+            new_price_value = int(new_price)
+        except (TypeError, ValueError):
+            return jsonify({'status': 'error', 'message': 'Les prix doivent être des nombres entiers positifs'}), 400
+        if current_price_value < 0 or new_price_value < 0:
+            return jsonify({'status': 'error', 'message': 'Les prix doivent être positifs'}), 400
+        
+        # Photo facultative : validée sur son CONTENU (octets de signature), pas sur son nom
+        photo_path = None
+        photo = request.files.get('photo')
+        if photo and photo.filename:
+            header = photo.stream.read(16)
+            photo.stream.seek(0, os.SEEK_END)
+            photo_size = photo.stream.tell()
+            photo.stream.seek(0)
+            extension = detect_image_extension(header)
+            if extension is None:
+                return jsonify({'status': 'error', 'message': 'La photo doit être une image PNG, JPEG ou GIF valide'}), 400
+            if photo_size > MAX_FEEDBACK_PHOTO_BYTES:
+                return jsonify({'status': 'error', 'message': 'La photo ne doit pas dépasser 5 Mo'}), 400
+            os.makedirs('data/user_photos', exist_ok=True)
+            # Nom aléatoire + extension déduite du contenu : le nom envoyé par le client est ignoré
+            photo_path = os.path.join('data/user_photos', f"feedback_{secrets.token_hex(16)}.{extension}")
+            photo.save(photo_path)
+        
+        # Créer l'entrée de feedback
+        feedback_entry = {
+            'id': generate_feedback_id(),
+            'timestamp': datetime.now().isoformat(),
+            'date': datetime.now().strftime('%Y-%m-%d'),
+            'product_name': product_name,
+            'supermarket': supermarket,
+            'current_price': current_price_value,
+            'new_price': new_price_value,
+            'price_difference': new_price_value - current_price_value,
+            'feedback_type': feedback_type,
+            'user_comment': user_comment,
+            'user_name': user_name or 'Anonyme',
+            'user_email': user_email,
+            'photo_path': photo_path,
+            'status': 'pending_review',
+            'reviewed_by': None,
+            'review_date': None,
+            'review_notes': None
+        }
+        
+        # Sauvegarder le feedback
+        save_feedback(feedback_entry)
+        
+        # Envoyer une notification à l'équipe (optionnel)
+        send_feedback_notification(feedback_entry)
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Signalement envoyé avec succès !',
+            'feedback_id': feedback_entry['id']
+        })
+        
+    except RequestEntityTooLarge:
+        return jsonify({'status': 'error', 'message': 'La requête dépasse la taille maximale autorisée'}), 413
+    except Exception:
+        app.logger.exception('Erreur lors du traitement du signalement')
+        return jsonify({
+            'status': 'error',
+            'message': 'Erreur lors du traitement du signalement'
+        }), 500
 
 # ------------------------------------------------------------------ administration
 
@@ -494,27 +539,6 @@ from collaboration import register_collaboration
 load_community_prices = register_collaboration(app, is_feedback_admin)
 
 if __name__ == '__main__':
-    # Créer des données d'exemple si le fichier n'existe pas
-    if not os.path.exists(DATA_FILE):
-        sample_data = [
-            {"article": "Riz Basmati", "supermarche": "Carrefour", "prix": 500, "unite": "kg"},
-            {"article": "Riz Basmati", "supermarche": "Cap Sud", "prix": 520, "unite": "kg"},
-            {"article": "Riz Basmati", "supermarche": "Casino", "prix": 480, "unite": "kg"},
-            {"article": "Huile d'Olive", "supermarche": "Carrefour", "prix": 1200, "unite": "L"},
-            {"article": "Huile d'Olive", "supermarche": "Cap Sud", "prix": 1150, "unite": "L"},
-            {"article": "Huile d'Olive", "supermarche": "Casino", "prix": 1250, "unite": "L"},
-            {"article": "Pâtes Spaghetti", "supermarche": "Carrefour", "prix": 180, "unite": "kg"},
-            {"article": "Pâtes Spaghetti", "supermarche": "Cap Sud", "prix": 175, "unite": "kg"},
-            {"article": "Pâtes Spaghetti", "supermarche": "Casino", "prix": 190, "unite": "kg"},
-            {"article": "Lait", "supermarche": "Carrefour", "prix": 120, "unite": "L"},
-            {"article": "Lait", "supermarche": "Cap Sud", "prix": 125, "unite": "L"},
-            {"article": "Lait", "supermarche": "Casino", "prix": 118, "unite": "L"},
-            {"article": "Pain", "supermarche": "Carrefour", "prix": 85, "unite": "unité"},
-            {"article": "Pain", "supermarche": "Cap Sud", "prix": 90, "unite": "unité"},
-            {"article": "Pain", "supermarche": "Casino", "prix": 82, "unite": "unité"}
-        ]
-        save_articles(sample_data)
-    
-    app.run(debug=os.environ.get('FLASK_DEBUG', '').lower() == 'true', host='0.0.0.0', port=int(os.environ.get('PORT', '5000')))
-
-
+    # Serveur de DÉVELOPPEMENT, local par défaut. En production : gunicorn (voir Dockerfile).
+    app.run(debug=os.environ.get('FLASK_DEBUG', '').lower() == 'true',
+            host=os.environ.get('COMPAREPRIX_HOST', '127.0.0.1'), port=int(os.environ.get('PORT', '5000')))

@@ -28,5 +28,6 @@
 
 
 </main><a class="basket-dock" href="./panier.html" aria-label="Voir mon panier"><span>🛍️ Panier <span id="basketDockCount">0</span></span><strong id="basketDockTotal">0 FCFA</strong><span aria-hidden="true">→</span></a><div id="basketToast" class="basket-toast" role="status" aria-live="polite"></div>
-<script src="./static/basket.js"></script><script src="./static/compareprix.js"></script>
+<script nonce="{{ csp_nonce }}">document.documentElement.classList.add('js');</script>
+<script nonce="{{ csp_nonce }}" src="./static/basket.js"></script><script nonce="{{ csp_nonce }}" src="./static/compareprix.js"></script>
 </body></html>

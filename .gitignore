@@ -152,3 +152,9 @@ data/backup.log
 
 # Sorties générées
 build/
+
+# Données d'exécution (comptes, sessions, cache des prix en ligne, preuves) : jamais versionnées
+data/.session-secret
+data/community.sqlite3*
+data/online-prices.sqlite3*
+data/proofs/
