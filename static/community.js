@@ -2,7 +2,7 @@
 const pageMode=document.body.dataset.page||'account';
 function contributionDestination(){const target=new URL('./contribuer.html',location.href);target.search=location.search;target.hash='contribution';return target.href;}
 function accountDestination(){const target=new URL('./compte.html',location.href);target.search=location.search;if(!target.searchParams.has('intent'))target.searchParams.set('intent','contribute');return target.href;}
-let csrf='',currentUser=null,registering=true,online=false;
+let csrf='',currentUser=null,registering=true,online=false,features={email:false,require_verified_email:false},pendingEmail='';
 const byId=id=>document.getElementById(id),form=byId('contributionForm'),message=byId('message');
 const fields=['article','brand','variant','quantity','unit','price','store','location','city','district','shop','observed_at','availability'];
 const draftKey='compareprix-contribution-draft-v1';
@@ -12,7 +12,7 @@ const response=await fetch(url,{...options,headers:{'X-CSRF-Token':csrf,...optio
 let data;try{data=await response.json();}catch{throw new Error('Les comptes et contributions nécessitent la version serveur de ComparePrix.');}
 if(!response.ok)throw new Error(data.message||'La demande a échoué.');return data;
 }
-function displayAccount(data){csrf=data.csrf;currentUser=data.user;byId('signedIn').hidden=!currentUser;byId('signedOut').hidden=!!currentUser;byId('contribution').hidden=!currentUser||pageMode!=='contribution';if(pageMode==='contribution'&&!currentUser){location.replace(accountDestination());return;}byId('contributeFromAccount').href=contributionDestination();document.querySelector('.account-layout').classList.toggle('account-first',!currentUser);if(currentUser){byId('greeting').textContent='Bonjour '+currentUser.name;byId('password').value='';}loadHistory();}
+function displayAccount(data){csrf=data.csrf;currentUser=data.user;if(data.features)features=data.features;renderEmail();byId('signedIn').hidden=!currentUser;byId('signedOut').hidden=!!currentUser;byId('contribution').hidden=!currentUser||pageMode!=='contribution';if(pageMode==='contribution'&&!currentUser){location.replace(accountDestination());return;}byId('contributeFromAccount').href=contributionDestination();document.querySelector('.account-layout').classList.toggle('account-first',!currentUser);if(currentUser){byId('greeting').textContent='Bonjour '+currentUser.name;byId('password').value='';}loadHistory();}
 async function loadHistory(){
 if(!currentUser){byId('historyRows').textContent='Connectez-vous pour suivre vos relevés.';byId('points').textContent='';return;}
 try{
@@ -33,6 +33,21 @@ function showAuthMode(){byId('registration').hidden=!registering;byId('name').re
 byId('switchAuth').addEventListener('click',()=>{registering=!registering;showAuthMode();});
 byId('showPassword')?.addEventListener('click',()=>{const password=byId('password'),visible=password.type==='password';password.type=visible?'text':'password';byId('showPassword').textContent=visible?'Masquer le mot de passe':'Afficher le mot de passe';byId('showPassword').setAttribute('aria-pressed',String(visible));});
 showAuthMode();
+function renderEmail(){
+const box=byId('emailBox'),forgot=byId('forgotBox');if(!box||!forgot)return;
+box.hidden=!(currentUser&&features.email);forgot.hidden=!(features.email&&!currentUser);
+if(currentUser){byId('emailState').textContent=currentUser.email_verified?'Email vérifié : '+currentUser.email+'. Il permet de récupérer votre mot de passe.':'Aucun email vérifié : sans lui, votre mot de passe ne peut pas être récupéré.'+(features.require_verified_email?' Il est requis pour envoyer un prix.':'');byId('emailForm').hidden=false;byId('emailCodeForm').hidden=!pendingEmail;byId('emailSend').textContent=currentUser.email_verified?'Changer d’email':'Envoyer le code';}
+}
+async function post(url,payload){return api(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});}
+byId('emailForm')?.addEventListener('submit',async event=>{event.preventDefault();const button=byId('emailSend');button.disabled=true;
+try{const email=byId('emailInput').value.trim();const data=await post('/api/account/email/request',{email});pendingEmail=email;byId('emailCodeForm').hidden=false;byId('emailCode').focus();tell(data.message);}catch(error){tell(error.message);}finally{button.disabled=false;}});
+byId('emailCodeForm')?.addEventListener('submit',async event=>{event.preventDefault();const button=byId('emailConfirm');button.disabled=true;
+try{const data=await post('/api/account/email/confirm',{email:pendingEmail,code:byId('emailCode').value.trim()});pendingEmail='';byId('emailCode').value='';byId('emailInput').value='';currentUser={...currentUser,email_verified:true,email:data.email};renderEmail();tell(data.message);}catch(error){tell(error.message);}finally{button.disabled=false;}});
+byId('forgotBtn')?.addEventListener('click',()=>{const form=byId('resetForm'),open=form.hidden;form.hidden=!open;byId('forgotBtn').setAttribute('aria-expanded',String(open));if(open){byId('resetPhone').value=byId('phone').value;byId('resetPhone').focus();}});
+byId('resetSend')?.addEventListener('click',async()=>{const button=byId('resetSend');button.disabled=true;
+try{const data=await post('/api/account/reset/request',{phone:byId('resetPhone').value});tell(data.message);byId('resetCode').focus();}catch(error){tell(error.message);}finally{button.disabled=false;}});
+byId('resetForm')?.addEventListener('submit',async event=>{event.preventDefault();
+try{const data=await post('/api/account/reset/confirm',{phone:byId('resetPhone').value,code:byId('resetCode').value.trim(),password:byId('resetPassword').value});csrf=data.csrf;byId('resetForm').reset();byId('resetForm').hidden=true;registering=false;showAuthMode();byId('phone').focus();tell(data.message);}catch(error){tell(error.message);}});
 byId('authForm').addEventListener('submit',async event=>{
 event.preventDefault();const button=byId('authSubmit');button.disabled=true;
 try{displayAccount(await api('/api/account/'+(registering?'register':'login'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:byId('phone').value,password:byId('password').value,name:byId('name').value})}));tell('Vous êtes connecté. Vous pouvez envoyer votre relevé.');if(['update','contribute'].includes(new URLSearchParams(location.search).get('intent')))location.assign(contributionDestination());else byId('account').scrollIntoView({behavior:'smooth'});}catch(error){tell(error.message);}finally{button.disabled=false;}

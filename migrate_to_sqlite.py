@@ -3,7 +3,7 @@
     python migrate_to_sqlite.py
 
 À lancer après tout outil qui écrit encore data/articles.json ou
-data/user_feedback.json (data_collection.py, validation_tool.py...).
+data/user_feedback.json (anciens outils de collecte, supprimés).
 Un relevé déjà présent est ignoré ; l'historique n'est jamais supprimé.
 """
 import db

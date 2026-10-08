@@ -46,13 +46,23 @@ Les prix manuels utilisent encore `data/articles.json`. Les comptes, observation
 
 Les mots de passe sont hachés. Les opérations de compte et de contribution utilisent une session et un jeton CSRF ; les endpoints administrateur utilisent le jeton Bearer. Les réponses privées ne sont pas mises en cache. L’ancien endpoint anonyme `/submit_feedback` est retiré (HTTP 410) au profit du parcours connecté.
 
+## Vérification d’email et récupération du mot de passe
+
+Facultatives : l’inscription par téléphone reste immédiate. Un email vérifié (code à 6 chiffres, valable 15 minutes, 5 essais) permet de récupérer le mot de passe depuis « Mot de passe oublié ? ». Sans SMTP configuré, la fonction est masquée et inactive.
+
+- `COMPAREPRIX_SMTP_HOST`, `COMPAREPRIX_SMTP_FROM` (obligatoires pour activer), `COMPAREPRIX_SMTP_PORT` (587 par défaut), `COMPAREPRIX_SMTP_USER`, `COMPAREPRIX_SMTP_PASSWORD`.
+- `COMPAREPRIX_SMTP_SECURITY` : `starttls` (défaut), `ssl` (port 465) ou `none` (relais local uniquement).
+- `COMPAREPRIX_REQUIRE_VERIFIED_EMAIL=true` : exige un email vérifié pour envoyer un prix (désactivé par défaut pour ne pas freiner les contributions ; sans effet si SMTP n’est pas configuré).
+
+Le code n’est jamais stocké en clair (empreinte HMAC) ; la demande de récupération répond toujours de la même façon, qu’un compte existe ou non. Les limites d’envoi sont en mémoire par processus (voir `ratelimit.py`). Une réinitialisation de mot de passe déconnecte toutes les sessions ouvertes du compte. Un `COMPAREPRIX_SMTP_SECURITY` inconnu désactive l’envoi d’email (jamais de repli sans chiffrement). Un SMS n’est pas fourni : il exige un compte payant chez un fournisseur.
+
 ## GitHub Pages
 
 GitHub Pages ne peut pas exécuter Flask ni stocker des comptes. Le site statique reste une démonstration avec des pages de compte et de saisie qui signalent l’absence du serveur. Le parcours complet fonctionne sur la version Flask. Ne pas annoncer les inscriptions comme disponibles sur GitHub Pages seul.
 
 ## Limites de cette première version
 
-Pas encore d’email de vérification ou de récupération de mot de passe, d’OCR, de publication automatique, de panier comparatif ou de conversion monétaire des points. La modération doit vérifier la preuve et l’équivalence des produits. Les prix ne garantissent pas la disponibilité en magasin. Les limites d’authentification utilisent l’adresse IP vue par Flask ; configurer le proxy explicitement lors de l’hébergement.
+Pas encore d’OCR, de publication automatique, de panier comparatif ou de conversion monétaire des points. La modération doit vérifier la preuve et l’équivalence des produits. Les prix ne garantissent pas la disponibilité en magasin. Les limites d’authentification utilisent l’adresse IP vue par Flask ; configurer le proxy explicitement lors de l’hébergement.
 
 ## Logos
 

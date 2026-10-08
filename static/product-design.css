@@ -133,3 +133,5 @@ body.searched .welcome{display:none}
 .status:empty{display:none}
 .quick-help{margin:6px 0}
 .results-bar{margin:14px 0 10px}
+
+.email-box{margin-top:22px;padding-top:18px;border-top:1px solid #dce7df}.email-box h3{margin:0 0 6px;font-size:1rem}#forgotBox{margin-top:14px}#resetForm{margin-top:12px}
