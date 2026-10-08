@@ -15,7 +15,7 @@ RUN pip install -r requirements.txt
 
 # Uniquement le nécessaire à l'exécution : pas de tests, pas de données d'exemple (data/ est exclu)
 COPY app.py db.py pricing.py ratelimit.py uploads.py import_prices.py merge_data.py \
-     migrate_to_sqlite.py backup_db.py online_prices.py collaboration.py gunicorn.conf.py ./
+     migrate_to_sqlite.py backup_db.py online_prices.py collaboration.py verification.py mailer.py gunicorn.conf.py ./
 COPY templates templates
 COPY static static
 COPY config config

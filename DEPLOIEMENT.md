@@ -59,6 +59,16 @@ Autre point à traiter : l'image tourne sous un utilisateur non-root, alors que 
 propriétaire root, ce qui empêche l'écriture de la base. Je peux adapter le `Dockerfile` quand vous aurez choisi un hébergeur précis.
 Les offres avec disque persistant sont généralement payantes : vérifiez la grille tarifaire en vigueur.
 
+## Activer l'envoi d'email (facultatif)
+Sans cela, l'application fonctionne ; seule la récupération du mot de passe est indisponible. Un fournisseur SMTP gratuit suffit (Brevo, Mailjet, Gmail avec mot de passe d'application...). Dans le fichier WSGI de PythonAnywhere, avant `from wsgi import application` :
+```python
+os.environ['COMPAREPRIX_SMTP_HOST'] = 'smtp-relay.brevo.com'
+os.environ['COMPAREPRIX_SMTP_USER'] = 'VOTRE_IDENTIFIANT_SMTP'
+os.environ['COMPAREPRIX_SMTP_PASSWORD'] = 'VOTRE_CLE_SMTP'
+os.environ['COMPAREPRIX_SMTP_FROM'] = 'ComparePrix <no-reply@votre-domaine>'
+```
+**Compte gratuit PythonAnywhere : les connexions sortantes passent par une liste blanche de sites ; vérifier que votre fournisseur SMTP y figure, sinon l'envoi échouera (message « L'email n'a pas pu être envoyé »).** Les domaines expéditeurs doivent être authentifiés (SPF/DKIM) chez le fournisseur pour éviter le dossier spam.
+
 ## Après la mise en ligne
 1. Ouvrir `/admin`, saisir le jeton, importer votre fiche de collecte remplie (`data/fiche_collecte.csv`).
 2. Configurer une sauvegarde régulière (`backup_db.py`) et la copier hors du serveur.

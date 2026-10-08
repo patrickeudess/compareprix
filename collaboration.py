@@ -4,13 +4,15 @@ import json
 import secrets
 import sqlite3
 import hashlib
-import re
 from contextlib import contextmanager
 from datetime import date, datetime, timedelta, timezone
 from io import BytesIO
 from pathlib import Path
 from flask import request, session, jsonify, render_template, send_file
 from werkzeug.security import generate_password_hash, check_password_hash
+
+import mailer
+from verification import register_verification, normalize_phone, mask_email
 
 
 def register_collaboration(app, is_admin):
@@ -95,7 +97,17 @@ def register_collaboration(app, is_admin):
 
     def user():
         with db() as conn:
-            return conn.execute('SELECT id, phone, name FROM users WHERE id=?', (session.get('uid'),)).fetchone()
+            return conn.execute('SELECT id, phone, name, contact_email, email_verified_at FROM users WHERE id=?', (session.get('uid'),)).fetchone()
+
+    def public_user(row):
+        """Ce que le navigateur de l'intéressé reçoit : l'email reste masqué."""
+        if not row:
+            return None
+        verified = bool(row['email_verified_at'])
+        return dict(id=row['id'], phone=row['phone'], name=row['name'],
+                    email=mask_email(row['contact_email']) if verified else None, email_verified=verified)
+
+    require_verified_email = os.environ.get('COMPAREPRIX_REQUIRE_VERIFIED_EMAIL', '').lower() in ('1', 'true')
 
     def csrf_ok():
         expected = session.get('csrf', '')
@@ -123,6 +135,8 @@ def register_collaboration(app, is_admin):
                 prix_unitaire=round(row['price'] / (row['quantity'] * factor), 2), unite_reference=base)
         return list(latest.values())
 
+    register_verification(app, db, user, csrf_ok, error, now)
+
     @app.get('/compte')
     @app.get('/compte.html')
     @app.get('/contribuer')
@@ -142,8 +156,8 @@ def register_collaboration(app, is_admin):
     @app.get('/api/session')
     def get_session():
         session.setdefault('csrf', secrets.token_hex(32))
-        current = user()
-        return jsonify(user=dict(current) if current else None, csrf=session['csrf'])
+        return jsonify(user=public_user(user()), csrf=session['csrf'],
+                       features=dict(email=mailer.is_configured(), require_verified_email=require_verified_email and mailer.is_configured()))
 
     @app.get('/api/locations')
     def locations():
@@ -171,12 +185,8 @@ def register_collaboration(app, is_admin):
             return error('Formulaire invalide')
         if len(phone)>40:
             return error('Numéro de téléphone invalide.')
-        phone = re.sub(r'[\s().-]', '', phone)
-        if phone.startswith('00'):
-            phone = '+' + phone[2:]
-        if re.fullmatch(r'[0-9]{10}', phone):
-            phone = '+225' + phone
-        if not re.fullmatch(r'\+[1-9][0-9]{7,14}', phone) or len(password)>256:
+        phone = normalize_phone(phone)
+        if not phone or len(password)>256:
             return error('Indiquez 10 chiffres pour un numéro ivoirien, ou un numéro international avec + et son indicatif.')
         identity = hashlib.sha256((request.remote_addr or '').encode()).hexdigest()
         timestamp = datetime.now(timezone.utc).timestamp()
@@ -207,7 +217,7 @@ def register_collaboration(app, is_admin):
         session.update(uid=uid, csrf=secrets.token_hex(32))
         with db() as conn:
             conn.execute('DELETE FROM login_attempts WHERE identity=?', (identity,))
-        return jsonify(user=dict(user()), csrf=session['csrf'])
+        return jsonify(user=public_user(user()), csrf=session['csrf'])
 
     @app.route('/api/contributions', methods=['GET','POST'])
     def contributions():
@@ -221,6 +231,8 @@ def register_collaboration(app, is_admin):
             return jsonify(contributions=[{k:r[k] for k in r.keys() if k not in ('user_id','proof_hash','fingerprint')} for r in rows], points=points)
         if not csrf_ok():
             return error('Session expirée. Actualisez la page.', 403)
+        if require_verified_email and mailer.is_configured() and not current['email_verified_at']:
+            return error('Vérifiez votre email dans « Mon compte » avant d\'envoyer un prix.', 403)
         data = request.form
         values = {}
         for field, limit, required in [('article',200,True),('brand',100,False),('variant',100,False),('store',120,True),('city',50,True),('district',60,True),('shop',80,True)]:
