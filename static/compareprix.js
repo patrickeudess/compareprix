@@ -30,6 +30,7 @@ cityFilter.append(new Option('Toutes les villes',''));communeFilter.append(new O
 [['Tous',''],['En magasin','store'],['En ligne','online']].forEach(([text,value])=>channelFilter.append(new Option(text,value)));
 [['Prix du format','price'],['Prix par kg / litre','unit']].forEach(([text,value])=>orderFilter.append(new Option(text,value)));
 form.after(geo);
+const filterToggle=document.createElement('button');filterToggle.type='button';filterToggle.className='filter-toggle';filterToggle.textContent='⚙ Filtres';filterToggle.setAttribute('aria-expanded','false');filterToggle.setAttribute('aria-controls','comparisonFilters');geo.id='comparisonFilters';form.after(filterToggle);filterToggle.addEventListener('click',()=>{const expanded=filterToggle.getAttribute('aria-expanded')!=='true';filterToggle.setAttribute('aria-expanded',String(expanded));geo.classList.toggle('filters-open',expanded);});
 const comparisonHint=document.createElement('p');comparisonHint.className='hint';comparisonHint.textContent='Comparez la même marque et le même format. En ligne : livraison et frais à confirmer auprès du vendeur.';geo.after(comparisonHint);
 let geoCities=[],geoCommunes={};
 fetch('./static/locations.json').then(r=>r.json()).then(data=>{geoCities=data.cities||[];geoCommunes=data.communesByCity||{};syncCities();syncCommunes();}).catch(()=>{});
@@ -46,11 +47,13 @@ const rows=results.filter(row=>(!filter.value||row.supermarche===filter.value)&&
 document.getElementById('resultCount').textContent=rows.length+' offre'+(rows.length>1?'s':'')+(orderFilter.value==='unit'?' · Prix par kg / litre':' · Prix croissants');
 content.replaceChildren();
 if(!rows.length){const empty=document.createElement('p');empty.textContent='Aucune offre pour ces filtres. Essayez une autre ville ou ajoutez un prix près de chez vous.';content.append(empty);}
+const groups=new Map();
 rows.forEach(row=>{
 const card=document.createElement('article');card.className='offer';
 const details=document.createElement('div');details.className='offer-details';
 const visual=document.createElement('div');visual.className='product-visual';visual.setAttribute('aria-hidden','true');
-const product=String(row.article).toLocaleLowerCase('fr');visual.textContent=product.includes('riz')?'🌾':product.includes('huile')?'🫒':product.includes('lait')?'🥛':product.includes('pain')?'🥖':product.includes('sucre')?'🧊':product.includes('café')||product.includes('cafe')?'☕':product.includes('eau')?'💧':'🛍️';
+const imageUrl=row.image_url||row.image||row.photo_url;try{const url=new URL(imageUrl);if(url.protocol==='https:'){const photo=document.createElement('img');photo.src=url.href;photo.alt=row.article;photo.loading='lazy';photo.referrerPolicy='no-referrer';photo.addEventListener('error',()=>photo.remove());visual.append(photo);}}catch{}
+const product=String(row.article).toLocaleLowerCase('fr');const illustration=document.createElement('span');illustration.textContent=product.includes('riz')?'🌾':product.includes('huile')?'🫒':product.includes('lait')?'🥛':product.includes('pain')?'🥖':product.includes('sucre')?'🧊':product.includes('café')||product.includes('cafe')?'☕':product.includes('eau')?'💧':product.includes('tomate')?'🍅':product.includes('spaghetti')?'🍝':product.includes('sardine')?'🐟':product.includes('thé')?'🍵':'🛍️';visual.append(illustration);
 const identity=document.createElement('div'),title=document.createElement('h3');title.textContent=row.article;identity.append(title);details.append(visual,identity);
 const store=document.createElement('div');store.className='store';
 const logo=logos[String(row.supermarche).trim().toLowerCase()];
@@ -71,7 +74,17 @@ const report=document.createElement('button');report.type='button';report.textCo
 const update=document.createElement('a');const target=new URL('./compte.html',location.href);target.searchParams.set('article',row.article);target.searchParams.set('store',row.supermarche);target.searchParams.set('format',row.unite||'');target.searchParams.set('location',row.lieu||'');target.searchParams.set('city',row.ville||'');target.searchParams.set('district',row.quartier||'');target.searchParams.set('shop',row.boutique||'');target.searchParams.set('intent','update');target.hash='account';update.href=target.href;update.textContent='↻ Actualiser';update.setAttribute('aria-label','Partager un prix actualisé pour '+row.article);actions.append(update);card.append(actions);
 if(row.livraison_possible){const delivery=document.createElement('p');delivery.textContent='🛵 Livraison : '+row.zones_livraison_commercant+' · '+row.frais_livraison;card.append(delivery);}
 if(/^\+[1-9][0-9]{7,14}$/.test(row.contact_professionnel||'')){const phone=document.createElement('a');phone.href='tel:'+row.contact_professionnel;phone.textContent='📞 Appeler le vendeur';phone.className='product-link';const whatsapp=document.createElement('a');whatsapp.href='https://wa.me/'+row.contact_professionnel.slice(1)+'?text='+encodeURIComponent('Bonjour, votre offre '+row.article+' sur ComparePrix est-elle disponible ? Je souhaite confirmer le prix et la livraison.');whatsapp.textContent='💬 Contacter sur WhatsApp';whatsapp.target='_blank';whatsapp.rel='noopener noreferrer';whatsapp.className='product-link';card.append(phone,whatsapp);}
-content.append(card);
+const key=JSON.stringify([normalizeSearch(row.article),normalizeSearch(row.marque||row.brand),normalizeSearch(row.variante||row.variant),normalizeSearch(row.unite||'format non renseigné')]);if(!groups.has(key))groups.set(key,[]);groups.get(key).push({row,card});
+});
+document.getElementById('resultCount').textContent=groups.size+' produit'+(groups.size>1?'s':'')+' · '+rows.length+' offre'+(rows.length>1?'s':'');
+groups.forEach(offers=>{
+const first=offers.reduce((best,item)=>item.row.prix<best.row.prix?item:best,offers[0]);
+const group=document.createElement('details');group.className='product-group';
+const summary=document.createElement('summary');const visual=first.card.querySelector('.product-visual').cloneNode(true);
+const identity=document.createElement('div');const title=document.createElement('h3');title.textContent=first.row.article;const format=document.createElement('p');format.textContent=first.row.unite||'Format à confirmer';const count=document.createElement('span');count.className='group-count';count.textContent=offers.length+' offre'+(offers.length>1?'s':'')+' · '+new Set(offers.map(item=>item.row.supermarche)).size+' vendeur(s)';identity.append(title,format,count);
+const price=document.createElement('div');price.className='group-price';const caption=document.createElement('small');caption.textContent=offers.length>1?'À partir de':'Prix relevé';const amount=document.createElement('strong');amount.textContent=money.format(first.row.prix)+' FCFA';const action=document.createElement('span');action.className='group-open';action.textContent='Voir '+(offers.length>1?'les offres':'l’offre')+' ↓';price.append(caption,amount,action);summary.append(visual,identity,price);group.append(summary);
+const list=document.createElement('div');list.className='group-offers';offers.forEach(item=>list.append(item.card));group.append(list);content.append(group);
+
 });
 }
 async function search(){
