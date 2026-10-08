@@ -28,3 +28,14 @@ body[data-page="account"] .account-layout{display:block;max-width:620px;margin:2
 .search-filters select:focus-visible{outline:3px solid #bddbca;outline-offset:2px;border-color:#176b45}
 @media(max-width:700px){.search-filters{grid-template-columns:repeat(2,minmax(0,1fr));padding:12px;gap:12px;border-radius:14px}.search-filters select{font-size:12px;padding-left:10px;height:44px}.search-filters .filter-caption{font-size:11px}}
 @media(max-width:320px){.search-filters{grid-template-columns:minmax(0,1fr)}}
+
+/* Product comparison groups */
+.product-group{background:white;border:1px solid var(--border);border-radius:20px;overflow:hidden;min-width:0}
+.product-group>summary{list-style:none;display:grid;grid-template-columns:76px minmax(0,1fr) auto;gap:16px;align-items:center;padding:22px;cursor:pointer}
+.product-group>summary::-webkit-details-marker{display:none}
+.product-group h3{margin:0;font-size:1.04rem}.product-group summary p{margin:6px 0;font-size:.85rem;color:var(--muted)}
+.group-count{font-size:.76rem;color:var(--green)}.group-price{display:flex;flex-direction:column;gap:6px;text-align:right}.group-price small{font-size:.72rem;color:var(--muted)}.group-price strong{font-size:1.35rem;color:var(--green);white-space:nowrap}.group-open{font-size:.78rem;font-weight:650}.product-group[open] .group-open{color:var(--muted)}
+.group-offers{padding:0 14px 14px;display:grid;gap:10px}.group-offers .offer{box-shadow:none;background:#fafcf9}.group-offers .product-visual{display:none}.group-offers .offer-details{grid-template-columns:1fr}
+.product-visual{position:relative;overflow:hidden}.product-visual img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;padding:5px}.product-visual:has(img)>span{visibility:hidden}
+.filter-toggle{display:none}.product-group>summary:focus-visible{outline:3px solid var(--accent);outline-offset:-4px}
+@media(max-width:700px){.filter-toggle{display:block;margin-top:14px;background:#eef5ee;color:var(--green);font-weight:650;width:100%;text-align:left}.search-filters:not(.filters-open){display:none}.product-group>summary{grid-template-columns:62px minmax(0,1fr);gap:12px;padding:18px}.product-group summary .product-visual{width:62px;height:76px}.group-price{grid-column:2;text-align:left;flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:7px 10px}.group-price small{width:100%}.group-price strong{font-size:1.35rem}.group-open{margin-left:auto}.group-offers{padding:0 10px 10px}}
