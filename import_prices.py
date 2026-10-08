@@ -16,7 +16,9 @@ Un relevé identique déjà présent est ignoré (import rejouable sans doublon)
 import argparse
 import csv
 import io
+import re
 import sys
+from datetime import date
 
 import db
 from backup_db import create_backup
@@ -32,6 +34,28 @@ def decode_csv(raw):
         return raw.decode('utf-8-sig')
     except UnicodeDecodeError:
         return raw.decode('cp1252', errors='replace')
+
+
+def normalize_date(value):
+    """JJ/MM/AAAA, JJ-MM-AAAA ou JJ.MM.AAAA (ce qu'Excel français exporte) -> AAAA-MM-JJ.
+    Toute autre valeur est rendue telle quelle : la validation la refusera avec son message habituel.
+    Les formats à deux chiffres d'année ou ambigus ne sont pas devinés."""
+    m = re.fullmatch(r'(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})(?:[ T].*)?', value)
+    if not m:
+        return value
+    try:
+        return date(int(m.group(3)), int(m.group(2)), int(m.group(1))).isoformat()
+    except ValueError:
+        return value
+
+
+def normalize_price(value):
+    """« 2 500 », « 2500 FCFA », « 2 500,00 » -> « 2500 ». Une valeur non entière (« 2500,5 ») est laissée telle
+    quelle et sera refusée : on n'arrondit jamais un prix."""
+    text = re.sub(r'(?i)\s*(f\s*cfa|cfa|fcfa|f)\s*$', '', value.replace('\u00a0', ' ').replace('\u202f', ' ')).strip()
+    text = re.sub(r'(?<=\d)[ ](?=\d{3}\b)', '', text)
+    m = re.fullmatch(r'(\d+)(?:[.,]0+)?', text)
+    return m.group(1) if m else value
 
 
 def parse_csv(f):
@@ -50,6 +74,10 @@ def parse_csv(f):
         raise ValueError('Colonnes manquantes : ' + ', '.join(missing))
     for n, row in enumerate(reader, start=2):  # ligne 1 = en-tête
         rec = {k: (v or '').strip() for k, v in row.items() if k}
+        if rec.get('prix'):
+            rec['prix'] = normalize_price(rec['prix'])
+        if rec.get('date_releve'):
+            rec['date_releve'] = normalize_date(rec['date_releve'])
         if not rec.get('prix'):
             skipped += 1
             continue

@@ -46,6 +46,12 @@ Les prix manuels utilisent encore `data/articles.json`. Les comptes, observation
 
 Les mots de passe sont hachés. Les opérations de compte et de contribution utilisent une session et un jeton CSRF ; les endpoints administrateur utilisent le jeton Bearer. Les réponses privées ne sont pas mises en cache. L’ancien endpoint anonyme `/submit_feedback` est retiré (HTTP 410) au profit du parcours connecté.
 
+## Collecter les premiers prix
+
+`data/fiche_collecte.xlsx` est la fiche à emporter en magasin : 30 produits courants × 3 magasins, avec règles de relevé (onglet « Lisez-moi »), listes déroulantes et contrôles de saisie (onglet « Saisie »), et suivi d’avancement par magasin (onglet « Suivi »). Pour la régénérer avec d’autres magasins ou produits : `python tools/build_fiche.py --stores "Carrefour,Casino"` (nécessite `pip install -r requirements-dev.txt`).
+
+Parcours : remplir `prix` et `date_releve` (une ligne sans prix est ignorée, un produit absent reste vide) → *Enregistrer sous* CSV depuis l’onglet « Saisie » → `/admin` → Importer un CSV (simulation d’abord ; tout est refusé si une seule ligne est invalide). Les prix avec espaces ou « FCFA » et les dates `JJ/MM/AAAA` d’Excel français sont acceptés ; un prix non entier n’est jamais arrondi. Les prix importés sont « à vérifier » jusqu’à validation dans `/admin`.
+
 ## Vérification d’email et récupération du mot de passe
 
 Facultatives : l’inscription par téléphone reste immédiate. Un email vérifié (code à 6 chiffres, valable 15 minutes, 5 essais) permet de récupérer le mot de passe depuis « Mot de passe oublié ? ». Sans SMTP configuré, la fonction est masquée et inactive.

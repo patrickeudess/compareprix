@@ -1,3 +1,4 @@
 -r requirements.txt
 pip-audit
 ruff
+openpyxl>=3.1,<4
