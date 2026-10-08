@@ -5,7 +5,7 @@ const logos = Object.freeze({
 'casino':'https://groupeprosuma.com/wp-content/uploads/2020/12/logo-casno-supermarche-mini.png'
 });
 const form=document.getElementById('searchForm'),input=document.getElementById('searchInput'),filter=document.getElementById('storeFilter'),status=document.getElementById('status'),section=document.getElementById('resultsSection'),content=document.getElementById('resultsContent');
-let results=[],searchSequence=0,cataloguePromise,searchTimer;
+let results=[],searchSequence=0,cataloguePromise,searchTimer,catalogueReady=false;
 function normalizeSearch(value){return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('fr').replace(/[^a-z0-9]+/g,' ').trim();}
 const searchAliases={pate:'spaghetti',pates:'spaghetti',tomates:'tomate',sardine:'sardines',cafe:'cafe',nescafe:'cafe',the:'the'};
 function matchesProduct(row,term){
@@ -25,11 +25,11 @@ return cataloguePromise;
 const cityFilter=document.createElement('select'),communeFilter=document.createElement('select'),channelFilter=document.createElement('select'),orderFilter=document.createElement('select');
 cityFilter.id='cityFilter';communeFilter.id='communeFilter';channelFilter.id='channelFilter';orderFilter.id='orderFilter';
 const geo=document.createElement('div');geo.className='search-filters';geo.setAttribute('aria-label','Affiner la comparaison');
-[['Ville',cityFilter],['Commune',communeFilter],['Type d’offre',channelFilter],['Comparer par',orderFilter]].forEach(([text,select])=>{const label=document.createElement('label');label.htmlFor=select.id;label.className='search-filter';const caption=document.createElement('span');caption.className='filter-caption';caption.textContent=({cityFilter:'📍 ',communeFilter:'🏘️ ',channelFilter:'🏪 ',orderFilter:'↕ '})[select.id]+text;label.append(caption);label.append(select);geo.append(label);});
+[['Ville',cityFilter],['Commune',communeFilter],['Type d’offre',channelFilter]].forEach(([text,select])=>{const label=document.createElement('label');label.htmlFor=select.id;label.className='search-filter';const caption=document.createElement('span');caption.className='filter-caption';caption.textContent=({cityFilter:'📍 ',communeFilter:'🏘️ ',channelFilter:'🏪 ',orderFilter:'↕ '})[select.id]+text;label.append(caption);label.append(select);geo.append(label);});
 cityFilter.append(new Option('Toutes les villes',''));communeFilter.append(new Option('Toutes les communes',''));
 [['Tous',''],['En magasin','store'],['En ligne','online']].forEach(([text,value])=>channelFilter.append(new Option(text,value)));
 [['Prix du format','price'],['Prix par kg / litre','unit']].forEach(([text,value])=>orderFilter.append(new Option(text,value)));
-form.after(geo);
+const filtersBox=document.createElement('details');filtersBox.className='filters-box';const filtersSummary=document.createElement('summary');const filtersLabel=document.createElement('span');filtersLabel.textContent='Filtres : ville, commune, type d’offre';const filtersBadge=document.createElement('b');filtersBadge.className='filters-count';filtersBadge.hidden=true;filtersSummary.append(filtersLabel,filtersBadge);filtersBox.append(filtersSummary,geo);form.after(filtersBox);function updateFiltersBadge(){const active=[cityFilter,communeFilter,channelFilter].filter(select=>select.value).length;filtersBadge.hidden=!active;filtersBadge.textContent=active+(active>1?' actifs':' actif');if(active)filtersBox.open=true;}
 const comparisonHint=document.createElement('p');comparisonHint.className='hint';comparisonHint.textContent='Comparez la même marque et le même format. En ligne : livraison et frais à confirmer auprès du vendeur.';geo.after(comparisonHint);
 let geoCities=[],geoCommunes={};
 fetch('./static/locations.json').then(r=>r.json()).then(data=>{geoCities=data.cities||[];geoCommunes=data.communesByCity||{};syncCities();syncCommunes();}).catch(()=>{});
@@ -41,15 +41,20 @@ function syncCommunes(){const selected=communeFilter.value;communeFilter.replace
 cityFilter.addEventListener('change',()=>{communeFilter.value='';syncCommunes();render();});
 
 const money=new Intl.NumberFormat('fr-CI');
+function shortDate(value){const date=new Date(String(value)+'T12:00:00');return Number.isNaN(date.getTime())?String(value):date.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});}
+const sortSeg=document.createElement('div');sortSeg.className='sort-seg';sortSeg.setAttribute('role','group');sortSeg.setAttribute('aria-label','Trier les offres');sortSeg.hidden=true;
+[['Moins cher','price'],['Prix par kg / litre','unit']].forEach(([text,value])=>{const button=document.createElement('button');button.type='button';button.textContent=text;button.dataset.value=value;button.addEventListener('click',()=>{orderFilter.value=value;render();});sortSeg.append(button);});
+content.before(sortSeg);
+function showSkeleton(){section.hidden=false;sortSeg.hidden=true;document.getElementById('resultCount').textContent='Chargement des prix…';content.replaceChildren(...[0,1,2].map(()=>{const placeholder=document.createElement('div');placeholder.className='offer skeleton';placeholder.setAttribute('aria-hidden','true');return placeholder;}));}
 function render(){
 const rows=results.filter(row=>(!filter.value||row.supermarche===filter.value)&&(!cityFilter.value||row.ville===cityFilter.value||(onlineOffer(row)&&(row.zones_livraison||[]).includes(cityFilter.value)))&&(!communeFilter.value||commune(row)===communeFilter.value)&&(!channelFilter.value||(channelFilter.value==='online')===onlineOffer(row))).sort((a,b)=>orderFilter.value==='unit'?(a.prix_unitaire??Infinity)-(b.prix_unitaire??Infinity):a.prix-b.prix);
 document.getElementById('resultCount').textContent=rows.length+' offre'+(rows.length>1?'s':'')+(orderFilter.value==='unit'?' · Prix par kg / litre':' · Prix croissants');
-content.replaceChildren();
+content.replaceChildren();sortSeg.hidden=false;sortSeg.querySelectorAll('button').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.value===orderFilter.value)));updateFiltersBadge();
 if(!rows.length){const empty=document.createElement('p');empty.textContent='Aucune offre pour ces filtres. Essayez une autre ville ou ajoutez un prix près de chez vous.';content.append(empty);}
 const groupKey=row=>String(row.article).toLocaleLowerCase('fr')+'|'+row.unite_reference;
 const groups=new Map();rows.forEach(row=>{if(!Number.isFinite(row.prix_unitaire))return;const key=groupKey(row),group=groups.get(key)||{count:0,best:Infinity};group.count++;group.best=Math.min(group.best,row.prix_unitaire);groups.set(key,group);});
-rows.forEach(row=>{
-const card=document.createElement('article');card.className='offer';
+rows.forEach((row,index)=>{
+const card=document.createElement('article');card.className='offer';card.style.setProperty('--i',Math.min(index,10));
 const group=groups.get(groupKey(row));const isBest=Boolean(group&&group.count>1&&row.prix_unitaire===group.best);if(isBest)card.classList.add('is-best');
 const details=document.createElement('div');details.className='offer-details';
 const visual=document.createElement('div');visual.className='product-visual';visual.setAttribute('aria-hidden','true');
@@ -61,34 +66,36 @@ if(logo){const image=document.createElement('img');image.src=logo;image.alt='';i
 const name=document.createElement('span');name.textContent=row.supermarche;store.append(name);identity.append(store);
 const price=document.createElement('div');price.className='price';price.textContent=money.format(row.prix)+' FCFA';
 const unit=document.createElement('span');unit.className='unit';unit.textContent='Format : '+(row.unite||'unité');price.append(unit);card.append(details,price);
-const source=document.createElement('span');source.className='price-badge'+(row.date_releve?' dated':'');source.textContent=row.source==='prix_internet'?'🌐 Prix en ligne · consulté le '+row.date_consultation:row.statut==='donnee_exemple'||row.source==='exemple'?'Exemple':row.date_releve?'✓ Validé · '+row.date_releve:'◷ À confirmer';if(row.source==='prix_internet'&&row.actualisation!=='ok')source.textContent+=' · '+(row.actualisation==='unavailable'?'Actualisation indisponible': 'Vérification en cours');identity.append(source);const stock=document.createElement('p');stock.className='stock-badge '+(row.disponibilite==='available'?'available':row.disponibilite==='out_of_stock'?'out-of-stock':'unknown');stock.textContent=({available:'🟢 Disponible',out_of_stock:'🔴 Rupture de stock'})[row.disponibilite]||'⚪ Disponibilité inconnue';if(row.date_disponibilite)stock.textContent+=' · '+row.date_disponibilite;identity.append(stock);
-const locationInfo=document.createElement('p');locationInfo.className='offer-place';locationInfo.textContent=onlineOffer(row)?'🚚 '+((row.zones_livraison||[]).length?'Livraison : '+row.zones_livraison.join(', '):'Zone de livraison à confirmer')+' · Frais à confirmer':'📍 '+[row.ville,commune(row),row.boutique].filter(Boolean).join(' · ');identity.append(locationInfo);
-if(!onlineOffer(row)&&row.ville&&commune(row)&&row.boutique){const map=document.createElement('a');map.href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent([row.boutique,commune(row),row.ville,'Côte d’Ivoire'].join(', '));map.target='_blank';map.rel='noopener noreferrer';map.textContent='📍 Rechercher sur la carte';identity.append(map);}
-if(row.lieu){const place=document.createElement('p');place.className='offer-place';place.textContent='📍 '+row.lieu;identity.append(place);} 
+const more=document.createElement('details');more.className='offer-more';const moreSummary=document.createElement('summary');moreSummary.textContent='Détails et actions';more.append(moreSummary);
+const source=document.createElement('span');source.className='price-badge'+(row.date_releve?' dated':'');source.textContent=row.source==='prix_internet'?'🌐 Prix en ligne · vu le '+shortDate(row.date_consultation):row.statut==='donnee_exemple'||row.source==='exemple'?'Exemple':row.date_releve?'✓ Validé · '+row.date_releve:'◷ À confirmer';if(row.source==='prix_internet'&&row.actualisation!=='ok')source.textContent+=' · '+(row.actualisation==='unavailable'?'Actualisation indisponible': 'Vérification en cours');identity.append(source);const stock=document.createElement('p');stock.className='stock-badge '+(row.disponibilite==='available'?'available':row.disponibilite==='out_of_stock'?'out-of-stock':'unknown');stock.textContent=({available:'🟢 Disponible',out_of_stock:'🔴 Rupture de stock'})[row.disponibilite]||'⚪ Disponibilité inconnue';if(row.date_disponibilite)stock.textContent+=' · '+row.date_disponibilite;more.append(stock);
+const locationInfo=document.createElement('p');locationInfo.className='offer-place';locationInfo.textContent=onlineOffer(row)?'🚚 '+((row.zones_livraison||[]).length?'Livraison : '+row.zones_livraison.join(', '):'Zone de livraison à confirmer')+' · Frais à confirmer':'📍 '+[row.ville,commune(row),row.boutique].filter(Boolean).join(' · ');more.append(locationInfo);
+if(!onlineOffer(row)&&row.ville&&commune(row)&&row.boutique){const map=document.createElement('a');map.href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent([row.boutique,commune(row),row.ville,'Côte d’Ivoire'].join(', '));map.target='_blank';map.rel='noopener noreferrer';map.textContent='📍 Rechercher sur la carte';more.append(map);}
+if(row.lieu){const place=document.createElement('p');place.className='offer-place';place.textContent='📍 '+row.lieu;more.append(place);} 
 if(Number.isFinite(row.prix_unitaire)){const normalized=document.createElement('span');normalized.className='unit';normalized.textContent=money.format(row.prix_unitaire)+' FCFA / '+row.unite_reference;price.append(normalized);}
 const links=document.createElement('div');links.className='offer-links';
 if(row.source_catalogue){try{const sourceUrl=new URL(row.source_catalogue);if(sourceUrl.protocol==='https:'){const sourceLink=document.createElement('a');sourceLink.href=sourceUrl.href;sourceLink.target='_blank';sourceLink.rel='noopener noreferrer';sourceLink.className='source-link';sourceLink.textContent='Voir la source du prix';links.append(sourceLink);}}catch{}}
 try{const url=new URL(row.url);if(['https:','http:'].includes(url.protocol)&&!url.pathname.includes('example')){const link=document.createElement('a');link.href=url.href;link.target='_blank';link.rel='noopener noreferrer';link.className='product-link';link.textContent='Voir le produit';links.append(link);}}catch{}if(links.children.length)card.append(links);
 const actions=document.createElement('div');actions.className='offer-actions';
-const add=document.createElement('button');add.type='button';add.className='basket-add';add.textContent='＋ Ajouter';add.addEventListener('click',()=>{addToBasket(row);add.textContent='✓ Ajouté';});if(row.disponibilite==='out_of_stock'){add.disabled=true;add.textContent='Indisponible';}actions.append(add);
-const report=document.createElement('button');report.type='button';report.textContent='⚑ Signaler';report.setAttribute('aria-label','Signaler une erreur sur '+row.article);report.addEventListener('click',()=>openReport(row));actions.append(report);
-const update=document.createElement('a');const target=new URL('./compte.html',location.href);target.searchParams.set('article',row.article);target.searchParams.set('store',row.supermarche);target.searchParams.set('format',row.unite||'');target.searchParams.set('location',row.lieu||'');target.searchParams.set('city',row.ville||'');target.searchParams.set('district',row.quartier||'');target.searchParams.set('shop',row.boutique||'');target.searchParams.set('intent','update');target.hash='account';update.href=target.href;update.textContent='↻ Actualiser';update.setAttribute('aria-label','Partager un prix actualisé pour '+row.article);actions.append(update);card.append(actions);
+const add=document.createElement('button');add.type='button';add.className='basket-add';add.textContent='＋ Ajouter';add.addEventListener('click',()=>{addToBasket(row);add.textContent='✓ Ajouté';add.classList.add('added');if(navigator.vibrate)navigator.vibrate(15);clearTimeout(add.resetTimer);add.resetTimer=setTimeout(()=>{add.textContent='＋ Ajouter';add.classList.remove('added');},1600);});if(row.disponibilite==='out_of_stock'){add.disabled=true;add.textContent='Indisponible';}actions.append(add);
+const share=document.createElement('a');share.className='share-link';share.target='_blank';share.rel='noopener noreferrer';share.href='https://wa.me/?text='+encodeURIComponent(row.article+' : '+money.format(row.prix)+' FCFA chez '+row.supermarche+(isBest?' (meilleur prix)':'')+' — comparé sur ComparePrix '+location.href.split('#')[0]);share.textContent='Partager';share.setAttribute('aria-label','Partager '+row.article+' sur WhatsApp');actions.append(share);
+const report=document.createElement('button');report.type='button';report.textContent='⚑ Signaler';report.setAttribute('aria-label','Signaler une erreur sur '+row.article);report.addEventListener('click',()=>openReport(row));more.append(report);
+const update=document.createElement('a');const target=new URL('./compte.html',location.href);target.searchParams.set('article',row.article);target.searchParams.set('store',row.supermarche);target.searchParams.set('format',row.unite||'');target.searchParams.set('location',row.lieu||'');target.searchParams.set('city',row.ville||'');target.searchParams.set('district',row.quartier||'');target.searchParams.set('shop',row.boutique||'');target.searchParams.set('intent','update');target.hash='account';update.href=target.href;update.textContent='↻ Actualiser';update.setAttribute('aria-label','Partager un prix actualisé pour '+row.article);more.append(update);card.append(actions,more);
 content.append(card);
 });
 }
 async function search(){
 const term=input.value.trim();
-const sequence=++searchSequence;status.textContent='Recherche en cours…';section.hidden=true;
+const sequence=++searchSequence;status.textContent='Recherche en cours…';if(!catalogueReady)showSkeleton();
 try{
-const articles=await loadCatalogue();if(sequence!==searchSequence)return;
+const articles=await loadCatalogue();catalogueReady=true;if(sequence!==searchSequence)return;
 results=articles.filter(row=>matchesProduct(row,term)&&Number.isFinite(row.prix)&&row.prix>0);
 const selectedStore=filter.value;filter.replaceChildren(new Option('Tous les magasins',''));
 [...new Set(results.map(row=>row.supermarche))].sort((a,b)=>a.localeCompare(b,'fr')).forEach(name=>filter.append(new Option(name,name)));
 if([...filter.options].some(option=>option.value===selectedStore))filter.value=selectedStore;
 syncCities();syncCommunes();
 status.textContent=results.length?'':'Aucun prix trouvé pour « '+term+' ». Essayez un autre nom de produit.';
-section.hidden=!results.length;render();
-}catch{if(sequence===searchSequence)status.textContent='Impossible de charger les prix. Réessayez dans un instant.';}
+section.hidden=!results.length;render();document.body.classList.toggle('searched',Boolean(term)&&results.length>0);
+}catch{if(sequence===searchSequence){section.hidden=true;status.textContent='Impossible de charger les prix. Réessayez dans un instant.';}}
 }
 form.addEventListener('submit',event=>{event.preventDefault();clearTimeout(searchTimer);search();});
 input.addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(search,180);});
