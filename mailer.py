@@ -20,8 +20,22 @@ class MailNotConfigured(RuntimeError):
     """Aucun serveur SMTP configuré."""
 
 
+SECURITY_MODES = ('starttls', 'ssl', 'none')
+
+
+def _security():
+    """Mode de chiffrement demandé, ou None si la valeur est inconnue (faute de frappe, espace...)."""
+    try:
+        default = 'ssl' if int(os.environ.get('COMPAREPRIX_SMTP_PORT', '587')) == 465 else 'starttls'
+    except ValueError:
+        return None
+    mode = os.environ.get('COMPAREPRIX_SMTP_SECURITY', default).strip().lower()
+    return mode if mode in SECURITY_MODES else None
+
+
 def is_configured():
-    return bool(os.environ.get('COMPAREPRIX_SMTP_HOST') and os.environ.get('COMPAREPRIX_SMTP_FROM'))
+    """Un mode de chiffrement invalide désactive l'envoi plutôt que de retomber en clair."""
+    return bool(os.environ.get('COMPAREPRIX_SMTP_HOST') and os.environ.get('COMPAREPRIX_SMTP_FROM') and _security())
 
 
 def send_mail(to, subject, body):
@@ -37,7 +51,7 @@ def send_mail(to, subject, body):
     message['To'] = to
     message['Subject'] = subject
     message.set_content(body)
-    security = os.environ.get('COMPAREPRIX_SMTP_SECURITY', 'ssl' if port == 465 else 'starttls').lower()
+    security = _security()
     context = ssl.create_default_context()
     if security == 'ssl':
         server = smtplib.SMTP_SSL(host, port, timeout=15, context=context)

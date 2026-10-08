@@ -54,7 +54,7 @@ Facultatives : l’inscription par téléphone reste immédiate. Un email vérif
 - `COMPAREPRIX_SMTP_SECURITY` : `starttls` (défaut), `ssl` (port 465) ou `none` (relais local uniquement).
 - `COMPAREPRIX_REQUIRE_VERIFIED_EMAIL=true` : exige un email vérifié pour envoyer un prix (désactivé par défaut pour ne pas freiner les contributions ; sans effet si SMTP n’est pas configuré).
 
-Le code n’est jamais stocké en clair (empreinte HMAC) ; la demande de récupération répond toujours de la même façon, qu’un compte existe ou non. Les limites d’envoi sont en mémoire par processus (voir `ratelimit.py`). Un SMS n’est pas fourni : il exige un compte payant chez un fournisseur.
+Le code n’est jamais stocké en clair (empreinte HMAC) ; la demande de récupération répond toujours de la même façon, qu’un compte existe ou non. Les limites d’envoi sont en mémoire par processus (voir `ratelimit.py`). Une réinitialisation de mot de passe déconnecte toutes les sessions ouvertes du compte. Un `COMPAREPRIX_SMTP_SECURITY` inconnu désactive l’envoi d’email (jamais de repli sans chiffrement). Un SMS n’est pas fourni : il exige un compte payant chez un fournisseur.
 
 ## GitHub Pages
 

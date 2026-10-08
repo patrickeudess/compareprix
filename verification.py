@@ -209,7 +209,8 @@ def register_verification(app, db, user, csrf_ok, error, now):
         if not found or not check_code(found['id'], 'reset', found['contact_email'], data.get('code')):
             return error('Code incorrect ou expiré. Demandez un nouveau code.', 400)
         with db() as conn:
-            conn.execute('UPDATE users SET password_hash=? WHERE id=?', (generate_password_hash(password), found['id']))
+            # session_version+1 : toutes les sessions déjà ouvertes (autre appareil, cookie volé) cessent d'être valides.
+            conn.execute('UPDATE users SET password_hash=?, session_version=session_version+1 WHERE id=?', (generate_password_hash(password), found['id']))
             conn.execute('UPDATE verification_codes SET used=1 WHERE user_id=?', (found['id'],))
         session.clear()
         session['csrf'] = secrets.token_hex(32)

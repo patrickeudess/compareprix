@@ -100,6 +100,41 @@ class TestNavigationIcons(unittest.TestCase):
                 self.assertIn('focusable="false"', svg)
 
 
+class TestMarkupStructure(unittest.TestCase):
+    """Un <div> de trop ferme `.account-layout` trop tôt : le navigateur « répare » et les cartes se défont."""
+
+    def test_every_template_has_balanced_divs(self):
+        for page in PAGES:
+            html = read(*page.split('/'))
+            self.assertEqual(len(re.findall(r'<div\b', html)), len(re.findall(r'</div>', html)), page)
+
+    def test_account_panels_stay_inside_their_cards(self):
+        from html.parser import HTMLParser
+
+        class Tree(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.stack, self.ancestors = [], {}
+
+            def handle_starttag(self, tag, attrs):
+                if tag in ('br', 'input', 'img', 'meta', 'link', 'hr'):
+                    return
+                ident = dict(attrs).get('id')
+                if ident:
+                    self.ancestors[ident] = [i for i in self.stack if i]
+                self.stack.append(ident)
+
+            def handle_endtag(self, tag):
+                if self.stack:
+                    self.stack.pop()
+
+        tree = Tree()
+        tree.feed(read('templates', 'community.html'))
+        for ident, parent in (('signedIn', 'account'), ('signedOut', 'account'), ('forgotBox', 'account'),
+                              ('emailBox', 'signedIn')):
+            self.assertIn(parent, tree.ancestors[ident], f'#{ident} doit rester dans #{parent}')
+
+
 class TestBasketDock(unittest.TestCase):
     def test_dock_starts_hidden_and_css_honours_hidden(self):
         self.assertRegex(read('templates', 'index.html'), r'<a class="basket-dock" hidden ')

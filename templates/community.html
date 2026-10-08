@@ -10,7 +10,7 @@
 <form id="resetForm" hidden><p class="hint">Un code sera envoyé à l’email vérifié de votre compte. Sans email vérifié, la récupération n’est pas possible.</p>
 <label for="resetPhone">Numéro de téléphone du compte</label><input id="resetPhone" type="tel" inputmode="tel" maxlength="40" autocomplete="tel" required><button id="resetSend" type="button" class="secondary">Recevoir un code par email</button>
 <label for="resetCode">Code reçu (6 chiffres)</label><input id="resetCode" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required>
-<label for="resetPassword">Nouveau mot de passe (12 caractères minimum)</label><input id="resetPassword" type="password" minlength="12" maxlength="256" autocomplete="new-password" required><button type="submit">Changer le mot de passe</button></form></div></div>
+<label for="resetPassword">Nouveau mot de passe (12 caractères minimum)</label><input id="resetPassword" type="password" minlength="12" maxlength="256" autocomplete="new-password" required><button type="submit">Changer le mot de passe</button></form></div>
 <div id="signedIn" hidden><p id="greeting"></p><a id="contributeFromAccount" class="cta-link" href="./contribuer.html">📸 Ajouter un prix</a><button id="logout" class="secondary" type="button">Se déconnecter</button>
 <div id="emailBox" class="email-box" hidden><h3>Email de récupération</h3><p id="emailState" class="hint"></p>
 <form id="emailForm"><label for="emailInput">Adresse email</label><input id="emailInput" type="email" maxlength="254" autocomplete="email" placeholder="vous@exemple.com" required><button id="emailSend" type="submit" class="secondary">Envoyer le code</button></form>

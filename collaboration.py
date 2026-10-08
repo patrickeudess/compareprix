@@ -76,6 +76,8 @@ def register_collaboration(app, is_admin):
         if 'phone' not in {row['name'] for row in conn.execute('PRAGMA table_info(users)')}:
             conn.execute('ALTER TABLE users ADD COLUMN phone TEXT')
         conn.execute('CREATE UNIQUE INDEX IF NOT EXISTS users_phone_unique ON users(phone)')
+        if 'session_version' not in {row['name'] for row in conn.execute('PRAGMA table_info(users)')}:
+            conn.execute('ALTER TABLE users ADD COLUMN session_version INTEGER NOT NULL DEFAULT 0')
         if 'availability' not in {row['name'] for row in conn.execute('PRAGMA table_info(contributions)')}:
             conn.execute("ALTER TABLE contributions ADD COLUMN availability TEXT NOT NULL DEFAULT 'unknown'")
         columns = {row['name'] for row in conn.execute('PRAGMA table_info(contributions)')}
@@ -96,8 +98,10 @@ def register_collaboration(app, is_admin):
         return jsonify(message=message), code
 
     def user():
+        """Compte de la session, sauf si sa version a changé (mot de passe réinitialisé : toutes les sessions tombent)."""
         with db() as conn:
-            return conn.execute('SELECT id, phone, name, contact_email, email_verified_at FROM users WHERE id=?', (session.get('uid'),)).fetchone()
+            row = conn.execute('SELECT id, phone, name, contact_email, email_verified_at, session_version FROM users WHERE id=?', (session.get('uid'),)).fetchone()
+        return row if row and row['session_version'] == session.get('sv', 0) else None
 
     def public_user(row):
         """Ce que le navigateur de l'intéressé reçoit : l'email reste masqué."""
@@ -203,7 +207,7 @@ def register_collaboration(app, is_admin):
                 with db() as conn:
                     cursor = conn.execute('INSERT INTO users(email,phone,name,password_hash,created_at) VALUES (?,?,?,?,?)',
                         ('phone:'+phone,phone,name.strip() or 'Contributeur '+secrets.token_hex(3),generate_password_hash(password),now()))
-                    uid = cursor.lastrowid
+                    uid, sv = cursor.lastrowid, 0
             except sqlite3.IntegrityError:
                 return error('Ce numéro est déjà utilisé. Essayez de vous connecter.', 409)
         else:
@@ -211,10 +215,10 @@ def register_collaboration(app, is_admin):
                 found = conn.execute('SELECT * FROM users WHERE phone=?', (phone,)).fetchone()
             if not found or not check_password_hash(found['password_hash'], password):
                 return error('Numéro ou mot de passe incorrect.', 401)
-            uid = found['id']
+            uid, sv = found['id'], found['session_version']
         session.clear()
         session.permanent = True
-        session.update(uid=uid, csrf=secrets.token_hex(32))
+        session.update(uid=uid, sv=sv, csrf=secrets.token_hex(32))
         with db() as conn:
             conn.execute('DELETE FROM login_attempts WHERE identity=?', (identity,))
         return jsonify(user=public_user(user()), csrf=session['csrf'])

@@ -1,5 +1,6 @@
 """Tests : vérification d'email et récupération du mot de passe (verification.py, mailer.py).
 Lancer : python -m unittest test_verification -v"""
+import contextlib
 import os
 import re
 import sqlite3
@@ -49,6 +50,27 @@ class TestHelpers(unittest.TestCase):
             self.assertIsNone(verification.normalize_email(bad), bad)
         self.assertEqual(verification.mask_email('awa@exemple.ci'), 'a***@exemple.ci')
 
+    def test_unknown_security_mode_disables_sending_instead_of_falling_back_to_plaintext(self):
+        base = dict(SMTP_ENV)
+        for bad in ('tls', 'STARTLS ', 'false', 'nonee', ''):
+            with unittest.mock.patch.dict(os.environ, {**base, 'COMPAREPRIX_SMTP_SECURITY': bad}, clear=True):
+                self.assertFalse(mailer.is_configured(), repr(bad))
+                with unittest.mock.patch('smtplib.SMTP') as plain:
+                    with self.assertRaises(mailer.MailNotConfigured):
+                        mailer.send_mail('a@b.ci', 's', 'b')
+                    plain.assert_not_called()
+        for good in ('starttls', ' SSL ', 'none'):
+            with unittest.mock.patch.dict(os.environ, {**base, 'COMPAREPRIX_SMTP_SECURITY': good}, clear=True):
+                self.assertTrue(mailer.is_configured(), repr(good))
+
+    def test_default_security_follows_the_port(self):
+        with unittest.mock.patch.dict(os.environ, {**SMTP_ENV, 'COMPAREPRIX_SMTP_PORT': '465'}, clear=True):
+            self.assertEqual(mailer._security(), 'ssl')
+        with unittest.mock.patch.dict(os.environ, SMTP_ENV, clear=True):
+            self.assertEqual(mailer._security(), 'starttls')
+        with unittest.mock.patch.dict(os.environ, {**SMTP_ENV, 'COMPAREPRIX_SMTP_PORT': 'abc'}, clear=True):
+            self.assertFalse(mailer.is_configured())
+
     def test_mail_is_not_configured_without_smtp_variables(self):
         with unittest.mock.patch.dict(os.environ, {}, clear=True):
             self.assertFalse(mailer.is_configured())
@@ -71,7 +93,7 @@ class TestEmailVerification(VerifyCase):
         self.register()
         self.post('/api/account/email/request', email=EMAIL)
         code = self.last_code()
-        with sqlite3.connect(os.path.join(os.environ['COMPAREPRIX_DATA_DIR'], 'community.sqlite3')) as conn:
+        with contextlib.closing(sqlite3.connect(os.path.join(os.environ['COMPAREPRIX_DATA_DIR'], 'community.sqlite3'))) as conn:
             conn.row_factory = sqlite3.Row
             row = conn.execute('SELECT * FROM verification_codes').fetchone()
         self.assertNotEqual(row['code_hash'], code)
@@ -194,6 +216,21 @@ class TestPasswordReset(VerifyCase):
         code = self.last_code()
         self.assertEqual(self.post('/api/account/reset/confirm', phone=PHONE, code=code, password=self.NEW).status_code, 200)
         self.assertEqual(self.post('/api/account/reset/confirm', phone=PHONE, code=code, password=self.NEW + 'x').status_code, 400)
+
+    def test_reset_revokes_sessions_opened_elsewhere(self):
+        other = self.app.test_client()  # un autre navigateur déjà connecté (ou un cookie volé)
+        token = other.get('/api/session').get_json()['csrf']
+        self.assertEqual(other.post('/api/account/login', json={'phone': PHONE, 'password': PASSWORD},
+                                    headers={'X-CSRF-Token': token}).status_code, 200)
+        self.assertIsNotNone(other.get('/api/session').get_json()['user'])
+        self.assertEqual(other.get('/api/contributions').status_code, 200)
+        self.post('/api/account/reset/request', phone=PHONE)
+        self.assertEqual(self.post('/api/account/reset/confirm', phone=PHONE, code=self.last_code(), password=self.NEW).status_code, 200)
+        self.assertIsNone(other.get('/api/session').get_json()['user'])
+        self.assertEqual(other.get('/api/contributions').status_code, 401)
+        # le nouveau mot de passe ouvre une session valable
+        self.assertEqual(self.post('/api/account/login', phone=PHONE, password=self.NEW).status_code, 200)
+        self.assertEqual(self.client.get('/api/contributions').status_code, 200)
 
     def test_rate_limit_per_phone(self):
         statuses = [self.post('/api/account/reset/request', phone=PHONE).status_code for _ in range(4)]
