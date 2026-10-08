@@ -70,6 +70,6 @@ os.environ['COMPAREPRIX_SMTP_FROM'] = 'ComparePrix <no-reply@votre-domaine>'
 **Compte gratuit PythonAnywhere : les connexions sortantes passent par une liste blanche de sites ; vérifier que votre fournisseur SMTP y figure, sinon l'envoi échouera (message « L'email n'a pas pu être envoyé »).** Les domaines expéditeurs doivent être authentifiés (SPF/DKIM) chez le fournisseur pour éviter le dossier spam.
 
 ## Après la mise en ligne
-1. Ouvrir `/admin`, saisir le jeton, importer votre fiche de collecte remplie (`data/fiche_collecte.csv`).
+1. Ouvrir `/admin`, saisir le jeton, importer votre fiche de collecte remplie (`data/fiche_collecte.xlsx`, enregistrée en CSV : voir README, « Collecter les premiers prix »).
 2. Configurer une sauvegarde régulière (`backup_db.py`) et la copier hors du serveur.
 3. Vérifier `/healthz` et que `/admin` n'est joignable qu'en HTTPS.
