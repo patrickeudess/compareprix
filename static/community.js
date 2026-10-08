@@ -59,7 +59,7 @@ tell('La création de compte et l’envoi de prix ne sont pas encore disponibles
 byId('authForm').querySelectorAll('input,button').forEach(field=>field.disabled=true);
 byId('send').disabled=true;
 }else{
-api('/api/session').then(data=>{online=true;displayAccount(data);if(pageMode==='account'&&data.user&&['update','contribute'].includes(new URLSearchParams(location.search).get('intent')))location.assign(contributionDestination());}).catch(error=>{tell(error.message);byId('authSubmit').disabled=true;byId('send').disabled=true;});
+api('/api/session').then(data=>{online=true;displayAccount(data);if(pageMode==='account'&&data.user&&['update','contribute','merchant'].includes(new URLSearchParams(location.search).get('intent')))location.assign(contributionDestination());}).catch(error=>{tell(error.message);byId('authSubmit').disabled=true;byId('send').disabled=true;});
 }
 
 
