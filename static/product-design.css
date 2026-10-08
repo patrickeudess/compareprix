@@ -73,3 +73,63 @@ body:has(.basket-dock[hidden]){padding-bottom:105px}
 .offer>.price{font-size:1.65rem}
 }
 @media(max-width:440px){.search-filters{grid-template-columns:minmax(0,1fr)}}
+
+/* === Fluidité et simplicité : filtres repliables, tri en deux boutons, détails repliés, squelette de chargement, transitions ===
+   Principes (guide UI/UX Pro Max) : révélation progressive, retour immédiat à chaque action, mouvement court (150-350 ms)
+   limité à opacity/transform, désactivé si l'utilisateur demande moins d'animations. */
+@view-transition{navigation:auto}
+a,button,summary{-webkit-tap-highlight-color:transparent}
+button:active,.cta-link:active,.share-link:active{transform:scale(.97)}
+button,.share-link,.cta-link{transition:transform .12s ease,background-color .15s,border-color .15s,color .15s}
+body.searched .welcome{display:none}
+.filters-box{margin:14px 0 4px;border:1px solid #e1ebe4;border-radius:14px;background:#f4f8f5}
+.filters-box>summary{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 16px;cursor:pointer;font-size:.88rem;font-weight:650;color:#385445;list-style:none}
+.filters-box>summary::-webkit-details-marker{display:none}
+.filters-box>summary::after{content:"＋";margin-left:auto;font-size:1.1rem}
+.filters-box[open]>summary::after{content:"−"}
+.filters-box>summary:focus-visible{outline:3px solid #e7b64b;outline-offset:2px;border-radius:12px}
+.filters-count{background:#126445;color:#fff;font-size:12px;font-weight:700;border-radius:100px;padding:3px 10px}
+.filters-box .search-filters{margin:0;border:0;border-top:1px solid #e1ebe4;border-radius:0 0 14px 14px;background:transparent;grid-template-columns:repeat(3,minmax(0,1fr))}
+.filters-box .hint{margin:0;padding:0 16px 14px}
+.sort-seg{display:inline-flex;gap:4px;padding:4px;margin:0 0 14px;background:#e6eee8;border-radius:14px}
+.sort-seg[hidden]{display:none}
+.sort-seg button{min-height:44px;border:0;border-radius:10px;padding:0 16px;background:transparent;color:#385445;font-size:.88rem;font-weight:650}
+.sort-seg button[aria-pressed="true"]{background:#fff;color:#0d4f37;box-shadow:0 1px 4px #12392820}
+.results-bar{margin:22px 0 12px}
+@keyframes offerIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.offer:not(.skeleton){animation:offerIn .32s ease both;animation-delay:calc(var(--i,0)*40ms)}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+.offer.skeleton{min-height:210px;background:linear-gradient(100deg,#fff 30%,#eef3ee 50%,#fff 70%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
+.offer-more{border-top:1px solid #edf2ea;margin-top:2px}
+.offer-more>summary{display:flex;align-items:center;min-height:44px;cursor:pointer;font-size:.82rem;font-weight:650;color:#385445;list-style:none}
+.offer-more>summary::-webkit-details-marker{display:none}
+.offer-more>summary::after{content:"＋";margin-left:auto;font-size:1.05rem}
+.offer-more[open]>summary::after{content:"−"}
+.offer-more>summary:focus-visible{outline:3px solid #e7b64b;outline-offset:2px;border-radius:8px}
+.offer-more>button{min-height:44px;margin:4px 10px 4px 0;border:1px solid #dfe7df;border-radius:10px;background:#fafcf9;color:#385445;font-size:.82rem;padding:0 14px}
+.offer-more>a{margin-right:14px;color:#126445;font-size:.82rem;font-weight:650}
+.offer-actions .share-link{flex:0 0 auto;min-height:44px;padding:0 16px;border:1px solid #cfe0d4;border-radius:11px;background:#fff;color:#126445;font-size:.88rem;font-weight:650;text-decoration:none}
+.offer-actions .share-link:hover{background:#eef5ef}
+.offer-actions .basket-add.added{background:#0d4f37!important;border-color:#0d4f37!important}
+.basket-toast{transition:opacity .2s}
+@media(max-width:700px){
+.suggestions{flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x proximity;margin-inline:-4px;padding:2px 4px 6px;scrollbar-width:none}
+.suggestions::-webkit-scrollbar{display:none}
+.suggestions button{flex:0 0 auto;scroll-snap-align:start}
+.sort-seg{display:flex}
+.sort-seg button{flex:1;padding:0 8px}
+.filters-box .search-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:440px){.filters-box .search-filters{grid-template-columns:minmax(0,1fr)}}
+@media(prefers-reduced-motion:reduce){.offer:not(.skeleton){animation:none}.offer.skeleton{animation:none}button:active,.cta-link:active,.share-link:active{transform:none}@view-transition{navigation:none}}
+
+@media(min-width:701px){
+.welcome{padding:24px 36px;margin:18px 0}
+.welcome h1,.welcome h2{font-size:clamp(1.6rem,3vw,2.1rem);margin-bottom:8px}
+.welcome .eyebrow{margin-bottom:8px}
+.welcome p:not(.eyebrow){font-size:.95rem;line-height:1.5}
+.page-nav{padding-bottom:14px;margin-bottom:6px}
+}
+.status:empty{display:none}
+.quick-help{margin:6px 0}
+.results-bar{margin:14px 0 10px}

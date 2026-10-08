@@ -108,5 +108,34 @@ class TestBasketDock(unittest.TestCase):
         self.assertIn("dock.hidden=count===0", read('static', 'basket.js'))
 
 
+class TestFluidity(unittest.TestCase):
+    CSS = read('static', 'product-design.css')
+    JS = read('static', 'compareprix.js')
+
+    def test_new_controls_keep_44px_touch_targets(self):
+        for selector in ('.sort-seg button', '.offer-more>summary', '.offer-actions .share-link', '.offer-more>button'):
+            rule = re.search(re.escape(selector) + r'\{[^}]*min-height:\s*44px', self.CSS)
+            self.assertIsNotNone(rule, f'{selector} : hauteur minimale de 44 px absente')
+        self.assertRegex(self.CSS, r'\.filters-box>summary\{[^}]*min-height:\s*48px')
+
+    def test_entry_animation_and_skeleton_stop_when_reduced_motion_is_requested(self):
+        block = re.search(r'@media\(prefers-reduced-motion:reduce\)\{(.*)\}\s*(?:@|$)', self.CSS, re.S)
+        reduced = ''.join(re.findall(r'@media\(prefers-reduced-motion:reduce\)\{(.*?)\}\}', self.CSS, re.S)) or (block.group(1) if block else '')
+        self.assertIn('.offer:not(.skeleton){animation:none}', reduced)
+        self.assertIn('.offer.skeleton{animation:none}', reduced)
+
+    def test_whatsapp_share_link_is_safe(self):
+        self.assertIn("share.href='https://wa.me/?text='+encodeURIComponent(", self.JS)
+        self.assertIn("share.rel='noopener noreferrer'", self.JS)
+
+    def test_skeleton_cards_are_hidden_from_screen_readers(self):
+        self.assertIn("placeholder.setAttribute('aria-hidden','true')", self.JS)
+
+    def test_secondary_details_are_folded_and_filters_collapsed(self):
+        self.assertIn("more.className='offer-more'", self.JS)
+        self.assertIn("filtersBox.className='filters-box'", self.JS)
+        self.assertNotIn("['Comparer par',orderFilter]", self.JS)  # le tri est un sélecteur à deux boutons
+
+
 if __name__ == '__main__':
     unittest.main()
