@@ -12,7 +12,7 @@ const response=await fetch(url,{...options,headers:{'X-CSRF-Token':csrf,...optio
 let data;try{data=await response.json();}catch{throw new Error('Les comptes et contributions nécessitent la version serveur de ComparePrix.');}
 if(!response.ok)throw new Error(data.message||'La demande a échoué.');return data;
 }
-function displayAccount(data){csrf=data.csrf;currentUser=data.user;if(data.features)features=data.features;renderEmail();byId('signedIn').hidden=!currentUser;byId('signedOut').hidden=!!currentUser;byId('contribution').hidden=!currentUser||pageMode!=='contribution';if(pageMode==='contribution'&&!currentUser){location.replace(accountDestination());return;}byId('contributeFromAccount').href=contributionDestination();document.querySelector('.account-layout').classList.toggle('account-first',!currentUser);if(currentUser){byId('greeting').textContent='Bonjour '+currentUser.name;byId('password').value='';}loadHistory();}
+function displayAccount(data){csrf=data.csrf;currentUser=data.user;if(data.features)features=data.features;renderEmail();if(byId('scanBox'))byId('scanBox').hidden=!(features.photo_scan&&currentUser);byId('signedIn').hidden=!currentUser;byId('signedOut').hidden=!!currentUser;byId('contribution').hidden=!currentUser||pageMode!=='contribution';if(pageMode==='contribution'&&!currentUser){location.replace(accountDestination());return;}byId('contributeFromAccount').href=contributionDestination();document.querySelector('.account-layout').classList.toggle('account-first',!currentUser);if(currentUser){byId('greeting').textContent='Bonjour '+currentUser.name;byId('password').value='';}loadHistory();}
 async function loadHistory(){
 if(!currentUser){byId('historyRows').textContent='Connectez-vous pour suivre vos relevés.';byId('points').textContent='';return;}
 try{
@@ -61,6 +61,16 @@ canvas.width=Math.round(bitmap.width*scale);canvas.height=Math.round(bitmap.heig
 const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.8));
 return blob&&blob.size<file.size?new File([blob],'photo.jpg',{type:'image/jpeg'}):file;}catch{return file;}
 }
+byId('scan')?.addEventListener('click',async()=>{
+const original=byId('photo').files[0];if(!original){tell('Choisissez d’abord une photo.');return;}
+const button=byId('scan');button.disabled=true;tell('Lecture de la photo…');
+try{const photo=await shrinkPhoto(original),body=new FormData();body.set('photo',photo,photo.name);
+const data=await api('/api/contributions/scan',{method:'POST',body}),f=data.fields;
+// On ne remplace que ce que le modèle a lu ; l'utilisateur garde le dernier mot.
+for(const key of ['article','brand','quantity','unit','price'])if(f[key]!==undefined)byId(key).value=f[key];
+saveDraft();tell(data.message);byId('article').focus();}
+catch(error){tell(error.message);}finally{button.disabled=false;}
+});
 function saveDraft(){try{localStorage.setItem(draftKey,JSON.stringify(Object.fromEntries(fields.map(key=>[key,byId(key).value]))));}catch{byId('draftNote').textContent='Le navigateur ne peut pas conserver ce brouillon.';}}
 form.addEventListener('input',saveDraft);
 try{const draft=JSON.parse(localStorage.getItem(draftKey)||'{}');fields.forEach(key=>{if(typeof draft[key]==='string')byId(key).value=draft[key];});}catch{}

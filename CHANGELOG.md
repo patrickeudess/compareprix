@@ -3,6 +3,7 @@
 Historique détaillé : `git log`. Ce fichier ne garde que les changements visibles.
 
 ## Non publié
+- **Lecture automatique des photos (saisie assistée, désactivée par défaut)** : bouton « Lire la photo et pré-remplir » dans le formulaire de prix. La photo est envoyée à l'API d'Anthropic, qui propose produit, marque, quantité, unité et prix ; l'utilisateur vérifie avant d'envoyer. Rien n'est enregistré par cette étape. Active seulement si `COMPAREPRIX_VISION_API_KEY` est définie ; limites : 10 analyses par compte et par heure, plafond quotidien `COMPAREPRIX_VISION_DAILY_MAX` (200). Texte de confidentialité mis à jour.
 - **Stabilité** : `/healthz` vérifie désormais les deux bases et l'espace disque (503 + alerte avant la panne ; `COMPAREPRIX_QUOTA_MB`, `COMPAREPRIX_MIN_FREE_MB`). Pages d'erreur 404/405/500 propres, sans détail technique. Migration de démarrage sûre quand plusieurs processus démarrent ensemble (`schema_util.py`). Sauvegarde complète (2 bases + photos, rotation, vérification `--verify`). Photos de preuve réduites à 1600 px. Purge des tentatives de connexion et codes périmés. Procédure : `docs/EXPLOITATION.md`.
 - Procédure de domaine concrétisée pour `compareprix.ci` / `www.compareprix.ci` (commandes à copier telles quelles).
 - Nom de domaine : procédure complète (`docs/DOMAINE.md`), outil de vérification (`tools/check_domain.py`), mise à jour des pages GitHub Pages (`tools/set_site_url.py`) et redirection vers l'adresse officielle (`COMPAREPRIX_CANONICAL_HOST`, inactive par défaut).

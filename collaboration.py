@@ -12,6 +12,8 @@ from flask import request, session, jsonify, render_template, send_file
 from werkzeug.security import generate_password_hash, check_password_hash
 
 import mailer
+import vision
+from ratelimit import SlidingWindowLimiter
 from schema_util import add_column_if_missing
 from verification import register_verification, normalize_phone, mask_email
 
@@ -95,6 +97,25 @@ def register_collaboration(app, is_admin):
     def error(message, code=400):
         return jsonify(message=message), code
 
+    scan_limiter = SlidingWindowLimiter(10, 3600)  # analyses de photo par compte et par heure (par processus)
+
+    def clean_photo(payload):
+        """Valide une photo JPG/PNG, la réencode en JPEG (sans EXIF/GPS) et la réduit à 1600 px. Retourne (octets, message d'erreur)."""
+        from PIL import Image, UnidentifiedImageError
+        try:
+            with Image.open(BytesIO(payload)) as image:
+                if image.format not in ('JPEG','PNG') or image.width*image.height>25000000:
+                    return None, 'Choisissez une photo JPG ou PNG de moins de 25 mégapixels.'
+                image.verify()
+            with Image.open(BytesIO(payload)) as image:
+                image = image.convert('RGB')
+                image.thumbnail((1600, 1600))  # le disque de l'hébergeur est limité : une preuve n'a pas besoin de plus
+                output = BytesIO()
+                image.save(output, format='JPEG', quality=85)
+                return output.getvalue(), None
+        except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
+            return None, 'La photo est invalide.'
+
     def user():
         """Compte de la session, sauf si sa version a changé (mot de passe réinitialisé : toutes les sessions tombent)."""
         with db() as conn:
@@ -164,7 +185,7 @@ def register_collaboration(app, is_admin):
     def get_session():
         session.setdefault('csrf', secrets.token_hex(32))
         return jsonify(user=public_user(user()), csrf=session['csrf'],
-                       features=dict(email=mailer.is_configured(), require_verified_email=require_verified_email and mailer.is_configured()))
+                       features=dict(email=mailer.is_configured(), photo_scan=vision.configured(), require_verified_email=require_verified_email and mailer.is_configured()))
 
     @app.get('/api/locations')
     def locations():
@@ -269,24 +290,12 @@ def register_collaboration(app, is_admin):
         proof_path = proof_hash = None
         upload = request.files.get('photo')
         if upload and upload.filename:
-            from PIL import Image, UnidentifiedImageError
             payload = upload.read(5*1024*1024+1)
             if len(payload)>5*1024*1024:
                 return error('La photo ne doit pas dépasser 5 Mo.')
-            try:
-                with Image.open(BytesIO(payload)) as image:
-                    if image.format not in ('JPEG','PNG') or image.width*image.height>25000000:
-                        return error('Choisissez une photo JPG ou PNG de moins de 25 mégapixels.')
-                    image.verify()
-                # Réencoder pour retirer métadonnées EXIF et géolocalisation.
-                with Image.open(BytesIO(payload)) as image:
-                    image = image.convert('RGB')
-                    image.thumbnail((1600, 1600))  # le disque de l'hébergeur est limité : une preuve n'a pas besoin de plus
-                    output = BytesIO()
-                    image.save(output, format='JPEG', quality=85)
-                    clean = output.getvalue()
-            except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
-                return error('La photo est invalide.')
+            clean, problem = clean_photo(payload)
+            if problem:
+                return error(problem)
             proof_hash = hashlib.sha256(clean).hexdigest()
             folder = root / 'proofs'
             folder.mkdir(exist_ok=True)
@@ -302,6 +311,36 @@ def register_collaboration(app, is_admin):
                 (root / 'proofs' / proof_path).unlink(missing_ok=True)
             return error('Ce relevé ou cette photo a déjà été envoyé.', 409)
         return jsonify(id=cid,message='Relevé envoyé. Il sera visible après validation.'), 201
+
+    @app.post('/api/contributions/scan')
+    def scan_photo():
+        """Saisie assistée : lit une photo et PROPOSE des champs. La photo n'est ni enregistrée ni liée à un relevé."""
+        current = user()
+        if not current:
+            return error('Connectez-vous pour utiliser la lecture automatique.', 401)
+        if not csrf_ok():
+            return error('Session expirée. Actualisez la page.', 403)
+        if not vision.configured():
+            return error('La lecture automatique n\'est pas activée. Saisissez les champs à la main.', 503)
+        upload = request.files.get('photo')
+        if not upload or not upload.filename:
+            return error('Choisissez une photo.')
+        payload = upload.read(5*1024*1024+1)
+        if len(payload)>5*1024*1024:
+            return error('La photo ne doit pas dépasser 5 Mo.')
+        allowed, wait = scan_limiter.check(current['id'])
+        if not allowed:
+            return error(f'Trop d\'analyses. Réessayez dans {max(1, wait // 60)} min ou saisissez à la main.', 429)
+        clean, problem = clean_photo(payload)
+        if problem:
+            return error(problem)
+        try:
+            fields = vision.extract(clean)
+        except vision.VisionError as failure:
+            return error(str(failure), 503)
+        if not fields:
+            return error('Rien de lisible sur cette photo. Saisissez les champs à la main.', 422)
+        return jsonify(fields=fields, message='Champs proposés : vérifiez-les avant d\'envoyer.')
 
     @app.get('/api/contributions/<int:cid>/photo')
     def photo(cid):
