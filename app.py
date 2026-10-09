@@ -1,8 +1,10 @@
 import gzip
 import io
 import re
+import shutil
+import sqlite3
 
-from flask import Flask, render_template, request, jsonify, redirect, send_from_directory, g
+from flask import Flask, render_template, request, jsonify, make_response, redirect, send_from_directory, g
 from werkzeug.middleware.proxy_fix import ProxyFix
 import json
 import os
@@ -151,16 +153,93 @@ def compress_response(response):
         response.set_etag(etag.strip('"'), weak=True)  # le contenu envoyé diffère de l'original : validateur faible
     return response
 
+def data_folder():
+    return os.path.abspath(os.environ.get('COMPAREPRIX_DATA_DIR', 'data'))
+
+def folder_size_mb(folder):
+    total = 0
+    for root, _, files in os.walk(folder):
+        for name in files:
+            try:
+                total += os.path.getsize(os.path.join(root, name))
+            except OSError:
+                pass
+    return total / 1_000_000
+
+def storage_problem():
+    """Retourne 'quota' ou 'disque' si l'espace est presque épuisé, sinon None.
+    COMPAREPRIX_QUOTA_MB : quota de l'offre d'hébergement (ex. 512 sur l'offre gratuite de PythonAnywhere) ; alerte à 90 %.
+    shutil.disk_usage décrit le disque de la machine, pas votre quota : d'où cette variable.
+    COMPAREPRIX_MIN_FREE_MB (50 par défaut) : alerte si le disque de la machine descend sous ce seuil."""
+    folder = data_folder()
+    if not os.path.isdir(folder):
+        return None
+    try:
+        quota = float(os.environ.get('COMPAREPRIX_QUOTA_MB', '0') or 0)
+    except ValueError:
+        quota = 0
+    if quota > 0 and folder_size_mb(folder) >= quota * 0.9:
+        return 'quota'
+    try:
+        minimum = float(os.environ.get('COMPAREPRIX_MIN_FREE_MB', '50') or 50)
+    except ValueError:
+        minimum = 50
+    if shutil.disk_usage(folder).free / 1_000_000 < minimum:
+        return 'disque'
+    return None
+
 @app.route('/healthz')
 def healthz():
-    """Sonde de santé (Docker/orchestrateur/CI) : vérifie que la base répond. Aucune donnée sensible."""
+    """Sonde de santé (Docker/orchestrateur/CI/supervision) : les DEUX bases répondent et l'espace n'est pas épuisé.
+    Un 503 est fait pour déclencher une alerte AVANT la panne. Aucune donnée sensible dans la réponse."""
     try:
         with db.transaction(write=False) as conn:
             conn.execute('SELECT 1').fetchone()
+        community = os.path.join(data_folder(), 'community.sqlite3')
+        if os.path.exists(community):
+            conn = sqlite3.connect(f'file:{community}?mode=ro', uri=True, timeout=5)
+            try:
+                conn.execute('SELECT 1 FROM sqlite_master LIMIT 1').fetchone()
+            finally:
+                conn.close()
+        problem = storage_problem()
+        if problem:
+            app.logger.error('Espace de stockage presque épuisé (%s)', problem)
+            return jsonify({'status': 'error', 'reason': problem}), 503
         return jsonify({'status': 'ok'})
     except Exception:
         app.logger.exception('Healthcheck en échec')
         return jsonify({'status': 'error'}), 503
+
+ERROR_MESSAGES = {404: 'Cette page est introuvable.', 405: 'Cette action n\'est pas autorisée ici.',
+                  500: 'Une erreur est survenue de notre côté. Réessayez dans un instant.'}
+
+def wants_json():
+    return request.path.startswith(('/api/', '/search')) or request.accept_mimetypes.best == 'application/json'
+
+def error_response(code, extra_headers=None):
+    message = ERROR_MESSAGES[code]
+    if wants_json():
+        response = jsonify({'status': 'error', 'message': message})
+    else:
+        response = make_response(render_template('error.html', code=code, message=message))
+    response.status_code = code
+    for key, value in (extra_headers or {}).items():
+        response.headers[key] = value
+    return response
+
+@app.errorhandler(404)
+def not_found(_error):
+    return error_response(404)
+
+@app.errorhandler(405)
+def method_not_allowed(error):
+    return error_response(405, {'Allow': ', '.join(error.valid_methods or [])})
+
+@app.errorhandler(500)
+def server_error(_error):
+    # Flask a déjà journalisé l'exception avec sa trace ; la réponse ne montre jamais de détail technique
+    return error_response(500)
 
 @app.route('/')
 def index():
