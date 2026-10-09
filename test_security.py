@@ -99,14 +99,15 @@ class TestHealth(unittest.TestCase):
 
 class TestIpSpoofing(unittest.TestCase):
     def test_x_forwarded_for_ignored_by_default(self):
+        """Changer d'en-tête X-Forwarded-For ne contourne pas la limite d'essais de jeton administrateur."""
         self.assertEqual(appmod._TRUSTED_PROXIES, 0)
         db.init_db(seed=False)
-        appmod.FEEDBACK_LIMITER = SlidingWindowLimiter(2, 3600)
+        appmod.ADMIN_FAIL_LIMITER = SlidingWindowLimiter(2, 3600)
+        self.addCleanup(setattr, appmod, 'ADMIN_FAIL_LIMITER', SlidingWindowLimiter(20, 600))
         client = appmod.app.test_client()
-        form = dict(product_name='P', supermarket='S', current_price='1', new_price='2', feedback_type='t')
-        codes = [client.post('/submit_feedback', data=form, headers={'X-Forwarded-For': f'9.9.9.{i}'}).status_code
+        codes = [client.get('/api/feedback', headers={'Authorization': 'Bearer faux', 'X-Forwarded-For': f'9.9.9.{i}'}).status_code
                  for i in range(3)]
-        self.assertEqual(codes, [200, 200, 429])  # changer d'en-tête ne contourne pas la limite
+        self.assertEqual(codes, [401, 401, 429])
 
 
 if __name__ == '__main__':

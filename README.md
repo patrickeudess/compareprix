@@ -52,6 +52,10 @@ Les mots de passe sont hachés. Les opérations de compte et de contribution uti
 
 Parcours : remplir `prix` et `date_releve` (une ligne sans prix est ignorée, un produit absent reste vide) → *Enregistrer sous* CSV depuis l’onglet « Saisie » → `/admin` → Importer un CSV (simulation d’abord ; tout est refusé si une seule ligne est invalide). Les prix avec espaces ou « FCFA » et les dates `JJ/MM/AAAA` d’Excel français sont acceptés ; un prix non entier n’est jamais arrondi. Les prix importés sont « à vérifier » jusqu’à validation dans `/admin`.
 
+## Performances
+
+Les fichiers statiques et les réponses du catalogue (`/api/articles`, `/search`, `/api/references`, `/api/stats`) sont compressés en gzip quand le navigateur le demande ; les réponses qui portent un jeton CSRF ou une session ne le sont jamais. Mesure (21 produits) : `/api/articles` 11,5 Ko → 1,6 Ko. Le temps de calcul de `/api/articles` croît avec le catalogue (environ 5 ms pour 113 offres, 130 ms pour 4 900) et la page d'accueil le télécharge en entier : au-delà de quelques milliers d'offres, prévoir une recherche côté serveur et un cache.
+
 ## Prix de référence nationaux (plafonds légaux, moyennes de marché)
 
 Une référence s'affiche sous le prix d'une offre, avec sa source cliquable. **Rien n'est publié tant que l'administrateur n'a pas mis `verified = oui`** après avoir recopié le chiffre depuis la **source officielle** (jamais depuis la presse). Les références se chargent par fichier : `python import_references.py data/references_modele.csv` (simulation), puis `--apply`. Les colonnes sont décrites en tête de `import_references.py`.

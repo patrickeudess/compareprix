@@ -1,12 +1,11 @@
+import gzip
 import io
 import re
 
 from flask import Flask, render_template, request, jsonify, send_from_directory, g
-from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.middleware.proxy_fix import ProxyFix
 import json
 import os
-from datetime import datetime
 import secrets
 
 import db
@@ -14,7 +13,6 @@ from online_prices import apply_updates
 from pricing import freshness, enrich_results, attach_references, unit_stats, store_price_index, validate_article, normalize_key
 from backup_db import create_backup
 import import_prices
-from uploads import MAX_IMAGE_BYTES, detect_image_extension
 from ratelimit import SlidingWindowLimiter
 
 app = Flask(__name__, static_folder='static')
@@ -31,11 +29,6 @@ if _TRUSTED_PROXIES > 0:
 # Base SQLite : voir db.py (chemin via COMPAREPRIX_DB, défaut data/compareprix.db)
 db.init_db()
 
-# Limite des signalements publics par adresse IP (par processus, cf. ratelimit.py)
-FEEDBACK_LIMITER = SlidingWindowLimiter(
-    int(os.environ.get('COMPAREPRIX_FEEDBACK_LIMIT', '10')),
-    int(os.environ.get('COMPAREPRIX_FEEDBACK_WINDOW', '3600')))
-MAX_FEEDBACK_PHOTO_BYTES = MAX_IMAGE_BYTES
 ALLOWED_FEEDBACK_STATUSES = {'pending_review', 'approved', 'rejected', 'in_progress'}
 app.config['MAX_CONTENT_LENGTH'] = 6 * 1024 * 1024
 
@@ -108,6 +101,33 @@ def add_security_headers(response):
     # HSTS uniquement si le site est réellement servi en HTTPS (sinon il bloquerait l'accès en HTTP)
     if os.environ.get('COMPAREPRIX_HSTS', '').lower() in ('1', 'true'):
         response.headers.setdefault('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+    return response
+
+# Compression gzip : le catalogue complet est retéléchargé à chaque visite et les données mobiles coûtent cher.
+# Liste blanche volontaire : jamais les réponses qui portent un jeton CSRF ou une session (/api/session, /api/account/...).
+GZIP_PATHS = ('/static/', '/api/articles', '/api/references', '/api/stats', '/search')
+GZIP_TYPES = ('text/', 'application/json', 'application/javascript', 'image/svg+xml')
+GZIP_MIN_BYTES = 1024
+
+@app.after_request
+def compress_response(response):
+    if (response.status_code != 200 or 'Content-Encoding' in response.headers
+            or not request.path.startswith(GZIP_PATHS)
+            or 'gzip' not in request.headers.get('Accept-Encoding', '').lower()
+            or not (response.mimetype or '').startswith(GZIP_TYPES)):
+        return response
+    response.direct_passthrough = False  # fichiers statiques : on lit le contenu pour le compresser
+    data = response.get_data()
+    if len(data) < GZIP_MIN_BYTES:
+        return response
+    packed = gzip.compress(data, compresslevel=6, mtime=0)
+    response.set_data(packed)
+    response.headers['Content-Encoding'] = 'gzip'
+    response.headers['Content-Length'] = str(len(packed))
+    response.headers.add('Vary', 'Accept-Encoding')
+    etag = response.headers.get('ETag')
+    if etag and not etag.startswith('W/'):
+        response.set_etag(etag.strip('"'), weak=True)  # le contenu envoyé diffère de l'original : validateur faible
     return response
 
 @app.route('/healthz')
@@ -248,99 +268,10 @@ def static_files(filename):
 
 @app.route('/submit_feedback', methods=['POST'])
 def submit_feedback():
-    """Traite les signalements d'utilisateurs"""
-    allowed, retry_after = FEEDBACK_LIMITER.check(request.remote_addr or 'inconnu')
-    if not allowed:
-        response = jsonify({'status': 'error', 'message': 'Trop de signalements, réessayez plus tard'})
-        response.status_code = 429
-        response.headers['Retry-After'] = str(retry_after)
-        return response
-    try:
-        # Récupérer les données du formulaire
-        product_name = request.form.get('product_name', '').strip()
-        supermarket = request.form.get('supermarket', '').strip()
-        current_price = request.form.get('current_price', '').strip()
-        new_price = request.form.get('new_price', '').strip()
-        feedback_type = request.form.get('feedback_type', '').strip()
-        user_comment = request.form.get('user_comment', '').strip()
-        user_name = request.form.get('user_name', '').strip()
-        user_email = request.form.get('user_email', '').strip()
-        
-        # Valider les champs et les tailles avant de traiter le signalement.
-        if not all([product_name, supermarket, current_price, new_price, feedback_type]):
-            return jsonify({
-                'status': 'error',
-                'message': 'Tous les champs obligatoires doivent être remplis'
-            }), 400
-        if len(product_name) > 200 or len(supermarket) > 120 or len(feedback_type) > 40 or len(user_comment) > 2000 or len(user_name) > 120 or len(user_email) > 254:
-            return jsonify({'status': 'error', 'message': 'Un ou plusieurs champs dépassent la longueur autorisée'}), 400
-        try:
-            current_price_value = int(current_price)
-            new_price_value = int(new_price)
-        except (TypeError, ValueError):
-            return jsonify({'status': 'error', 'message': 'Les prix doivent être des nombres entiers positifs'}), 400
-        if current_price_value < 0 or new_price_value < 0:
-            return jsonify({'status': 'error', 'message': 'Les prix doivent être positifs'}), 400
-        
-        # Photo facultative : validée sur son CONTENU (octets de signature), pas sur son nom
-        photo_path = None
-        photo = request.files.get('photo')
-        if photo and photo.filename:
-            header = photo.stream.read(16)
-            photo.stream.seek(0, os.SEEK_END)
-            photo_size = photo.stream.tell()
-            photo.stream.seek(0)
-            extension = detect_image_extension(header)
-            if extension is None:
-                return jsonify({'status': 'error', 'message': 'La photo doit être une image PNG, JPEG ou GIF valide'}), 400
-            if photo_size > MAX_FEEDBACK_PHOTO_BYTES:
-                return jsonify({'status': 'error', 'message': 'La photo ne doit pas dépasser 5 Mo'}), 400
-            os.makedirs('data/user_photos', exist_ok=True)
-            # Nom aléatoire + extension déduite du contenu : le nom envoyé par le client est ignoré
-            photo_path = os.path.join('data/user_photos', f"feedback_{secrets.token_hex(16)}.{extension}")
-            photo.save(photo_path)
-        
-        # Créer l'entrée de feedback
-        feedback_entry = {
-            'id': generate_feedback_id(),
-            'timestamp': datetime.now().isoformat(),
-            'date': datetime.now().strftime('%Y-%m-%d'),
-            'product_name': product_name,
-            'supermarket': supermarket,
-            'current_price': current_price_value,
-            'new_price': new_price_value,
-            'price_difference': new_price_value - current_price_value,
-            'feedback_type': feedback_type,
-            'user_comment': user_comment,
-            'user_name': user_name or 'Anonyme',
-            'user_email': user_email,
-            'photo_path': photo_path,
-            'status': 'pending_review',
-            'reviewed_by': None,
-            'review_date': None,
-            'review_notes': None
-        }
-        
-        # Sauvegarder le feedback
-        save_feedback(feedback_entry)
-        
-        # Envoyer une notification à l'équipe (optionnel)
-        send_feedback_notification(feedback_entry)
-        
-        return jsonify({
-            'status': 'success',
-            'message': 'Signalement envoyé avec succès !',
-            'feedback_id': feedback_entry['id']
-        })
-        
-    except RequestEntityTooLarge:
-        return jsonify({'status': 'error', 'message': 'La requête dépasse la taille maximale autorisée'}), 413
-    except Exception:
-        app.logger.exception('Erreur lors du traitement du signalement')
-        return jsonify({
-            'status': 'error',
-            'message': 'Erreur lors du traitement du signalement'
-        }), 500
+    """Ancien signalement anonyme, retiré : il écrivait en base et sur disque sans compte ni consentement.
+    Les prix se proposent désormais avec un compte contributeur (modération avant publication)."""
+    return jsonify({'status': 'error',
+                    'message': 'Utilisez la page Proposer un prix avec votre compte contributeur.'}), 410
 
 # ------------------------------------------------------------------ administration
 
@@ -507,38 +438,9 @@ def update_feedback(feedback_id):
         app.logger.exception('Erreur lors de la mise à jour du signalement')
         return jsonify({'status': 'error', 'message': 'Erreur lors de la mise à jour du signalement'}), 500
 
-def generate_feedback_id():
-    """Génère un ID unique pour le feedback"""
-    import hashlib
-    timestamp = datetime.now().isoformat()
-    random_component = os.urandom(8).hex()
-    return hashlib.md5(f"{timestamp}{random_component}".encode()).hexdigest()[:12]
-
-def save_feedback(feedback_entry):
-    """Sauvegarde un nouveau feedback (transaction SQLite : sûr en multi-workers)"""
-    db.add_feedback(feedback_entry)
-
 def load_feedback():
     """Charge tous les feedbacks"""
     return db.list_feedback()
-
-def send_feedback_notification(feedback_entry):
-    """Envoie une notification à l'équipe (simulation)"""
-    # Ici, on pourrait envoyer un email ou une notification WhatsApp
-    print("🔔 Nouveau signalement reçu:")
-    print(f"   - Produit: {feedback_entry['product_name']}")
-    print(f"   - Supermarché: {feedback_entry['supermarket']}")
-    print(f"   - Prix actuel: {feedback_entry['current_price']} FCFA")
-    print(f"   - Nouveau prix: {feedback_entry['new_price']} FCFA")
-    print(f"   - Différence: {feedback_entry['price_difference']} FCFA")
-    print(f"   - Type: {feedback_entry['feedback_type']}")
-    print(f"   - Utilisateur: {feedback_entry['user_name']}")
-    
-    if feedback_entry['user_comment']:
-        print(f"   - Commentaire: {feedback_entry['user_comment']}")
-    
-    if feedback_entry['photo_path']:
-        print(f"   - Photo: {feedback_entry['photo_path']}")
 
 from collaboration import register_collaboration
 load_community_prices = register_collaboration(app, is_feedback_admin)

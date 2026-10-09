@@ -1,6 +1,5 @@
 """Tests : quantités, prix unitaire, prix aberrants, validation du contenu des photos.
 Lancer : python -m unittest test_unit_price -v"""
-import io
 import atexit
 import os
 import tempfile
@@ -13,7 +12,6 @@ os.environ['COMPAREPRIX_DB'] = os.path.join(_TMP.name, 'boot.db')
 import db
 import app as appmod
 from pricing import enrich_results, parse_quantity, unit_price
-from ratelimit import SlidingWindowLimiter
 from uploads import detect_image_extension
 
 PNG = b'\x89PNG\r\n\x1a\n' + b'\x00' * 32
@@ -109,56 +107,6 @@ class TestPhotoValidation(unittest.TestCase):
         self.assertEqual(detect_image_extension(b'GIF89a....'), 'gif')
         for bad in (b'<?php echo 1;', b'<svg onload=alert(1)>', b'MZ\x90\x00', b'', b'%PDF-1.4'):
             self.assertIsNone(detect_image_extension(bad), bad)
-
-
-class TestPhotoHttp(unittest.TestCase):
-    def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(self.tmp.cleanup)
-        os.environ['COMPAREPRIX_DB'] = os.path.join(self.tmp.name, 'p.db')
-        db.init_db(seed=False)
-        self.cwd = os.getcwd()
-        os.chdir(self.tmp.name)  # les photos sont écrites en chemin relatif data/user_photos
-        self.addCleanup(os.chdir, self.cwd)
-        appmod.FEEDBACK_LIMITER = SlidingWindowLimiter(100, 3600)
-        self.client = appmod.app.test_client()
-
-    def post(self, content, filename):
-        data = dict(product_name='Pain', supermarket='Carrefour', current_price='85', new_price='70',
-                    feedback_type='price_decrease', photo=(io.BytesIO(content), filename))
-        return self.client.post('/submit_feedback', data=data, content_type='multipart/form-data')
-
-    def saved(self):
-        d = os.path.join(self.tmp.name, 'data', 'user_photos')
-        return os.listdir(d) if os.path.isdir(d) else []
-
-    def test_real_image_accepted_extension_comes_from_content(self):
-        r = self.post(PNG, 'ticket.jpg')  # nom trompeur : le contenu fait foi
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual([f.rsplit('.', 1)[1] for f in self.saved()], ['png'])
-
-    def test_disguised_script_rejected_nothing_saved_nothing_stored(self):
-        for payload, name in ((b'<?php system($_GET[1]); ?>', 'x.png'), (b'<svg onload=alert(1)>', 'x.jpg')):
-            r = self.post(payload, name)
-            self.assertEqual(r.status_code, 400)
-            self.assertIn('image', r.get_json()['message'])
-        self.assertEqual(self.saved(), [])
-        self.assertEqual(db.list_feedback(), [])
-
-    def test_oversized_image_rejected(self):
-        # Limite abaissée pour tester la même logique sans corps de 5 Mo (le client de test
-        # les écrit dans un fichier temporaire non fermé : artefact de test, vérifié sans fuite sur Gunicorn).
-        old = appmod.MAX_FEEDBACK_PHOTO_BYTES
-        appmod.MAX_FEEDBACK_PHOTO_BYTES = 1000
-        self.addCleanup(setattr, appmod, 'MAX_FEEDBACK_PHOTO_BYTES', old)
-        self.assertEqual(self.post(PNG + b'\x00' * 2000, 'big.png').status_code, 400)
-        self.assertEqual(self.post(PNG, 'ok.png').status_code, 200)  # sous la limite : accepté
-        self.assertEqual(len(self.saved()), 1)
-
-    def test_no_photo_is_fine(self):
-        data = dict(product_name='Pain', supermarket='Carrefour', current_price='85', new_price='70',
-                    feedback_type='price_decrease')
-        self.assertEqual(self.client.post('/submit_feedback', data=data).status_code, 200)
 
 
 class TestApiPayload(unittest.TestCase):

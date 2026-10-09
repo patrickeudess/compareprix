@@ -176,8 +176,6 @@ class TestHttp(DbCase):
         with db.transaction() as c:
             db.add_observation(c, article())
         self.client = appmod.app.test_client()
-        appmod.FEEDBACK_LIMITER = SlidingWindowLimiter(3, 3600)
-        self.addCleanup(setattr, appmod, 'FEEDBACK_LIMITER', appmod.FEEDBACK_LIMITER)
 
     def form(self, **kw):
         d = dict(product_name='Pâtes Spaghetti', supermarket='Casino', current_price='190',
@@ -185,23 +183,34 @@ class TestHttp(DbCase):
         d.update(kw)
         return d
 
-    def test_submit_then_admin_approves_and_search_shows_new_price(self):
-        r = self.client.post('/submit_feedback', data=self.form())
-        self.assertEqual(r.status_code, 200)
-        fid = r.get_json()['feedback_id']
-        self.assertEqual(self.client.put(f'/api/feedback/{fid}', json={'status': 'approved'}).status_code, 401)
-        r = self.client.put(f'/api/feedback/{fid}', json={'status': 'approved'}, headers=ADMIN)
+    def test_legacy_feedback_is_still_moderated_by_admin_and_changes_the_price(self):
+        """Les signalements déjà en base (ancien système) restent traitables par l'administrateur."""
+        db.add_feedback(feedback(fid='ancien'))
+        self.assertEqual(self.client.put('/api/feedback/ancien', json={'status': 'approved'}).status_code, 401)
+        r = self.client.put('/api/feedback/ancien', json={'status': 'approved'}, headers=ADMIN)
         self.assertTrue(r.get_json()['price_applied'])
         found = self.client.post('/search', data={'search_term': 'pates'}).get_json()['results']
         self.assertEqual((found[0]['prix'], found[0]['source']), (170, 'signalement'))
-        hist = self.client.get('/api/history/Pâtes Spaghetti').get_json()
-        self.assertEqual(len(hist), 2)
+        self.assertEqual(len(self.client.get('/api/history/Pâtes Spaghetti').get_json()), 2)
 
-    def test_rate_limit_returns_429(self):
-        codes = [self.client.post('/submit_feedback', data=self.form()).status_code for _ in range(4)]
-        self.assertEqual(codes, [200, 200, 200, 429])
-        r = self.client.post('/submit_feedback', data=self.form())
-        self.assertIn('Retry-After', r.headers)
+    def test_anonymous_submission_is_retired_and_writes_nothing(self):
+        """Régression : « Réparer main » avait rétabli ce point d'entrée anonyme, contraire au README."""
+        before = len(db.list_feedback())
+        for _ in range(15):  # même répété, sans limiteur ni effet
+            r = self.client.post('/submit_feedback', data=self.form())
+            self.assertEqual(r.status_code, 410)
+        self.assertIn('compte contributeur', r.get_json()['message'])
+        self.assertEqual(len(db.list_feedback()), before)
+        self.assertEqual(self.client.get('/submit_feedback').status_code, 405)
+
+    def test_anonymous_submission_with_a_photo_stores_no_file(self):
+        import io
+        cwd = os.getcwd()
+        os.chdir(self.tmp.name)
+        self.addCleanup(os.chdir, cwd)
+        data = self.form(photo=(io.BytesIO(b'\x89PNG\r\n\x1a\n' + b'\x00' * 32), 'ticket.png'))
+        self.assertEqual(self.client.post('/submit_feedback', data=data, content_type='multipart/form-data').status_code, 410)
+        self.assertFalse(os.path.exists(os.path.join(self.tmp.name, 'data', 'user_photos')))
 
     def test_unknown_feedback_404(self):
         r = self.client.put('/api/feedback/nope', json={'status': 'approved'}, headers=ADMIN)
