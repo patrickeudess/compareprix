@@ -2,7 +2,7 @@ import gzip
 import io
 import re
 
-from flask import Flask, render_template, request, jsonify, send_from_directory, g
+from flask import Flask, render_template, request, jsonify, redirect, send_from_directory, g
 from werkzeug.middleware.proxy_fix import ProxyFix
 import json
 import os
@@ -77,6 +77,27 @@ def _new_csp_nonce():
 @app.context_processor
 def _inject_csp_nonce():
     return {'csp_nonce': g.get('csp_nonce', '')}
+
+LOCAL_HOSTS = ('localhost', '127.0.0.1', '[::1]')
+
+def canonical_host():
+    """Adresse publique unique (COMPAREPRIX_CANONICAL_HOST, ex. www.exemple.ci). Tolère un « https:// » ou un « / » collés."""
+    raw = os.environ.get('COMPAREPRIX_CANONICAL_HOST', '').strip().lower()
+    return raw.split('://')[-1].strip('/').split('/')[0] if raw else ''
+
+@app.before_request
+def redirect_to_canonical_host():
+    """Redirige (301) les lectures arrivées par une autre adresse (xxx.pythonanywhere.com, domaine sans www...) vers
+    l'adresse officielle : une seule adresse pour les moteurs de recherche, les cookies de session et la confiance.
+    Inactif sans COMPAREPRIX_CANONICAL_HOST. Jamais pour /healthz, ni pour les écritures (POST...), ni en local."""
+    canonical = canonical_host()
+    if not canonical or request.method not in ('GET', 'HEAD') or request.path == '/healthz':
+        return None
+    host = request.host.split(':')[0].lower() if not request.host.startswith('[') else request.host
+    if host == canonical or host in LOCAL_HOSTS:
+        return None
+    target = request.full_path if request.query_string else request.path
+    return redirect(f'https://{canonical}{target}', code=301)
 
 @app.after_request
 def add_security_headers(response):

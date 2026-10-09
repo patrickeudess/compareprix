@@ -36,7 +36,7 @@ jobs:
       - name: Lint (erreurs et pyflakes)
         run: ruff check .
       - name: Tests unitaires
-        run: python -W error::ResourceWarning -m unittest test_pricing test_db test_unit_price test_security test_backup test_admin test_demo test_online_prices test_collaboration test_verification test_import_prices test_fiche_collecte test_references test_compression -v
+        run: python -W error::ResourceWarning -m unittest test_pricing test_db test_unit_price test_security test_backup test_admin test_demo test_online_prices test_collaboration test_verification test_import_prices test_fiche_collecte test_references test_compression test_canonical test_check_domain test_set_site_url -v
 
   audit:
     name: Audit des dépendances
