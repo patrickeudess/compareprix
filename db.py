@@ -60,6 +60,26 @@ WHERE o.id = (SELECT o2.id FROM price_observation o2
               WHERE o2.product_id = o.product_id AND o2.store_id = o.store_id
               ORDER BY COALESCE(o2.date_releve, '') DESC, o2.id DESC LIMIT 1);
 
+-- Prix de référence nationaux (plafonds légaux, moyennes de marché). Jamais affichés tant que `verified` = 0.
+CREATE TABLE IF NOT EXISTS reference_price (
+    id          INTEGER PRIMARY KEY,
+    kind        TEXT NOT NULL CHECK (kind IN ('plafond','moyenne_marche')),
+    label       TEXT NOT NULL,
+    include     TEXT NOT NULL,              -- mots-clés TOUS requis dans le nom du produit (séparés par des virgules)
+    exclude     TEXT NOT NULL DEFAULT '',   -- mots-clés qui écartent le produit
+    unit_base   TEXT NOT NULL CHECK (unit_base IN ('kg','L')),
+    qty_value   REAL,                       -- plafond : quantité du format visé (en kg ou L) ; moyenne : NULL
+    value       INTEGER NOT NULL CHECK (value > 0),  -- plafond : FCFA le format ; moyenne : FCFA par kg ou L
+    zone        TEXT NOT NULL DEFAULT '',
+    source_name TEXT NOT NULL,
+    source_url  TEXT NOT NULL DEFAULT '',
+    valid_from  TEXT,
+    valid_to    TEXT,
+    verified    INTEGER NOT NULL DEFAULT 0 CHECK (verified IN (0,1)),
+    created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (kind, label, unit_base, qty_value, zone, valid_from)
+);
+
 CREATE TABLE IF NOT EXISTS feedback (
     id                     TEXT PRIMARY KEY,
     timestamp              TEXT NOT NULL,
@@ -225,6 +245,35 @@ def add_observation(conn, a):
         'VALUES (?,?,?,?,?,?,?,?,?,?)',
         (pid, sid, int(a['prix']), a['unite'], a['date_releve'], a['source'], a['statut'], url, image_url, meta))
     return cur.lastrowid, True
+
+
+def add_reference(conn, rec):
+    """Insère une référence. Retourne (id, créée). Une référence identique (même clé unique) est ignorée."""
+    key = (rec['kind'], rec['label'], rec['unit_base'], rec.get('qty_value'), rec.get('zone', ''), rec.get('valid_from'))
+    dup = conn.execute('SELECT id FROM reference_price WHERE kind=? AND label=? AND unit_base=? AND qty_value IS ? '
+                       'AND zone=? AND valid_from IS ?', key).fetchone()
+    if dup:
+        return dup['id'], False
+    cur = conn.execute(
+        'INSERT INTO reference_price(kind,label,include,exclude,unit_base,qty_value,value,zone,source_name,source_url,'
+        'valid_from,valid_to,verified) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+        (rec['kind'], rec['label'], rec['include'], rec.get('exclude', ''), rec['unit_base'], rec.get('qty_value'),
+         int(rec['value']), rec.get('zone', ''), rec['source_name'], rec.get('source_url', ''), rec.get('valid_from'),
+         rec.get('valid_to'), 1 if rec.get('verified') else 0))
+    return cur.lastrowid, True
+
+
+def list_references(today=None):
+    """Références affichables : vérifiées par l'administrateur ET en cours de validité à la date `today`."""
+    today = (today or datetime.now().date()).isoformat() if not isinstance(today, str) else today
+    conn = _connect()
+    try:
+        rows = conn.execute(
+            'SELECT * FROM reference_price WHERE verified = 1 AND (valid_from IS NULL OR valid_from <= ?) '
+            'AND (valid_to IS NULL OR valid_to >= ?) ORDER BY valid_from DESC, id DESC', (today, today)).fetchall()
+    finally:
+        conn.close()
+    return [dict(r) for r in rows]
 
 
 def import_articles(conn, articles):

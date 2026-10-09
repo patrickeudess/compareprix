@@ -52,6 +52,12 @@ Les mots de passe sont hachés. Les opérations de compte et de contribution uti
 
 Parcours : remplir `prix` et `date_releve` (une ligne sans prix est ignorée, un produit absent reste vide) → *Enregistrer sous* CSV depuis l’onglet « Saisie » → `/admin` → Importer un CSV (simulation d’abord ; tout est refusé si une seule ligne est invalide). Les prix avec espaces ou « FCFA » et les dates `JJ/MM/AAAA` d’Excel français sont acceptés ; un prix non entier n’est jamais arrondi. Les prix importés sont « à vérifier » jusqu’à validation dans `/admin`.
 
+## Prix de référence nationaux (plafonds légaux, moyennes de marché)
+
+Une référence s'affiche sous le prix d'une offre, avec sa source cliquable. **Rien n'est publié tant que l'administrateur n'a pas mis `verified = oui`** après avoir recopié le chiffre depuis la **source officielle** (jamais depuis la presse). Les références se chargent par fichier : `python import_references.py data/references_modele.csv` (simulation), puis `--apply`. Les colonnes sont décrites en tête de `import_references.py`.
+
+Garde-fous : un plafond ne s'applique que si le produit (mots-clés `include`/`exclude`) **et le format exact** correspondent ; un verdict « supérieur au plafond indiqué » n'est donné que pour un relevé **fait en magasin**, **daté**, **dans la zone** du plafond (jamais pour un prix en ligne) ; une référence expirée ou sans date de début n'est jamais affichée. La liste publique est disponible sur `/api/references`. Courriers pour obtenir les chiffres officiels : `docs/COURRIERS.md`.
+
 ## Confidentialité et consentement
 
 La page `/confidentialite` décrit les données collectées (numéro, pseudo, email facultatif, relevés, photo privée), leur usage, leur conservation et les droits des utilisateurs. Définir `COMPAREPRIX_CONTACT` (adresse où exercer ses droits) pour qu’elle s’affiche. La création d’un compte exige une case de consentement ; la date est enregistrée (`users.consent_at`). **Le texte doit être validé par un juriste ivoirien, et le traitement des numéros de téléphone vérifié auprès de l’ARTCI avant un lancement public** (voir `docs/ETUDE_CONTEXTE_CI.md`, §6). Les photos sont réduites sur le téléphone avant l’envoi (1 600 px maximum, JPEG) pour économiser les données mobiles.

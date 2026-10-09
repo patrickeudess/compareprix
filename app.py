@@ -11,7 +11,7 @@ import secrets
 
 import db
 from online_prices import apply_updates
-from pricing import freshness, enrich_results, unit_stats, store_price_index, validate_article, normalize_key
+from pricing import freshness, enrich_results, attach_references, unit_stats, store_price_index, validate_article, normalize_key
 from backup_db import create_backup
 import import_prices
 from uploads import MAX_IMAGE_BYTES, detect_image_extension
@@ -75,7 +75,7 @@ def with_freshness(article):
 
 def present(articles):
     """Prépare des articles pour l'API : fraîcheur, prix unitaire, meilleur prix, prix aberrants."""
-    return enrich_results([with_freshness(a) for a in articles])
+    return attach_references(enrich_results([with_freshness(a) for a in articles]), db.list_references())
 
 @app.before_request
 def _new_csp_nonce():
@@ -151,6 +151,11 @@ def get_article(article_name):
 def get_price_history(article_name):
     """Historique complet des relevés d'un article (nom exact), filtrable par ?supermarche="""
     return jsonify(db.price_history(article_name, request.args.get('supermarche')))
+
+@app.route('/api/references')
+def get_references():
+    """Références nationales publiées (vérifiées et en cours de validité), avec leur source officielle."""
+    return jsonify({'references': db.list_references()})
 
 @app.route('/api/stats')
 def get_stats():

@@ -3,6 +3,9 @@
 Historique détaillé : `git log`. Ce fichier ne garde que les changements visibles.
 
 ## Non publié
+- Prix de référence nationaux (plafonds, moyennes) : table, import par fichier avec simulation, correspondance stricte produit + format + zone, affichage sourcé. Rien n'est visible tant que la ligne n'est pas marquée vérifiée.
+- Correction : « Meilleur prix par undefined » et « FCFA / undefined » s'affichaient sur tous les prix saisis à la main (le champ lu n'existe que pour les prix en ligne).
+- Courriers et contacts pour l'OCPV, le CNLVC, l'ARTCI, un juriste et les fournisseurs de SMS : `docs/COURRIERS.md`.
 - Confidentialité : page `/confidentialite`, case de consentement obligatoire à l'inscription, date de consentement enregistrée.
 - Photos réduites sur le téléphone avant l'envoi (mesuré : un PNG de 30 Mo et un JPEG de 11 Mo partent à moins de 1 Mo) : moins de données mobiles consommées.
 - Étude du contexte ivoirien avec sources : `docs/ETUDE_CONTEXTE_CI.md`.
