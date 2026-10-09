@@ -213,6 +213,81 @@ def normalize_key(name):
     return re.sub(r'\s+', ' ', str(name or '')).strip().lower()
 
 
+# ---------------------------------------------------------------- prix de référence nationaux
+
+def fold(text):
+    """Minuscules, sans accents, espaces compactés : « Huile végétale » -> « huile vegetale »."""
+    import unicodedata
+    ascii_text = unicodedata.normalize('NFKD', str(text or '')).encode('ascii', 'ignore').decode()
+    return re.sub(r'\s+', ' ', ascii_text).strip().lower()
+
+
+def _terms(csv_text):
+    return [fold(t) for t in str(csv_text or '').split(',') if fold(t)]
+
+
+def _has_term(folded_name, term):
+    # mot entier, pluriel en « s » toléré : « huile » reconnaît « huiles » mais pas « chuile »
+    return re.search(rf'(?<![a-z0-9]){re.escape(term)}s?(?![a-z0-9])', folded_name) is not None
+
+
+def _same_quantity(article, ref):
+    q = parse_quantity(article.get('article')) or parse_quantity(article.get('unite'))
+    return q is not None and q.base == ref['unit_base'] and abs(q.value - float(ref['qty_value'])) < 1e-6
+
+
+def match_reference(article, refs):
+    """Meilleure référence pour un article déjà enrichi (prix_unitaire, unite_base), ou None.
+
+    Règles volontairement strictes, pour ne jamais afficher une référence qui ne s'applique pas :
+      - tous les mots-clés `include` présents (mots entiers), aucun mot `exclude` ;
+      - plafond : le FORMAT de l'article (nom ou unité) doit être exactement celui du plafond ;
+      - moyenne : l'article doit avoir un prix unitaire dans la même unité de base (kg ou L).
+    En cas de plusieurs candidates : la plus spécifique (plus de mots-clés), puis la plus récente."""
+    name = fold(article.get('article'))
+    best, best_rank = None, None
+    for ref in refs:
+        include, exclude = _terms(ref['include']), _terms(ref.get('exclude'))
+        if not include or not all(_has_term(name, t) for t in include) or any(_has_term(name, t) for t in exclude):
+            continue
+        if ref['kind'] == 'plafond':
+            if ref.get('qty_value') is None or not _same_quantity(article, ref):
+                continue
+        elif article.get('unite_base') != ref['unit_base'] or article.get('prix_unitaire') is None:
+            continue
+        rank = (len(include), ref.get('valid_from') or '')
+        if best_rank is None or rank > best_rank:
+            best, best_rank = ref, rank
+    return best
+
+
+def attach_references(enriched, refs):
+    """Ajoute `reference` (ou None) à chaque article enrichi.
+
+    `position` d'un plafond : 'above' (prix > plafond) ou 'conform', UNIQUEMENT si le relevé a été fait en magasin
+    (jamais pour un prix en ligne) ET dans la zone du plafond ; sinon None : la référence est montrée comme simple
+    information, sans verdict."""
+    out = []
+    for a in enriched:
+        ref = match_reference(a, refs) if refs else None
+        info = None
+        if ref:
+            info = {k: ref.get(k) for k in ('kind', 'label', 'value', 'unit_base', 'qty_value', 'zone',
+                                            'source_name', 'source_url', 'valid_from', 'valid_to')}
+            info['position'], info['ecart_pct'] = None, None
+            if ref['kind'] == 'plafond':
+                info['ecart_pct'] = round((a['prix'] - ref['value']) / ref['value'] * 100, 1)
+                in_store = a.get('source') != 'prix_internet' and bool(a.get('date_releve'))
+                where = fold(' '.join(str(a.get(k) or '') for k in ('ville', 'lieu', 'quartier', 'boutique')))
+                in_zone = not ref.get('zone') or fold(ref['zone']) in where
+                if in_store and in_zone:
+                    info['position'] = 'above' if a['prix'] > ref['value'] else 'conform'
+            else:
+                info['ecart_pct'] = round((a['prix_unitaire'] - ref['value']) / ref['value'] * 100, 1)
+        out.append({**a, 'reference': info})
+    return out
+
+
 # ---------------------------------------------------------------- statistiques au prix unitaire
 
 def unit_stats(enriched):

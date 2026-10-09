@@ -59,6 +59,9 @@ Autre point à traiter : l'image tourne sous un utilisateur non-root, alors que 
 propriétaire root, ce qui empêche l'écriture de la base. Je peux adapter le `Dockerfile` quand vous aurez choisi un hébergeur précis.
 Les offres avec disque persistant sont généralement payantes : vérifiez la grille tarifaire en vigueur.
 
+## Brancher votre propre nom de domaine
+Voir **[docs/DOMAINE.md](docs/DOMAINE.md)** : compte payant PythonAnywhere, enregistrement CNAME `www`, HTTPS Let's Encrypt, cookies sécurisés, adresse officielle unique, HSTS, SPF/DKIM pour les emails. À vérifier à chaque étape avec `python tools/check_domain.py www.votre-domaine.ci`.
+
 ## Activer l'envoi d'email (facultatif)
 Sans cela, l'application fonctionne ; seule la récupération du mot de passe est indisponible. Un fournisseur SMTP gratuit suffit (Brevo, Mailjet, Gmail avec mot de passe d'application...). Dans le fichier WSGI de PythonAnywhere, avant `from wsgi import application` :
 ```python

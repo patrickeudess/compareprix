@@ -135,6 +135,16 @@ class TestMarkupStructure(unittest.TestCase):
             self.assertIn(parent, tree.ancestors[ident], f'#{ident} doit rester dans #{parent}')
 
 
+class TestUnitLabels(unittest.TestCase):
+    """`unite_reference` n'existe que sur les prix en ligne : les relevés faits en magasin n'ont que `unite_base`.
+    Lire `unite_reference` seul affichait « Meilleur prix par undefined » sur tous les prix saisis à la main."""
+
+    def test_price_unit_label_always_falls_back_to_unite_base(self):
+        js = read('static', 'compareprix.js')
+        self.assertIn("const unitOf=row=>row.unite_reference||row.unite_base", js)
+        self.assertEqual(js.count('row.unite_reference'), 1, "lire row.unite_reference uniquement via unitOf()")
+
+
 class TestBasketDock(unittest.TestCase):
     def test_dock_starts_hidden_and_css_honours_hidden(self):
         self.assertRegex(read('templates', 'index.html'), r'<a class="basket-dock" hidden ')
