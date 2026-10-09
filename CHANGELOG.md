@@ -3,6 +3,8 @@
 Historique détaillé : `git log`. Ce fichier ne garde que les changements visibles.
 
 ## Non publié
+- **Stabilité** : `/healthz` vérifie désormais les deux bases et l'espace disque (503 + alerte avant la panne ; `COMPAREPRIX_QUOTA_MB`, `COMPAREPRIX_MIN_FREE_MB`). Pages d'erreur 404/405/500 propres, sans détail technique. Migration de démarrage sûre quand plusieurs processus démarrent ensemble (`schema_util.py`). Sauvegarde complète (2 bases + photos, rotation, vérification `--verify`). Photos de preuve réduites à 1600 px. Purge des tentatives de connexion et codes périmés. Procédure : `docs/EXPLOITATION.md`.
+- Procédure de domaine concrétisée pour `compareprix.ci` / `www.compareprix.ci` (commandes à copier telles quelles).
 - Nom de domaine : procédure complète (`docs/DOMAINE.md`), outil de vérification (`tools/check_domain.py`), mise à jour des pages GitHub Pages (`tools/set_site_url.py`) et redirection vers l'adresse officielle (`COMPAREPRIX_CANONICAL_HOST`, inactive par défaut).
 - **Sécurité** : l'ancien signalement anonyme `/submit_feedback` avait été rétabli par erreur (il écrivait en base et sur disque, avec nom, email et photo, sans compte ni consentement). Il renvoie de nouveau **410**, comme l'indique le README. Les signalements déjà en base restent modérables par l'administrateur.
 - Compression gzip des fichiers statiques et des réponses de catalogue (÷3 à ÷7 : 11,5 Ko → 1,6 Ko pour `/api/articles` avec 21 produits). Jamais pour les réponses qui portent un jeton ou une session.

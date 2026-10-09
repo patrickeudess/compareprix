@@ -12,6 +12,7 @@ from flask import request, session, jsonify, render_template, send_file
 from werkzeug.security import generate_password_hash, check_password_hash
 
 import mailer
+from schema_util import add_column_if_missing
 from verification import register_verification, normalize_phone, mask_email
 
 
@@ -72,20 +73,15 @@ def register_collaboration(app, is_admin):
           article TEXT NOT NULL, store TEXT NOT NULL, reason TEXT NOT NULL,
           comment TEXT NOT NULL, created_at TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending');
         ''')
-        # Migration additive : conserver les comptes existants et leur historique.
-        if 'phone' not in {row['name'] for row in conn.execute('PRAGMA table_info(users)')}:
-            conn.execute('ALTER TABLE users ADD COLUMN phone TEXT')
+        # Migration additive : conserver les comptes existants et leur historique. Sûre si plusieurs processus
+        # démarrent en même temps (cf. schema_util).
+        add_column_if_missing(conn, 'users', 'phone', 'TEXT')
         conn.execute('CREATE UNIQUE INDEX IF NOT EXISTS users_phone_unique ON users(phone)')
-        if 'session_version' not in {row['name'] for row in conn.execute('PRAGMA table_info(users)')}:
-            conn.execute('ALTER TABLE users ADD COLUMN session_version INTEGER NOT NULL DEFAULT 0')
-        if 'consent_at' not in {row['name'] for row in conn.execute('PRAGMA table_info(users)')}:
-            conn.execute('ALTER TABLE users ADD COLUMN consent_at TEXT')  # NULL = compte créé avant le consentement explicite
-        if 'availability' not in {row['name'] for row in conn.execute('PRAGMA table_info(contributions)')}:
-            conn.execute("ALTER TABLE contributions ADD COLUMN availability TEXT NOT NULL DEFAULT 'unknown'")
-        columns = {row['name'] for row in conn.execute('PRAGMA table_info(contributions)')}
+        add_column_if_missing(conn, 'users', 'session_version', 'INTEGER NOT NULL DEFAULT 0')
+        add_column_if_missing(conn, 'users', 'consent_at', 'TEXT')  # NULL = compte créé avant le consentement explicite
+        add_column_if_missing(conn, 'contributions', 'availability', "TEXT NOT NULL DEFAULT 'unknown'")
         for field in ('city', 'district', 'shop'):
-            if field not in columns:
-                conn.execute(f"ALTER TABLE contributions ADD COLUMN {field} TEXT NOT NULL DEFAULT ''")
+            add_column_if_missing(conn, 'contributions', field, "TEXT NOT NULL DEFAULT ''")
 
     def now():
         return datetime.now(timezone.utc).isoformat()
@@ -202,6 +198,7 @@ def register_collaboration(app, is_admin):
         identity = hashlib.sha256((request.remote_addr or '').encode()).hexdigest()
         timestamp = datetime.now(timezone.utc).timestamp()
         with db() as conn:
+            conn.execute('DELETE FROM login_attempts WHERE until_at < ?', (timestamp,))  # purge : la table ne grossit pas
             attempt = conn.execute('SELECT * FROM login_attempts WHERE identity=?', (identity,)).fetchone()
             if attempt and attempt['until_at'] > timestamp and attempt['count'] >= 12:
                 return error('Trop de tentatives. Réessayez dans 15 minutes.', 429)
@@ -284,8 +281,9 @@ def register_collaboration(app, is_admin):
                 # Réencoder pour retirer métadonnées EXIF et géolocalisation.
                 with Image.open(BytesIO(payload)) as image:
                     image = image.convert('RGB')
+                    image.thumbnail((1600, 1600))  # le disque de l'hébergeur est limité : une preuve n'a pas besoin de plus
                     output = BytesIO()
-                    image.save(output, format='JPEG', quality=90)
+                    image.save(output, format='JPEG', quality=85)
                     clean = output.getvalue()
             except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
                 return error('La photo est invalide.')

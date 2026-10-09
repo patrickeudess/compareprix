@@ -1,16 +1,12 @@
 # Connecter un nom de domaine à ComparePrix (PythonAnywhere)
 
-Préparé le 9 octobre 2026. **Je n'ai accès ni à votre bureau d'enregistrement, ni à votre compte PythonAnywhere, ni au DNS** (mon environnement ne résout aucun nom). Ce document est donc une procédure à suivre par vous, avec des outils du dépôt pour **vérifier chaque étape**. Les passages entre crochets `[...]` sont à remplacer par vos valeurs.
+Préparé le 9 octobre 2026. **Je n'ai accès ni à votre bureau d'enregistrement, ni à votre compte PythonAnywhere, ni au DNS** (mon environnement ne résout aucun nom). Ce document est donc une procédure à suivre par vous, avec des outils du dépôt pour **vérifier chaque étape**. Les commandes utilisent déjà votre domaine, **compareprix.ci**.
 
-## 0. À régler avant tout : l'orthographe du nom
+## 0. Le domaine retenu : `compareprix.ci`
 
-Vous avez indiqué **www.comparepirx.ci**. L'application s'appelle **ComparePrix** : dans votre nom, le « i » et le « r » sont inversés (« comparep**ir**x » au lieu de « comparep**ri**x »).
+Le nom retenu est **compareprix.ci**, adresse officielle **`www.compareprix.ci`**. (Votre première indication, « comparepirx », avait les lettres « i » et « r » inversées : si vous avez aussi acheté cette variante, gardez-la seulement pour **rediriger** vers le bon nom, ce qui protège des fautes de frappe.)
 
-1. **Vérifiez sur le registre** quel nom est réellement enregistré à votre nom, avec l'outil WHOIS du registre : [whois.nic.ci](https://whois.nic.ci) (indiqué par plusieurs bureaux d'enregistrement). Cherchez `comparepirx.ci` **et** `compareprix.ci`.
-2. Si seul `comparepirx.ci` est à vous, c'est peut-être une faute de frappe à l'achat. Vos utilisateurs écriront naturellement « compareprix » : **prenez `compareprix.ci`** s'il est libre (règle « premier arrivé, premier servi » d'après les bureaux d'enregistrement).
-3. Idéal : gardez le bon nom comme adresse officielle et enregistrez l'autre pour y rediriger (protège des fautes de frappe et de l'usurpation). Les tarifs varient beaucoup selon le bureau d'enregistrement (un bureau annonce 9 500 FCFA par an, un autre site évoque 25 000 à 50 000 FCFA : **comparez le prix TTC et ce qui est inclus**).
-
-L'outil `tools/check_domain.py` affiche un **avertissement** si le nom ne contient pas « compareprix ».
+Avant l'étape 1, **vérifiez que `compareprix.ci` est bien à vous** : l'outil WHOIS du registre [whois.nic.ci](https://whois.nic.ci) (indiqué par plusieurs bureaux d'enregistrement) dit s'il est enregistré et par qui. Je n'ai pas pu le vérifier : mon environnement ne résout aucun nom. S'il est libre, l'enregistrement passe par un **bureau d'enregistrement accrédité** (règle « premier arrivé, premier servi »). Les tarifs varient beaucoup (un bureau annonce 9 500 FCFA par an, un autre site évoque 25 000 à 50 000 FCFA : **comparez le prix TTC et ce qui est inclus**).
 
 ## 1. Ce que dit la documentation officielle
 
@@ -30,7 +26,7 @@ L'ordre protège le site existant : **il ne casse rien tant que l'étape 7 n'est
 Si ce n'est pas fait. Notez : le **nombre d'applications web** autorisé dépend de l'offre. S'il n'y en a qu'une, l'application du domaine **remplace** l'ancienne (elle devra reprendre exactement sa configuration, voir étape 2).
 
 ### Étape 2 : ajouter le domaine sur l'onglet Web
-Créez l'entrée d'application web pour `www.[votre-domaine].ci` et **recopiez la configuration de l'ancienne** :
+Créez l'entrée d'application web pour `www.compareprix.ci` et **recopiez la configuration de l'ancienne** :
 - dossier du code et dossier de travail (le dossier du projet) ;
 - environnement virtuel (même version de Python) ;
 - **contenu du fichier WSGI**, y compris toutes les variables `COMPAREPRIX_*` existantes : `COMPAREPRIX_ADMIN_TOKEN`, `COMPAREPRIX_SECRET_KEY` (**identique**, sinon les utilisateurs sont déconnectés), `COMPAREPRIX_DATA_DIR` (**même dossier**, sinon la base semble vide), `COMPAREPRIX_TRUSTED_PROXIES=1`.
@@ -42,19 +38,19 @@ Notez l'**adresse CNAME que PythonAnywhere affiche** pour cette application (de 
 |---|---|---|
 | **CNAME** | `www` | l'adresse affichée par PythonAnywhere à l'étape 2 |
 
-Pour le nom **sans www** (`[votre-domaine].ci`) : le CNAME est impossible. Deux solutions : utiliser la **redirection web** (« URL forwarding ») du bureau d'enregistrement vers `https://www.[votre-domaine].ci`, ou ne pas l'utiliser. Ne touchez pas aux enregistrements **MX** existants (courrier).
+Pour le nom **sans www** (`compareprix.ci`) : le CNAME est impossible. Deux solutions : utiliser la **redirection web** (« URL forwarding ») du bureau d'enregistrement vers `https://www.compareprix.ci`, ou ne pas l'utiliser. Ne touchez pas aux enregistrements **MX** existants (courrier).
 
 ### Étape 4 : attendre la propagation et le vérifier
 D'après des utilisateurs de PythonAnywhere, 10 à 60 minutes en général (parfois plus). Pour vérifier, depuis une console ou votre ordinateur :
 ```bash
-python tools/check_domain.py www.[votre-domaine].ci
+python tools/check_domain.py www.compareprix.ci
 ```
 À ce stade, **seul le contrôle DNS doit passer** ; le certificat échoue tant que l'étape 5 n'est pas faite : c'est normal.
 
 ### Étape 5 : activer le HTTPS
 Onglet Web, section **Security**, ligne « HTTPS certificate » : choisir **Let's Encrypt auto-renew**. Puis activer la redirection HTTP vers HTTPS (« Force HTTPS ») en suivant la page d'aide. Relancez :
 ```bash
-python tools/check_domain.py www.[votre-domaine].ci --apex
+python tools/check_domain.py www.compareprix.ci --apex
 ```
 Attendus : DNS OK, certificat OK, `http -> https` OK, `/healthz` OK, en-têtes OK. Le cookie sera marqué non sécurisé et HSTS absent : ce sont les étapes 6 et 7.
 
@@ -69,12 +65,12 @@ Rechargez (**Reload**) et relancez `check_domain`. Le contrôle « cookie de ses
 
 ### Étape 7 : forcer une adresse unique (en dernier)
 ```python
-os.environ['COMPAREPRIX_CANONICAL_HOST'] = 'www.[votre-domaine].ci'
+os.environ['COMPAREPRIX_CANONICAL_HOST'] = 'www.compareprix.ci'
 ```
 Toute visite sur l'ancienne adresse (`patrickeudess.pythonanywhere.com`) sera redirigée (301) vers le nouveau domaine, en gardant la page et les paramètres. `/healthz`, les écritures (POST) et l'accès local ne sont jamais redirigés. Vérifiez :
 ```bash
-python tools/check_domain.py www.[votre-domaine].ci --apex --alternate=patrickeudess.pythonanywhere.com
-python tools/smoke_test.py https://www.[votre-domaine].ci
+python tools/check_domain.py www.compareprix.ci --apex --alternate=patrickeudess.pythonanywhere.com
+python tools/smoke_test.py https://www.compareprix.ci
 ```
 Puis testez à la main, sur un **téléphone en données mobiles** : ouvrir le site, créer un compte, se déconnecter, se reconnecter.
 
@@ -89,25 +85,29 @@ os.environ['COMPAREPRIX_HSTS'] = '1'
 ### Étape 9 : mettre à jour la redirection GitHub Pages
 Les pages `index.html`, `panier.html`, etc. redirigent encore vers l'ancienne adresse.
 ```bash
-python tools/set_site_url.py https://www.[votre-domaine].ci            # simulation
-python tools/set_site_url.py https://www.[votre-domaine].ci --apply    # écrit
+python tools/set_site_url.py https://www.compareprix.ci            # simulation
+python tools/set_site_url.py https://www.compareprix.ci --apply    # écrit
 git diff && git commit -am "Pointer GitHub Pages vers le nouveau domaine" && git push
 ```
 
 ### Étape 10 : courrier électronique
-Si vous envoyez des emails (code de vérification) avec une adresse du type `no-reply@[votre-domaine].ci`, le fournisseur SMTP vous demandera d'**authentifier le domaine** en ajoutant chez le bureau d'enregistrement des enregistrements **TXT/CNAME (SPF, DKIM)** dont il vous donne les valeurs exactes. Sans cela, les messages arrivent en courrier indésirable ou sont refusés. Puis :
+Si vous envoyez des emails (code de vérification) avec une adresse du type `no-reply@compareprix.ci`, le fournisseur SMTP vous demandera d'**authentifier le domaine** en ajoutant chez le bureau d'enregistrement des enregistrements **TXT/CNAME (SPF, DKIM)** dont il vous donne les valeurs exactes. Sans cela, les messages arrivent en courrier indésirable ou sont refusés. Puis :
 ```python
-os.environ['COMPAREPRIX_SMTP_FROM'] = 'ComparePrix <no-reply@[votre-domaine].ci>'
+os.environ['COMPAREPRIX_SMTP_FROM'] = 'ComparePrix <no-reply@compareprix.ci>'
 ```
 
 ### Étape 11 : mettre à jour les documents
-Remplacez l'ancienne adresse dans : `docs/COURRIERS.md` (courriers à l'OCPV, au CNLVC, à l'ARTCI, au juriste), la politique de confidentialité (variable `COMPAREPRIX_CONTACT`), la fiche de traitement ARTCI. **Les courriers non encore envoyés doivent porter la nouvelle adresse.**
+Une fois `check_domain` **sans échec**, remplacez l'ancienne adresse dans les courriers non encore envoyés :
+```bash
+sed -i 's#https://patrickeudess.pythonanywhere.com#https://www.compareprix.ci#g' docs/COURRIERS.md
+```
+Puis vérifiez la politique de confidentialité (variable `COMPAREPRIX_CONTACT` : une adresse du type `contact@compareprix.ci` suppose une boîte aux lettres que vous devez créer) et la fiche de traitement ARTCI. **N'écrivez pas la nouvelle adresse dans un courrier avant qu'elle fonctionne** : un destinataire qui clique sur un lien mort perd confiance.
 
 ## 3. Si quelque chose ne va pas
 
 | Symptôme | Cause probable | Que faire |
 |---|---|---|
-| `check_domain` : DNS ne résout pas | CNAME absent, mal écrit, ou pas encore propagé | Relire le nom et la valeur chez le bureau d'enregistrement ; attendre ; tester avec `nslookup www.[domaine].ci` |
+| `check_domain` : DNS ne résout pas | CNAME absent, mal écrit, ou pas encore propagé | Relire le nom et la valeur chez le bureau d'enregistrement ; attendre ; tester avec `nslookup www.compareprix.ci` |
 | Avertissement de certificat dans le navigateur | Let's Encrypt pas activé ou activé avant la propagation du DNS | Réactiver l'option sur l'onglet Web une fois `check_domain` OK sur le DNS |
 | Le site s'affiche mais « se déconnecte » sans arrêt | `COMPAREPRIX_COOKIE_SECURE=true` sans HTTPS fonctionnel, ou `COMPAREPRIX_SECRET_KEY` différente | Vérifier l'étape 5 ; recopier la même clé secrète |
 | Le site paraît vide (aucun prix) | `COMPAREPRIX_DATA_DIR` ou chemin de la base différent sur la nouvelle application | Reprendre exactement les valeurs de l'ancienne |

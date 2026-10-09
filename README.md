@@ -29,7 +29,7 @@ Configurer :
 - `COMPAREPRIX_COOKIE_SECURE=true` : sur un serveur HTTPS.
 - `COMPAREPRIX_DATA_DIR` : dossier persistant pour la base collaborative et les photos ; par défaut `data`.
 
-Les prix manuels utilisent encore `data/articles.json`. Les comptes, observations, décisions et mouvements de points sont dans `community.sqlite3`. Les fichiers de preuve sont dans `proofs/`. Sauvegarder ces données privées avec la clé de session et ne pas les servir comme fichiers publics. La base et les preuves ne doivent jamais être publiées sur GitHub.
+Les prix manuels utilisent encore `data/articles.json`. Les comptes, observations, décisions et mouvements de points sont dans `community.sqlite3`. Les fichiers de preuve sont dans `proofs/`. Sauvegarder ces données privées avec `python backup_db.py` (procédure : [docs/EXPLOITATION.md](docs/EXPLOITATION.md)) et ne pas les servir comme fichiers publics. La base et les preuves ne doivent jamais être publiées sur GitHub.
 
 ## Validation
 

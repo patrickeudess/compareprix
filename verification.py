@@ -21,6 +21,7 @@ from werkzeug.security import generate_password_hash
 
 import mailer
 from ratelimit import SlidingWindowLimiter
+from schema_util import add_column_if_missing
 
 CODE_TTL_SECONDS = 15 * 60
 MAX_ATTEMPTS = 5
@@ -63,10 +64,8 @@ def register_verification(app, db, user, csrf_ok, error, now):
     """Ajoute les colonnes, la table de codes et les 4 routes. `db`, `user`, `csrf_ok`, `error`, `now`
     sont les aides de collaboration.py."""
     with db() as conn:
-        cols = {row['name'] for row in conn.execute('PRAGMA table_info(users)')}
         for name in ('contact_email', 'email_verified_at'):
-            if name not in cols:
-                conn.execute(f'ALTER TABLE users ADD COLUMN {name} TEXT')
+            add_column_if_missing(conn, 'users', name, 'TEXT')
         # Un même email vérifié ne peut appartenir qu'à un seul compte.
         conn.execute('CREATE UNIQUE INDEX IF NOT EXISTS users_verified_email_unique '
                      'ON users(contact_email) WHERE email_verified_at IS NOT NULL')
@@ -89,6 +88,7 @@ def register_verification(app, db, user, csrf_ok, error, now):
         code = f'{secrets.randbelow(10 ** 6):06d}'
         with db() as conn:
             conn.execute('UPDATE verification_codes SET used=1 WHERE user_id=? AND purpose=? AND used=0', (user_id, purpose))
+            conn.execute('DELETE FROM verification_codes WHERE expires_at < ?', (clock() - 86400,))  # purge : codes périmés depuis 1 jour
             cursor = conn.execute(
                 'INSERT INTO verification_codes(user_id,purpose,email,code_hash,expires_at,created_at) VALUES (?,?,?,?,?,?)',
                 (user_id, purpose, email, digest(purpose, user_id, email, code), clock() + CODE_TTL_SECONDS, now()))
