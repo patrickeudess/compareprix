@@ -3,6 +3,9 @@
 Historique détaillé : `git log`. Ce fichier ne garde que les changements visibles.
 
 ## Non publié
+- Confidentialité : page `/confidentialite`, case de consentement obligatoire à l'inscription, date de consentement enregistrée.
+- Photos réduites sur le téléphone avant l'envoi (mesuré : un PNG de 30 Mo et un JPEG de 11 Mo partent à moins de 1 Mo) : moins de données mobiles consommées.
+- Étude du contexte ivoirien avec sources : `docs/ETUDE_CONTEXTE_CI.md`.
 - Fiche de collecte Excel prête à l'emploi (`data/fiche_collecte.xlsx`, générée par `tools/build_fiche.py`) : règles de relevé, contrôles de saisie, suivi par magasin, colonnes `lieu` et `note`.
 - Import CSV plus tolérant aux exports d'Excel français : dates `JJ/MM/AAAA`, prix « 2 500 » ou « 2500 FCFA ». Aucun arrondi.
 - Email de récupération facultatif : vérification par code à 6 chiffres et « Mot de passe oublié ? » (voir README, activé seulement si SMTP est configuré).

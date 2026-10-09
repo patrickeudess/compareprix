@@ -29,7 +29,7 @@ byId('historyRows').append(card);
 });
 }catch(error){tell(error.message);}
 }
-function showAuthMode(){byId('registration').hidden=!registering;byId('name').required=false;byId('password').minLength=registering?12:1;byId('password').autocomplete=registering?'new-password':'current-password';byId('authSubmit').textContent=registering?'Créer mon compte':'Se connecter';byId('switchAuth').textContent=registering?'J’ai déjà un compte':'Créer un compte';}
+function showAuthMode(){byId('registration').hidden=!registering;byId('name').required=false;byId('consent').required=registering;byId('password').minLength=registering?12:1;byId('password').autocomplete=registering?'new-password':'current-password';byId('authSubmit').textContent=registering?'Créer mon compte':'Se connecter';byId('switchAuth').textContent=registering?'J’ai déjà un compte':'Créer un compte';}
 byId('switchAuth').addEventListener('click',()=>{registering=!registering;showAuthMode();});
 byId('showPassword')?.addEventListener('click',()=>{const password=byId('password'),visible=password.type==='password';password.type=visible?'text':'password';byId('showPassword').textContent=visible?'Masquer le mot de passe':'Afficher le mot de passe';byId('showPassword').setAttribute('aria-pressed',String(visible));});
 showAuthMode();
@@ -50,9 +50,17 @@ byId('resetForm')?.addEventListener('submit',async event=>{event.preventDefault(
 try{const data=await post('/api/account/reset/confirm',{phone:byId('resetPhone').value,code:byId('resetCode').value.trim(),password:byId('resetPassword').value});csrf=data.csrf;byId('resetForm').reset();byId('resetForm').hidden=true;registering=false;showAuthMode();byId('phone').focus();tell(data.message);}catch(error){tell(error.message);}});
 byId('authForm').addEventListener('submit',async event=>{
 event.preventDefault();const button=byId('authSubmit');button.disabled=true;
-try{displayAccount(await api('/api/account/'+(registering?'register':'login'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:byId('phone').value,password:byId('password').value,name:byId('name').value})}));tell('Vous êtes connecté. Vous pouvez envoyer votre relevé.');if(['update','contribute'].includes(new URLSearchParams(location.search).get('intent')))location.assign(contributionDestination());else byId('account').scrollIntoView({behavior:'smooth'});}catch(error){tell(error.message);}finally{button.disabled=false;}
+try{displayAccount(await api('/api/account/'+(registering?'register':'login'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:byId('phone').value,password:byId('password').value,name:byId('name').value,consent:registering&&byId('consent').checked})}));tell('Vous êtes connecté. Vous pouvez envoyer votre relevé.');if(['update','contribute'].includes(new URLSearchParams(location.search).get('intent')))location.assign(contributionDestination());else byId('account').scrollIntoView({behavior:'smooth'});}catch(error){tell(error.message);}finally{button.disabled=false;}
 });
 byId('logout').addEventListener('click',async()=>{try{displayAccount(await api('/api/account/logout',{method:'POST'}));tell('Vous êtes déconnecté.');}catch(error){tell(error.message);}});
+// Réduit la photo avant l'envoi : moins de données mobiles consommées, envoi plus fiable. En cas de doute on garde l'original.
+async function shrinkPhoto(file){
+if(file.size<=400*1024||!/^image\/(jpeg|png)$/.test(file.type)||!window.createImageBitmap)return file;
+try{const bitmap=await createImageBitmap(file,{imageOrientation:'from-image'}),scale=Math.min(1,1600/Math.max(bitmap.width,bitmap.height)),canvas=document.createElement('canvas');
+canvas.width=Math.round(bitmap.width*scale);canvas.height=Math.round(bitmap.height*scale);canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close?.();
+const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.8));
+return blob&&blob.size<file.size?new File([blob],'photo.jpg',{type:'image/jpeg'}):file;}catch{return file;}
+}
 function saveDraft(){try{localStorage.setItem(draftKey,JSON.stringify(Object.fromEntries(fields.map(key=>[key,byId(key).value]))));}catch{byId('draftNote').textContent='Le navigateur ne peut pas conserver ce brouillon.';}}
 form.addEventListener('input',saveDraft);
 try{const draft=JSON.parse(localStorage.getItem(draftKey)||'{}');fields.forEach(key=>{if(typeof draft[key]==='string')byId(key).value=draft[key];});}catch{}
@@ -63,9 +71,10 @@ form.addEventListener('submit',async event=>{
 event.preventDefault();
 if(!online){tell('Cette page nécessite un serveur ComparePrix pour envoyer des relevés.');return;}
 if(!currentUser){tell('Connectez-vous ou créez un compte pour envoyer ce relevé. Votre brouillon est conservé.');byId('account').scrollIntoView({behavior:'smooth'});return;}
-const photo=byId('photo').files[0];if(photo&&photo.size>5*1024*1024){tell('La photo dépasse 5 Mo.');return;}
 byId('send').disabled=true;
-try{const data=await api('/api/contributions',{method:'POST',body:new FormData(form)});tell(data.message);form.reset();try{localStorage.removeItem(draftKey);}catch{}await loadHistory();location.assign('./compte.html#history');}catch(error){tell(error.message);}finally{byId('send').disabled=false;}
+try{const body=new FormData(form),original=byId('photo').files[0];
+if(original){const photo=await shrinkPhoto(original);if(photo.size>5*1024*1024){tell('La photo dépasse 5 Mo, même réduite. Choisissez-en une autre.');return;}body.set('photo',photo,photo.name);}
+const data=await api('/api/contributions',{method:'POST',body});tell(data.message);form.reset();try{localStorage.removeItem(draftKey);}catch{}await loadHistory();location.assign('./compte.html#history');}catch(error){tell(error.message);}finally{byId('send').disabled=false;}
 });
 if(document.body.dataset.preview==='true'){
 if(pageMode==='contribution'){location.replace(accountDestination());}

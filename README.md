@@ -52,6 +52,10 @@ Les mots de passe sont hachés. Les opérations de compte et de contribution uti
 
 Parcours : remplir `prix` et `date_releve` (une ligne sans prix est ignorée, un produit absent reste vide) → *Enregistrer sous* CSV depuis l’onglet « Saisie » → `/admin` → Importer un CSV (simulation d’abord ; tout est refusé si une seule ligne est invalide). Les prix avec espaces ou « FCFA » et les dates `JJ/MM/AAAA` d’Excel français sont acceptés ; un prix non entier n’est jamais arrondi. Les prix importés sont « à vérifier » jusqu’à validation dans `/admin`.
 
+## Confidentialité et consentement
+
+La page `/confidentialite` décrit les données collectées (numéro, pseudo, email facultatif, relevés, photo privée), leur usage, leur conservation et les droits des utilisateurs. Définir `COMPAREPRIX_CONTACT` (adresse où exercer ses droits) pour qu’elle s’affiche. La création d’un compte exige une case de consentement ; la date est enregistrée (`users.consent_at`). **Le texte doit être validé par un juriste ivoirien, et le traitement des numéros de téléphone vérifié auprès de l’ARTCI avant un lancement public** (voir `docs/ETUDE_CONTEXTE_CI.md`, §6). Les photos sont réduites sur le téléphone avant l’envoi (1 600 px maximum, JPEG) pour économiser les données mobiles.
+
 ## Vérification d’email et récupération du mot de passe
 
 Facultatives : l’inscription par téléphone reste immédiate. Un email vérifié (code à 6 chiffres, valable 15 minutes, 5 essais) permet de récupérer le mot de passe depuis « Mot de passe oublié ? ». Sans SMTP configuré, la fonction est masquée et inactive.

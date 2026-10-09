@@ -78,6 +78,8 @@ def register_collaboration(app, is_admin):
         conn.execute('CREATE UNIQUE INDEX IF NOT EXISTS users_phone_unique ON users(phone)')
         if 'session_version' not in {row['name'] for row in conn.execute('PRAGMA table_info(users)')}:
             conn.execute('ALTER TABLE users ADD COLUMN session_version INTEGER NOT NULL DEFAULT 0')
+        if 'consent_at' not in {row['name'] for row in conn.execute('PRAGMA table_info(users)')}:
+            conn.execute('ALTER TABLE users ADD COLUMN consent_at TEXT')  # NULL = compte créé avant le consentement explicite
         if 'availability' not in {row['name'] for row in conn.execute('PRAGMA table_info(contributions)')}:
             conn.execute("ALTER TABLE contributions ADD COLUMN availability TEXT NOT NULL DEFAULT 'unknown'")
         columns = {row['name'] for row in conn.execute('PRAGMA table_info(contributions)')}
@@ -148,6 +150,11 @@ def register_collaboration(app, is_admin):
     def account_page():
         return render_template('community.html', page='contribution' if 'contribuer' in request.path else 'account')
 
+    @app.get('/confidentialite')
+    @app.get('/confidentialite.html')
+    def privacy_page():
+        return render_template('privacy.html', contact=os.environ.get('COMPAREPRIX_CONTACT', '').strip())
+
     @app.get('/panier')
     @app.get('/panier.html')
     def basket_page():
@@ -203,10 +210,12 @@ def register_collaboration(app, is_admin):
         if action == 'register':
             if len(password) < 12 or len(name.strip()) > 80:
                 return error('Choisissez un mot de passe de 12 caractères minimum et un pseudo de 80 caractères maximum.')
+            if data.get('consent') is not True:
+                return error('Acceptez la politique de confidentialité pour créer un compte.')
             try:
                 with db() as conn:
-                    cursor = conn.execute('INSERT INTO users(email,phone,name,password_hash,created_at) VALUES (?,?,?,?,?)',
-                        ('phone:'+phone,phone,name.strip() or 'Contributeur '+secrets.token_hex(3),generate_password_hash(password),now()))
+                    cursor = conn.execute('INSERT INTO users(email,phone,name,password_hash,created_at,consent_at) VALUES (?,?,?,?,?,?)',
+                        ('phone:'+phone,phone,name.strip() or 'Contributeur '+secrets.token_hex(3),generate_password_hash(password),now(),now()))
                     uid, sv = cursor.lastrowid, 0
             except sqlite3.IntegrityError:
                 return error('Ce numéro est déjà utilisé. Essayez de vous connecter.', 409)
